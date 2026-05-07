@@ -27,6 +27,7 @@ import EditIcon from '@mui/icons-material/Edit';
 import theme from 'assets/scss/_themes-vars.module.scss';
 import value from 'assets/scss/_themes-vars.module.scss';
 import { toast, ToastContainer } from 'react-toastify';
+import swal from 'sweetalert';
 
 // import { axiosInstance } from '../../../api/api.js';
 import { get, post, put, remove } from '../../../api/api.js';
@@ -136,24 +137,79 @@ const BrokerBranch = () => {
     setOpen(true);
   };
 
+  // const handleDelete = async (index) => {
+  //   const id = data[index]._id;
+  //   await deleteBrokerBranch(id);
+  //   setData((prev) => prev.filter((_, idx) => idx !== index));
+  // };
+
+  // added pop up swal #M
   const handleDelete = async (index) => {
-    const id = data[index]._id;
-    await deleteBrokerBranch(id);
-    setData((prev) => prev.filter((_, idx) => idx !== index));
-  };
+  const id = data[index]._id;
+
+  swal({
+    title: "Are you sure?",
+    text: "Once deleted, you will not be able to recover this branch!",
+    icon: "warning",
+    buttons: ["Cancel", "Delete"],
+    dangerMode: true,
+  }).then(async (willDelete) => {
+    if (willDelete) {
+      try {
+        await deleteBrokerBranch(id);
+        setData((prev) => prev.filter((_, idx) => idx !== index));
+
+        swal("Deleted!", "Branch deleted successfully.", "success");
+      } catch (error) {
+        console.error(error);
+        swal("Error!", "Something went wrong.", "error");
+      }
+    }
+  });
+};
 
   const handleSubmit = async () => {
     if (validate()) {
+      // if (editIndex !== null) {
+      //   try {
+      //     const id = data[editIndex]._id;
+      //     const updateBranch = await updateBrokerBranch(id, form);
+      //     setData((prev) => prev.map((item, idx) => (idx === editIndex ? updateBranch : item)));
+      //     setOpen(false);
+      //   } catch (error) {
+      //     console.log(error);
+      //   }
+      // }
       if (editIndex !== null) {
-        try {
-          const id = data[editIndex]._id;
-          const updateBranch = await updateBrokerBranch(id, form);
-          setData((prev) => prev.map((item, idx) => (idx === editIndex ? updateBranch : item)));
-          setOpen(false);
-        } catch (error) {
-          console.log(error);
-        }
-      } else {
+  const id = data[editIndex]._id;
+
+  swal({
+    title: "Update Branch?",
+    text: "Do you want to update this branch details?",
+    icon: "warning",
+    buttons: ["Cancel", "Update"],
+  }).then(async (willUpdate) => {
+    if (willUpdate) {
+      try {
+        const updateBranch = await updateBrokerBranch(id, form);
+
+        setData((prev) =>
+          prev.map((item, idx) => (idx === editIndex ? updateBranch : item))
+        );
+
+        setOpen(false);
+
+        swal("Updated!", "Branch updated successfully.", "success");
+      } catch (error) {
+        console.error(error);
+        swal("Error!", "Something went wrong.", "error");
+      }
+    }
+  });
+
+  return; // 🔥 IMPORTANT
+}
+       else {
         try {
           const newBrokerBranch = await addBrokerBranch(form);
           setData((prev) => [...prev, newBrokerBranch]);

@@ -121,6 +121,10 @@ const UpdateCompanySettings = () => {
 
           setLogoPreview(d.logo || '');
 
+
+          // added #M 
+          setLogoPreview(d.logo ? getLogoUrl(d.logo) : '');
+
           // Export Center (Array support)
           if (Array.isArray(d.locations?.exportCenter) && d.locations.exportCenter.length > 0) {
             setExpCenter(
@@ -442,7 +446,7 @@ const UpdateCompanySettings = () => {
   const validateMain = () => {
     const err = {};
     if (!form.clientName) err.clientName = 'Required';
-    if (!form.officialMailId || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.officialMailId)) err.officialMailId = 'Valid email required';
+    if (!form.officialMailId || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.officialMailId))  err.officialMailId = 'Valid email required';
     if (!form.officialPhoneNo || !/^\d{10}$/.test(form.officialPhoneNo)) err.officialPhoneNo = '10-digit mobile required';
     if (form.altPhoneNo && !/^\d{10}$/.test(form.altPhoneNo)) err.altPhoneNo = '10-digit alt mobile';
     if (!form.website) err.website = 'Website required';
@@ -521,20 +525,30 @@ const UpdateCompanySettings = () => {
   //   }
   // };
 
+  // const getLogoUrl = (logoPath) => {
+  //   if (!logoPath) return null;
+
+  //   // normalize slashes
+  //   const normalized = logoPath.replace(/\\/g, '/');
+
+  //   // replace public/images with uploads
+  //   const urlPath = normalized.replace('public/images', 'uploads');
+
+  //   // prepend backend root URL, not /api/
+  //   // console.log(`http://localhost:5050/api/${urlPath}`);
+
+  //   return `${REACT_APP_API_URL}${urlPath}`;
+  // };
+
+
+  // Added #M 
   const getLogoUrl = (logoPath) => {
-    if (!logoPath) return null;
+  if (!logoPath) return "";
 
-    // normalize slashes
-    const normalized = logoPath.replace(/\\/g, '/');
+  const normalized = logoPath.replace(/\\/g, "/");
 
-    // replace public/images with uploads
-    const urlPath = normalized.replace('public/images', 'uploads');
-
-    // prepend backend root URL, not /api/
-    // console.log(`http://localhost:5050/api/${urlPath}`);
-
-    return `${REACT_APP_API_URL}${urlPath}`;
-  };
+  return `${REACT_APP_API_URL}/${normalized}`;
+};
 
   const handleSubmit = async () => {
     const isMainValid = validateMain();
@@ -606,7 +620,7 @@ const UpdateCompanySettings = () => {
           Company Settings
         </Typography>
       </Breadcrumb>
-
+Company Logo
       <Grid container spacing={gridSpacing}>
         <Grid item xs={12}>
           <Grid container justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
@@ -641,6 +655,7 @@ const UpdateCompanySettings = () => {
                     onChange={handleChange}
                     error={!!errors.officialMailId}
                     helperText={errors.officialMailId}
+                    inputProps={{maxLength:254,minLength:6  }}
                     fullWidth
                     required
                   />
@@ -825,10 +840,18 @@ const UpdateCompanySettings = () => {
                   {(logoPreview || form.companyLogo) && (
                     <Box position="relative" display="inline-block" mt={2}>
                       <img
-                        src={logoPreview instanceof File ? URL.createObjectURL(logoPreview) : getLogoUrl(form.companyLogo)}
+                        // src={logoPreview instanceof File ? URL.createObjectURL(logoPreview) : getLogoUrl(form.companyLogo)}
+
+                      // added #M 
+                      src={logoPreview ? (logoPreview instanceof File ? URL.createObjectURL(logoPreview) : logoPreview) : getLogoUrl(form.companyLogo)}
+
+
                         alt="Company Logo"
                         style={{ width: 100, height: 100, objectFit: 'contain', borderRadius: 4 }}
                       />
+
+
+
 
                       <IconButton
                         size="small"

@@ -476,7 +476,7 @@ const Default = () => {
       Paid: 'Paid'
     },
     colors: ['#FB8C00', '#43A047']
-  };
+  };``
 
   // map for easy access
   const chartOptions = {
@@ -671,6 +671,30 @@ const Default = () => {
 
   const todaysBirthdays = staff.filter((item) => isBirthdayToday(item?.basicDetails?.dateOfBirth));
 
+  // added filter for sorting financial year - #M
+const filteredFY = Array.from(
+  new Map(
+    financialYearData
+      .filter((year) => new Date(year.fromDate) <= new Date()) // remove future
+      .map((item) => [
+        `${item.fromDate}-${item.toDate}`, // unique key
+        item
+      ])
+  ).values()
+).sort((a, b) => new Date(b.fromDate) - new Date(a.fromDate));
+
+// making graph clickable for changing data - #M
+
+const [selectedGraph, setSelectedGraph] = useState('staff');
+
+
+
+
+
+
+
+
+
   return (
     <>
       {loading && (
@@ -721,8 +745,11 @@ const Default = () => {
                 value={selectedFY}
                 onChange={(e) => handleFilter(e)}
               >
+                
+
                 {financialYearData.length > 0 &&
-                  financialYearData.map((type) => (
+                  // financialYearData.map((type) => (
+                    filteredFY.map((type) => (
                     <MenuItem
                       key={type._id}
                       value={type._id}
@@ -738,6 +765,8 @@ const Default = () => {
             </Grid>
           </>
         ) : null}
+
+        
         {/* </Card> */}
 
         {/* Top Summary Cards */}
@@ -752,6 +781,14 @@ const Default = () => {
                 iconPrimary={TrendingUpIcon}
               />
             </Grid>
+
+        
+
+
+
+
+
+
             <Grid item lg={4} sm={6} xs={12}>
               <ReportCard
                 primary={policy.length.toLocaleString('en-IN')}

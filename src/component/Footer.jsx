@@ -13,7 +13,7 @@ const Footer = () => {
             Address
           </Typography>
           <Typography fontSize="11px" fontWeight={500}>
-            Amika Softwares
+            JP Insurance
           </Typography>
           <Typography fontSize="11px" lineHeight={1.4}>
             High5 Coworking Space 2nd Floor, Saykar Classic, above Athvale Sweet, Baner, Pune, Maharashtra 411069
@@ -57,7 +57,7 @@ const Footer = () => {
       </Grid>
 
       <Typography textAlign="center" mt={0.8} fontSize="10px" color="gray">
-        © {new Date().getFullYear()} Amika Softwares. All rights reserved.
+        © {new Date().getFullYear()} J P Insurances. All rights reserved.
       </Typography>
     </Box>
   );

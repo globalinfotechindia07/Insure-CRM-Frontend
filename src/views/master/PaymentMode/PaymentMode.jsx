@@ -1,7 +1,8 @@
 import React from 'react';
 
 const PaymentMode = () => {
-  return <div>PaymentMode</div>;
+  return <div>Payment Mode</div>;
+  
 };
 
 export default PaymentMode;

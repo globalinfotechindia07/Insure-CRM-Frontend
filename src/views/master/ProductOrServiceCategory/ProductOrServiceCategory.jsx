@@ -41,6 +41,7 @@ import { gridSpacing } from 'config.js';
 import value from 'assets/scss/_themes-vars.module.scss';
 import { get, post, put, remove } from '../../../api/api.js';
 import { useSelector } from 'react-redux';
+import swal from 'sweetalert';
 
 const initialState = {
   insDepartment: '',
@@ -134,28 +135,65 @@ const ProductOrServiceCategory = () => {
   const handleSubmit = async () => {
     if (validate()) {
       try {
+        // if (editIndex !== null) {
+        //   // Edit case
+        //   const id = data[editIndex]._id;
+        //   console.log('edit submit ', form);
+        //   const response = await put(`/productOrServiceCategory/${id}`, form);
+        //   console.log('res  ', response);
+        //   if (response.status) {
+        //     toast.success('Record Edited Succefully');
+        //   }
+
+        //   console.log('Respomse ', response);
+        //   const updatedCategory = response.data;
+        //   // console.log('Updated Category from API:', updatedCategory); // 🔍 debug
+
+        //   if (updatedCategory) {
+        //     const updated = [...data];
+        //     updated[editIndex] = updatedCategory;
+        //     setData(updated);
+        //   }
+        //   handleClose();
+        //   // setOpen(false);
+        // } 
+
+
         if (editIndex !== null) {
-          // Edit case
-          const id = data[editIndex]._id;
-          console.log('edit submit ', form);
-          const response = await put(`/productOrServiceCategory/${id}`, form);
-          console.log('res  ', response);
-          if (response.status) {
-            toast.success('Record Edited Succefully');
-          }
+  const id = data[editIndex]._id;
 
-          console.log('Respomse ', response);
-          const updatedCategory = response.data;
-          // console.log('Updated Category from API:', updatedCategory); // 🔍 debug
+  swal({
+    title: "Update Record?",
+    text: "Do you want to update this record?",
+    icon: "warning",
+    buttons: ["Cancel", "Update"],
+  }).then(async (willUpdate) => {
+    if (willUpdate) {
+      try {
+        const response = await put(`/productOrServiceCategory/${id}`, form);
 
-          if (updatedCategory) {
-            const updated = [...data];
-            updated[editIndex] = updatedCategory;
-            setData(updated);
-          }
-          handleClose();
-          // setOpen(false);
-        } else {
+        const updatedCategory = response.data;
+
+        if (updatedCategory) {
+          const updated = [...data];
+          updated[editIndex] = updatedCategory;
+          setData(updated);
+        }
+
+        handleClose();
+        swal("Updated!", "Record updated successfully.", "success");
+      } catch (error) {
+        console.error(error);
+        swal("Error!", "Something went wrong.", "error");
+      }
+    }
+  });
+
+  return; // 🔥 IMPORTANT (add case run hone se rokega)
+}
+        
+        
+        else {
           // Add case
           console.log('form is', form);
           const response = await post('/productOrServiceCategory', form);
@@ -181,19 +219,50 @@ const ProductOrServiceCategory = () => {
   };
 
   // Delete product/service category using axiosInstance
-  const handleDelete = async (index) => {
-    try {
-      const id = data[index]._id;
-      await remove(`/productOrServiceCategory/${id}`);
-      toast.success('Record Deleted Successfully');
+  // const handleDelete = async (index) => {
+  //   try {
+  //     const id = data[index]._id;
+  //     await remove(`/productOrServiceCategory/${id}`);
+  //     toast.success('Record Deleted Successfully');
 
-      const updated = [...data];
-      updated.splice(index, 1);
-      setData(updated);
-    } catch (error) {
-      console.error('Delete error:', error);
+  //     const updated = [...data];
+  //     updated.splice(index, 1);
+  //     setData(updated);
+  //   } catch (error) {
+  //     console.error('Delete error:', error);
+  //   }
+  // };
+
+
+
+  // added pop up #M
+
+  const handleDelete = async (index) => {
+  const id = data[index]._id;
+
+  swal({
+    title: "Are you sure?",
+    text: "Once deleted, you will not be able to recover this record!",
+    icon: "warning",
+    buttons: ["Cancel", "Delete"],
+    dangerMode: true,
+  }).then(async (willDelete) => {
+    if (willDelete) {
+      try {
+        await remove(`/productOrServiceCategory/${id}`);
+
+        const updated = [...data];
+        updated.splice(index, 1);
+        setData(updated);
+
+        swal("Deleted!", "Record deleted successfully.", "success");
+      } catch (error) {
+        console.error(error);
+        swal("Error!", "Something went wrong.", "error");
+      }
     }
-  };
+  });
+};
 
   //todo: handleEdit
   const handleEdit = (index, row) => {

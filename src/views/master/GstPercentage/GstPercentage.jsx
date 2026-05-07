@@ -27,8 +27,9 @@ import CancelIcon from '@mui/icons-material/Cancel';
 import EditIcon from '@mui/icons-material/Edit';
 import theme from 'assets/scss/_themes-vars.module.scss';
 import value from 'assets/scss/_themes-vars.module.scss';
-import { get, post, put, remove } from 'api/api'; // <-- import your API helpers
+import { get, post, put, remove } from 'api/api';
 import { useSelector } from 'react-redux';
+import swal from 'sweetalert';
 
 const initialState = {
   cgst: '',
@@ -55,7 +56,6 @@ const GstPercentage = () => {
   });
   const systemRights = useSelector((state) => state.systemRights.systemRights);
 
-  // Fetch Prefix list from backend
   useEffect(() => {
     const loginRole = localStorage.getItem('loginRole');
     if (loginRole === 'admin') {
@@ -69,22 +69,36 @@ const GstPercentage = () => {
 
   const fetchData = async () => {
     const res = await get('gst-percentage');
-
     console.log('gst percentage data:', res.data);
-
     if (res && res.data) setData(res.data);
     else setData([]);
   };
 
+  // ✅ VALIDATION UPDATED
   const validate = () => {
     const newErrors = {};
-    if (!form.value) newErrors.igst = 'GST value is required.';
+
+    if (!form.value) {
+      newErrors.value = 'GST value is required.';
+    } else if (!/^\d+$/.test(form.value)) {
+      newErrors.value = 'Only numbers are allowed (no special characters).';
+    } else if (form.value.length < 1 || form.value.length > 4) {
+      newErrors.value = 'GST must be between 1 to 4 digits.';
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
+  // ✅ HANDLE CHANGE UPDATED
   const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+    const { name, value: inputValue } = e.target;
+
+    if (name === 'value') {
+      if (!/^\d*$/.test(inputValue)) return; // allow only numbers
+    }
+
+    setForm({ ...form, [name]: inputValue });
   };
 
   const handleOpen = () => {
@@ -97,43 +111,115 @@ const GstPercentage = () => {
 
   const handleClose = () => setOpen(false);
 
+  // const handleSubmit = async () => {
+  //   console.log(form);
+  //   if (validate()) {
+  //     if (editIndex !== null && editId) {
+  //       const res = await put(`gst-percentage/${editId}`, form);
+  //       if (res && res.data) {
+  //         fetchData();
+  //         setOpen(false);
+  //         toast.success('Record Edited Successfully');
+  //       }
+  //     } else {
+  //       const res = await post('gst-percentage', form);
+  //       if (res && res.data) {
+  //         fetchData();
+  //         setOpen(false);
+  //         toast.success('Record Inserted Successfully');
+  //       }
+  //     }
+  //   }
+  // };
+
+
+
+  // added pop up #M
   const handleSubmit = async () => {
-    console.log(form);
-    if (validate()) {
-      if (editIndex !== null && editId) {
-        // Edit
-        const res = await put(`gst-percentage/${editId}`, form);
-        if (res && res.data) {
-          fetchData();
-          setOpen(false);
-          toast.success('Record Edited Successfully');
-        }
-      } else {
-        // Add
-        const res = await post('gst-percentage', form);
-        // console.log("Resp",res)
-        if (res && res.data) {
-          fetchData();
-          setOpen(false);
-          toast.success('Record Inserted Successfully');
+  if (!validate()) return;
+
+  const isEdit = editIndex !== null && editId;
+
+  // ✅ ONLY EDIT CASE → swal
+  if (isEdit) {
+    swal({
+      title: "Update GST?",
+      text: "Do you want to update this GST record?",
+      icon: "warning",
+      buttons: ["Cancel", "Update"],
+    }).then(async (willUpdate) => {
+      if (willUpdate) {
+        try {
+          const res = await put(`gst-percentage/${editId}`, form);
+
+          if (res && res.data) {
+            fetchData();
+            setOpen(false);
+            swal("Updated!", "Record updated successfully.", "success");
+          }
+        } catch (error) {
+          console.error(error);
+          swal("Error!", "Something went wrong.", "error");
         }
       }
+    });
+  } else {
+    // ✅ ADD CASE → NO swal (normal flow)
+    try {
+      const res = await post("gst-percentage", form);
+
+      if (res && res.data) {
+        fetchData();
+        setOpen(false);
+        toast.success("Record Inserted Successfully");
+      }
+    } catch (error) {
+      console.error(error);
+      toast.error("Something went wrong");
     }
-  };
+  }
+};
+
+
 
   const handleEdit = (index) => {
-    // setForm({ gstPercentage: data[index].value });
+    setForm(data[index]); // same as your flow (no change in behavior)
     setEditIndex(index);
     setEditId(data[index]._id);
     setOpen(true);
   };
 
+  // const handleDelete = async (index) => {
+  //   const id = data[index]._id;
+  //   await remove(`gst-percentage/${id}`, {});
+  //   fetchData();
+  //   toast.success('Record Deleted Successfully');
+  // };
+
+
+  // added pop up #M
   const handleDelete = async (index) => {
-    const id = data[index]._id;
-    await remove(`gst-percentage/${id}`, {}); // Soft delete
-    fetchData();
-    toast.success('Record Deleted Successfully');
-  };
+  const id = data[index]._id;
+
+  swal({
+    title: "Are you sure?",
+    text: "Once deleted, you will not be able to recover this record!",
+    icon: "warning",
+    buttons: ["Cancel", "Delete"],
+    dangerMode: true,
+  }).then(async (willDelete) => {
+    if (willDelete) {
+      try {
+        await remove(`gst-percentage/${id}`, {});
+        fetchData();
+        swal("Deleted!", "Record deleted successfully.", "success");
+      } catch (error) {
+        console.error(error);
+        swal("Error!", "Something went wrong.", "error");
+      }
+    }
+  });
+};
 
   return (
     <div>
@@ -155,7 +241,6 @@ const GstPercentage = () => {
         )}
       </Grid>
 
-      {/* Modal Form */}
       <Dialog open={open} onClose={handleClose}>
         <DialogTitle sx={{ m: 0, p: 2 }}>
           {editIndex !== null ? 'Edit Gst ' : 'Add Gst'}
@@ -172,6 +257,7 @@ const GstPercentage = () => {
             <Close />
           </IconButton>
         </DialogTitle>
+
         <DialogContent sx={{ minWidth: 400 }}>
           <TextField
             label="GST"
@@ -181,42 +267,11 @@ const GstPercentage = () => {
             error={!!errors.value}
             helperText={errors.value}
             InputLabelProps={{ shrink: true }}
+            inputProps={{ maxLength: 4 }} // ✅ ONLY ADDITION
             fullWidth
             margin="dense"
           />
-          {/* <TextField
-            label="SGST"
-            name="sgst"
-            value={form.sgst}
-            onChange={handleChange}
-            error={!!errors.sgst}
-            helperText={errors.sgst}
-            InputLabelProps={{ shrink: true }}
-            fullWidth
-            margin="dense"
-          />
-          <TextField
-            label="UGST"
-            name="ugst"
-            value={form.ugst}
-            onChange={handleChange}
-            error={!!errors.ugst}
-            helperText={errors.ugst}
-            InputLabelProps={{ shrink: true }}
-            fullWidth
-            margin="dense"
-          />
-          <TextField
-            label="IGST"
-            name="igst"
-            value={form.igst}
-            onChange={handleChange}
-            error={!!errors.igst}
-            helperText={errors.igst}
-            InputLabelProps={{ shrink: true }}
-            fullWidth
-            margin="dense"
-          /> */}
+
           <TextField
             type="date"
             label="Effective From"
@@ -230,6 +285,7 @@ const GstPercentage = () => {
             margin="dense"
           />
         </DialogContent>
+
         <DialogActions>
           <Button onClick={handleClose} variant="contained" color="error" sx={{ minWidth: '40px', padding: '2px' }}>
             <IconButton color="inherit">
@@ -237,14 +293,16 @@ const GstPercentage = () => {
             </IconButton>
           </Button>
 
-          <Button onClick={handleSubmit} variant="contained" sx={{ minWidth: '40px', padding: '2px', backgroundColor: value.primaryLight }}>
+          <Button
+            onClick={handleSubmit}
+            variant="contained"
+            sx={{ minWidth: '40px', padding: '2px', backgroundColor: value.primaryLight }}
+          >
             <IconButton color="inherit">{editIndex !== null ? <EditIcon /> : <SaveIcon />}</IconButton>
           </Button>
         </DialogActions>
       </Dialog>
 
-      {/* Table */}
-      {/* {data.length > 0 && ( */}
       <Card>
         <CardContent>
           <Table>
@@ -276,7 +334,11 @@ const GstPercentage = () => {
                       </Button>
                     )}
                     {(gstPercentagePermission.Delete === true || isAdmin) && (
-                      <Button color="error" onClick={() => handleDelete(index)} sx={{ padding: '1px', minWidth: '24px', height: '24px' }}>
+                      <Button
+                        color="error"
+                        onClick={() => handleDelete(index)}
+                        sx={{ padding: '1px', minWidth: '24px', height: '24px' }}
+                      >
                         <IconButton color="inherit">
                           <Delete />
                         </IconButton>
@@ -289,7 +351,7 @@ const GstPercentage = () => {
           </Table>
         </CardContent>
       </Card>
-      {/* )} */}
+
       <ToastContainer />
     </div>
   );

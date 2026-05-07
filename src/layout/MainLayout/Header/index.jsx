@@ -206,7 +206,7 @@ const Header = ({ drawerToggle }) => {
                       overflow: 'hidden'
                     }}
                   >
-                    <img src={getLogoUrl(secondLogo)} alt="Company Logo" style={{ maxWidth: '100%', maxHeight: '100%' }} />
+                    <img src={getLogoUrl(secondLogo)} alt="Company Logo" style={{ maxWidth: '100%', maxHeight: '100%', cursor:"pointer" }} />
                   </Box>
                 )}
               </Box>
@@ -354,7 +354,7 @@ const Header = ({ drawerToggle }) => {
               textTransform: 'uppercase'
             }}
           >
-            {`${loginData?.name || 'N/A'}  `}
+            {`${loginData?.names || 'J P Insurance'}  `}
           </Typography>
           &nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;
           {/* <select

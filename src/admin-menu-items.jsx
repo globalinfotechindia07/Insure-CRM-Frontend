@@ -96,10 +96,10 @@ export default {
           children: [
             {
               id: 'master-group',
-              title: 'Genral Master',
+              title: 'General Master',
               type: 'collapse',
               icon: GridViewIcon,
-              children: [
+              children: [       
                 {
                   id: 'financial-year',
                   title: 'Financial Year',
@@ -114,6 +114,7 @@ export default {
                   icon: AttachMoneyIcon,
                   url: '/master/gst-percentage'
                 },
+            
                 {
                   id: 'product-or-service-category',
                   title: 'Product',
@@ -147,6 +148,24 @@ export default {
             },
             {
               id: 'master-group',
+              title: 'TPA Master',
+              type: 'collapse',
+              icon: GridViewIcon,
+              children: [       
+                {
+                  id: 'financial-year',
+                  title: 'Financial Year',
+                  type: 'item',
+                  icon: AccountTreeIcon,
+                  url: '/master/financial-year'
+                },
+
+            
+
+              ]
+            },
+            {
+              id: 'master-group',
               title: 'Branch Master',
               type: 'collapse',
               icon: GridViewIcon,
@@ -166,7 +185,7 @@ export default {
                   url: '/master/broker-name'
                 },
                 {
-                  id: 'broker',
+                  id: 'broker-branch',
                   title: 'Broker Branch',
                   type: 'item',
                   icon: TrendingUpIcon,
@@ -174,7 +193,7 @@ export default {
                 },
                 {
                   id: 'broker-rate',
-                  title: 'Broker Rate',
+                  title: 'Brokerage Rate',
                   type: 'item',
                   icon: TrendingUpIcon,
                   url: '/master/broker-rate'

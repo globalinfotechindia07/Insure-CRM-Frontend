@@ -17,7 +17,7 @@ const TermsAndConditions = () => {
               Terms & Conditions
             </Typography>
             <Typography variant="body2" className="text-white opacity-90 mt-2">
-              For miraiCRM (Product of Amika Softwares)
+              For miraiCRM (Product of J P Insurances)
             </Typography>
           </Box>
 
@@ -30,7 +30,7 @@ const TermsAndConditions = () => {
             </Typography>
 
             <Typography variant="body2" paragraph>
-              These Terms constitute a legally binding agreement between you (the “User”/“Client”) and Amika Softwares regarding your use of
+              These Terms constitute a legally binding agreement between you (the “User”/“Client”) and J P Insurances regarding your use of
               miraiCRM and its services.
             </Typography>
 
@@ -40,7 +40,7 @@ const TermsAndConditions = () => {
               1. Modification of Terms & Conditions
             </Typography>
             <Typography variant="body2" paragraph>
-              Amika Softwares reserves the right to modify, update, or replace any part of these Terms & Conditions at any time. If changes
+              J P Insurances reserves the right to modify, update, or replace any part of these Terms & Conditions at any time. If changes
               are made, they will be posted on www.miraicrm.com or communicated through your registered account.
             </Typography>
             <Typography variant="body2" paragraph>
@@ -66,7 +66,7 @@ const TermsAndConditions = () => {
             <Typography variant="h6" fontWeight={700}>
               3. Our Rights
             </Typography>
-            <Typography variant="body2">Amika Softwares reserves the right, at its sole discretion, to:</Typography>
+            <Typography variant="body2">J P Insurances reserves the right, at its sole discretion, to:</Typography>
             <ul className="list-decimal ml-8 text-sm space-y-1">
               <li>Restrict, suspend, or terminate your access to the Platform or specific features.</li>
               <li>Modify, discontinue, or disable any part of the Platform without prior notice.</li>
@@ -76,7 +76,7 @@ const TermsAndConditions = () => {
               <li>Establish usage and operational limits for performance, security, and compliance.</li>
             </ul>
             <Typography variant="body2" paragraph className="mt-2">
-              Amika Softwares holds no liability for any loss arising due to such actions.
+              J P Insurances holds no liability for any loss arising due to such actions.
             </Typography>
 
             <Divider />
@@ -90,7 +90,7 @@ const TermsAndConditions = () => {
             </Typography>
             <Typography variant="body2" paragraph>
               All content, code, design, brand elements, modules, interfaces, graphics, workflows, and intellectual property within miraiCRM
-              are exclusively owned by Amika Softwares.
+              are exclusively owned by J P Insurances.
             </Typography>
 
             <Typography variant="subtitle2" fontWeight={700}>
@@ -104,7 +104,7 @@ const TermsAndConditions = () => {
               4.3 License to Use User Content
             </Typography>
             <Typography variant="body2" paragraph>
-              By using miraiCRM, you grant Amika Softwares a non-exclusive, royalty-free, worldwide licence to store, process, backup, and
+              By using miraiCRM, you grant J P Insurances a non-exclusive, royalty-free, worldwide licence to store, process, backup, and
               display your data strictly for providing features, analytics, and service improvements.
             </Typography>
 
@@ -129,7 +129,7 @@ const TermsAndConditions = () => {
               6. Data Security & Backups
             </Typography>
             <Typography variant="body2" paragraph>
-              Amika Softwares ensures encrypted transfers, secure servers, backups and controlled access. The company is not liable for data
+              J P Insurances ensures encrypted transfers, secure servers, backups and controlled access. The company is not liable for data
               loss caused by user actions, force majeure, credential misuse, or external cyberattacks.
             </Typography>
 
@@ -139,7 +139,7 @@ const TermsAndConditions = () => {
               7. Limitation of Liability
             </Typography>
             <Typography variant="body2" paragraph>
-              Amika Softwares shall not be liable for indirect damages, business loss, downtime, user errors, or external issues. Maximum
+              J P Insurances shall not be liable for indirect damages, business loss, downtime, user errors, or external issues. Maximum
               liability shall not exceed the last 3 months’ subscription amount.
             </Typography>
 
@@ -181,7 +181,7 @@ const TermsAndConditions = () => {
               11. Contact Information
             </Typography>
             <Typography variant="body2">
-              Amika Softwares
+              J P Insurances
               <br />
               03, New Viraj Nagar, Near Chintamani Nagari No.1,
               <br />
