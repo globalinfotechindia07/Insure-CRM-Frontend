@@ -26,7 +26,7 @@ const PrivacyPolicy = () => {
               1. Introduction
             </Typography>
             <Typography variant="body2">
-              Amika Softwares, a company duly incorporated under the Companies Act, 2013, bearing its registered office at 03, New Viraj
+              J P Insurances, a company duly incorporated under the Companies Act, 2013, bearing its registered office at 03, New Viraj
               Nagar, Near Chintamani Nagari No.1, Besa Road, Manewada, Nagpur – 440027, Contact No: +91 7722075447, Email:
               info@amikasoftwares.com (“Company”), owns and operates the website www.miraicrm.com and the associated web-based application
               (collectively referred to as the “MiraiCRM Platform”).
@@ -148,7 +148,7 @@ const PrivacyPolicy = () => {
             <Typography variant="body2">
               ATTN: Data Protection Officer
               <br />
-              Amika Softwares
+              J P Insurances
               <br />
               03, New Viraj Nagar,
               <br />

@@ -28,6 +28,8 @@ import EditIcon from '@mui/icons-material/Edit';
 import theme from 'assets/scss/_themes-vars.module.scss';
 import value from 'assets/scss/_themes-vars.module.scss';
 
+import swal from 'sweetalert';
+
 // import { axiosInstance } from '../../../api/api.js';
 import { get, post, put, remove } from '../../../api/api.js';
 import { useSelector } from 'react-redux';
@@ -103,15 +105,44 @@ const SubProductCategory = () => {
   const handleSubmit = async () => {
     if (validate()) {
       try {
+        // if (editIndex !== null) {
+        //   // Update
+        //   const id = data[editIndex]._id;
+        //   const response = await put(`SubProductCategory/${id}`, form);
+        //   console.log('Post sub categories data:', response.data);
+        //   const updated = [...data];
+        //   updated[editIndex] = response.data;
+        //   setData(updated);
         if (editIndex !== null) {
-          // Update
-          const id = data[editIndex]._id;
-          const response = await put(`SubProductCategory/${id}`, form);
-          console.log('Post sub categories data:', response.data);
-          const updated = [...data];
-          updated[editIndex] = response.data;
-          setData(updated);
-        } else {
+  const id = data[editIndex]._id;
+
+  swal({
+    title: "Update Record?",
+    text: "Do you want to update this record?",
+    icon: "warning",
+    buttons: ["Cancel", "Update"],
+  }).then(async (willUpdate) => {
+    if (willUpdate) {
+      try {
+        const response = await put(`SubProductCategory/${id}`, form);
+
+        const updated = [...data];
+        updated[editIndex] = response.data;
+        setData(updated);
+
+        setOpen(false);
+
+        swal("Updated!", "Record updated successfully.", "success");
+      } catch (error) {
+        console.error(error);
+        swal("Error!", "Something went wrong.", "error");
+      }
+    }
+  });
+
+  return; // 🔥 IMPORTANT (add case run hone se rokega)
+}
+         else {
           // Add
           const response = await post('SubProductCategory', form);
           const newSubCategory = response.data;
@@ -130,18 +161,51 @@ const SubProductCategory = () => {
   };
 
   // Delete sub product category using axiosInstance
+  // const handleDelete = async (index) => {
+  //   try {
+  //     const id = data[index]._id;
+  //     await remove(`SubProductCategory/${id}`);
+  //     const updated = [...data];
+  //     updated.splice(index, 1);
+  //     setData(updated);
+  //   } catch (error) {
+  //     // console.error(error);
+  //     console.error('Error deleting sub product category', error);
+  //   }
+  // };
+
+  // added pop up #M
   const handleDelete = async (index) => {
-    try {
-      const id = data[index]._id;
-      await remove(`SubProductCategory/${id}`);
-      const updated = [...data];
-      updated.splice(index, 1);
-      setData(updated);
-    } catch (error) {
-      // console.error(error);
-      console.error('Error deleting sub product category', error);
+  const id = data[index]._id;
+
+  swal({
+    title: "Are you sure?",
+    text: "Once deleted, you will not be able to recover this record!",
+    icon: "warning",
+    buttons: ["Cancel", "Delete"],
+    dangerMode: true,
+  }).then(async (willDelete) => {
+    if (willDelete) {
+      try {
+        await remove(`SubProductCategory/${id}`);
+
+        const updated = [...data];
+        updated.splice(index, 1);
+        setData(updated);
+
+        swal("Deleted!", "Record deleted successfully.", "success");
+      } catch (error) {
+        console.error(error);
+        swal("Error!", "Something went wrong.", "error");
+      }
     }
-  };
+  });
+};
+
+
+
+
+
 
   const handleEdit = (index) => {
     const item = data[index];

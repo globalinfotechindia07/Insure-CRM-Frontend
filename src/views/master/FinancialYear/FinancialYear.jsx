@@ -28,6 +28,8 @@ import EditIcon from '@mui/icons-material/Edit';
 import theme from 'assets/scss/_themes-vars.module.scss';
 import value from 'assets/scss/_themes-vars.module.scss';
 
+import swal from 'sweetalert';
+
 // import { axiosInstance } from '../../../api/api.js';
 import { get, post, put, remove } from '../../../api/api.js';
 import { useSelector } from 'react-redux';
@@ -96,30 +98,78 @@ const FinancialYear = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = async () => {
-    console.log('Submit ', editIndex);
-    if (!validate()) return;
-    try {
-      if (editIndex !== null) {
-        // Update existing
-        const id = data[editIndex]._id;
-        await put(`financialYear/${id}`, form);
+  // const handleSubmit = async () => {
+  //   console.log('Submit ', editIndex);
+  //   if (!validate()) return;
+  //   try {
+  //     if (editIndex !== null) {
+  //       // Update existing
+  //       const id = data[editIndex]._id;
+  //       await put(`financialYear/${id}`, form);
+  //       fetchFinancialYears();
+  //       toast.success('Record Edited Sucessfully');
+  //     } else {
+  //       console.log('save ', form);
+  //       // Create new
+  //       await post('financialYear', form);
+  //       fetchFinancialYears();
+  //       toast.success('Record Saved Sucessfully');
+  //     }
+  //     setOpen(false);
+  //     setForm(initialState());
+  //     setEditIndex(null);
+  //   } catch (error) {
+  //     console.error(error);
+  //   }
+  // };
+
+
+// added pop up #M
+const handleSubmit = async () => {
+  if (!validate()) return;
+
+  const isEdit = editIndex !== null;
+
+  swal({
+    title: isEdit ? "Update Record?" : "Add Record?",
+    text: isEdit
+      ? "Do you want to update this record?"
+      : "Do you want to add this record?",
+    icon: "warning",
+    buttons: ["Cancel", isEdit ? "Update" : "Add"],
+  }).then(async (willProceed) => {
+    if (willProceed) {
+      try {
+        if (isEdit) {
+          const id = data[editIndex]._id;
+          await put(`financialYear/${id}`, form);
+
+          swal("Success!", "Record updated successfully.", "success");
+        } else {
+          await post("financialYear", form);
+
+          swal("Success!", "Record added successfully.", "success");
+        }
+
         fetchFinancialYears();
-        toast.success('Record Edited Sucessfully');
-      } else {
-        console.log('save ', form);
-        // Create new
-        await post('financialYear', form);
-        fetchFinancialYears();
-        toast.success('Record Saved Sucessfully');
+        setOpen(false);
+        setForm(initialState());
+        setEditIndex(null);
+      } catch (error) {
+        console.error(error);
+        swal("Error!", "Something went wrong.", "error");
       }
-      setOpen(false);
-      setForm(initialState());
-      setEditIndex(null);
-    } catch (error) {
-      console.error(error);
     }
-  };
+  });
+};
+
+
+
+
+
+
+
+
   const formatDateForInput = (dateString) => {
     if (!dateString) return '';
     return new Date(dateString).toISOString().split('T')[0];
@@ -137,16 +187,43 @@ const FinancialYear = () => {
     setOpen(true);
   };
 
-  const handleDelete = async (index) => {
-    try {
-      const id = data[index]._id;
-      await remove(`financialYear/${id}`);
-      fetchFinancialYears();
-      toast.success('Record Deleted Sucessfully');
-    } catch (error) {
-      console.error(error);
+  // const handleDelete = async (index) => {
+  //   try {
+  //     const id = data[index]._id;
+  //     await remove(`financialYear/${id}`);
+  //     fetchFinancialYears();
+  //     toast.success('Record Deleted Sucessfully');
+  //   } catch (error) {
+  //     console.error(error);
+  //   }
+  // };
+
+
+
+// added pop up for delete option
+const handleDelete = async (index) => {
+  const id = data[index]._id;
+
+  swal({
+    title: "Are you sure?",
+    text: "Once deleted, you will not be able to recover this record!",
+    icon: "warning",
+    buttons: ["Cancel", "Delete"],
+    dangerMode: true,
+  }).then(async (willDelete) => {
+    if (willDelete) {
+      try {
+        await remove(`financialYear/${id}`);
+        fetchFinancialYears();
+        swal("Deleted!", "Record has been deleted successfully.", "success");
+      } catch (error) {
+        console.error(error);
+        swal("Error!", "Something went wrong.", "error");
+      }
     }
-  };
+  });
+};
+
   return (
     <div>
       <Breadcrumb>

@@ -28,6 +28,7 @@ import CancelIcon from '@mui/icons-material/Cancel';
 import EditIcon from '@mui/icons-material/Edit';
 import theme from 'assets/scss/_themes-vars.module.scss';
 import value from 'assets/scss/_themes-vars.module.scss';
+import swal from 'sweetalert';
 
 // import { axiosInstance } from '../../../api/api.js';
 import { get, post, put, remove } from '../../../api/api.js';
@@ -94,14 +95,42 @@ const SubCustomerGroup = () => {
     console.log('Submit ', form);
     if (!validate()) return;
     try {
+      // if (editIndex !== null) {
+      //   // Update existing
+      //   const id = data[editIndex]._id;
+      //   console.log('edit ', id);
+      //   await put(`subCustomerGroup/${id}`, form);
+      //   fetchSubCustomerGroups();
+      //   toast.success('Record Edited Sucessfully');
+      // } 
       if (editIndex !== null) {
-        // Update existing
-        const id = data[editIndex]._id;
-        console.log('edit ', id);
+  const id = data[editIndex]._id;
+
+  swal({
+    title: "Update Record?",
+    text: "Do you want to update this record?",
+    icon: "warning",
+    buttons: ["Cancel", "Update"],
+  }).then(async (willUpdate) => {
+    if (willUpdate) {
+      try {
         await put(`subCustomerGroup/${id}`, form);
         fetchSubCustomerGroups();
-        toast.success('Record Edited Sucessfully');
-      } else {
+
+        swal("Updated!", "Record updated successfully.", "success");
+        setOpen(false);
+        setForm(initialState);
+        setEditIndex(null);
+      } catch (error) {
+        console.error(error);
+        swal("Error!", "Something went wrong.", "error");
+      }
+    }
+  });
+
+  return; // ⚠️ VERY IMPORTANT
+}
+      else {
         // Create new
         await post('subCustomerGroup', form);
         fetchSubCustomerGroups();
@@ -121,17 +150,41 @@ const SubCustomerGroup = () => {
     setOpen(true);
   };
 
+  // const handleDelete = async (index) => {
+  //   try {
+  //     const id = data[index]._id;
+  //     await remove(`subCustomerGroup/${id}`);
+  //     fetchSubCustomerGroups();
+  //     toast.success('Record deleted Successfully');
+  //   } catch (error) {
+  //     console.error(error);
+  //     toast.error('Record deleted Failed');
+  //   }
+  // };
+
   const handleDelete = async (index) => {
-    try {
-      const id = data[index]._id;
-      await remove(`subCustomerGroup/${id}`);
-      fetchSubCustomerGroups();
-      toast.success('Record deleted Successfully');
-    } catch (error) {
-      console.error(error);
-      toast.error('Record deleted Failed');
+  const id = data[index]._id;
+
+  swal({
+    title: "Are you sure?",
+    text: "Once deleted, you will not be able to recover this record!",
+    icon: "warning",
+    buttons: ["Cancel", "Delete"],
+    dangerMode: true,
+  }).then(async (willDelete) => {
+    if (willDelete) {
+      try {
+        await remove(`subCustomerGroup/${id}`);
+        fetchSubCustomerGroups();
+
+        swal("Deleted!", "Record deleted successfully.", "success");
+      } catch (error) {
+        console.error(error);
+        swal("Error!", "Something went wrong.", "error");
+      }
     }
-  };
+  });
+};
 
   return (
     <div>

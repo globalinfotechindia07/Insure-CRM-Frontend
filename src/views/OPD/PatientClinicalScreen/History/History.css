@@ -151,7 +151,7 @@
 }
 .paticularSection .MuiStepLabel-root:hover .MuiStepLabel-label,
 .paticularSection .MuiStepLabel-root:hover .MuiSvgIcon-root-MuiStepIcon-root {
-  color: blue !important;
+  color: rgb(246, 246, 247) !important;
 }
 
 

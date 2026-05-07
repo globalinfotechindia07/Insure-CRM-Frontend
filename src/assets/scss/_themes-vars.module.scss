@@ -1,107 +1,213 @@
-$primary:#007c9eec;
-//$primary:#000000d7;
-$primary100: #08d0af;
+  // ==============================|| NEBULA LUXE 4.0 - LIGHT PREMIUM • SOFT & AIRY ||============================== //
+  // Light, breathable, premium — Like a luxury spa morning
 
-$primaryDark: #0567a4;
-$primaryLight: #0ac2eb;
+  // ================= BRAND COLORS (SOFT LAVENDER + DUSTY ROSE) ================= //
 
-$secondary: #425466;
-$secondaryDark: #272f33;
-$secondaryLight: #60696d;
+  $primary: #b794f4;              // Soft Lavender — gentle & premium
+  $primaryDark: #9f7aea;          // Dusty Violet — sophisticated depth
+  $primaryLight: #d6bcfa;         // Misty Lavender — ethereal & light
+  $primary100: #faf5ff;           // Ghost White — barely there
+  $primaryAccent: #fbbf24;        // Soft Amber — warm glow
 
-$error: #ff2c19e1;
-$errorDark: #cf1100;
-$errorLight: #ec4333;
+  $secondary: #fbd38d;            // Creamy Amber — soft & warm
+  $secondaryDark: #f6ad55;        // Warm Peach — gentle contrast
+  $secondaryLight: #fef3c7;       // Vanilla Mist — ultra light
 
-$warning: #f4a100;
-$warningDark: #aa7000;
-$warningLight: #f6b333;
+  // ================= STATUS COLORS (SOFT & GENTLE) ================= //
 
-$info: #d0a908;
-$infoDark: #937706;
-$infoLight: #eabd0a;
+  $error: #f8a5a5;               // Soft Coral — gentle alert
+  $errorDark: #e66a6a;            // Muted Crimson
+  $errorLight: #ffe0e0;           // Blush White
 
-$success: #1ac662;
-$successDark: #007849;
-$successLight: #33bc87;
+  $warning: #fbd38d;              // Soft Honey — warm notice
+  $warningDark: #f6ad55;          // Light Tangerine
+  $warningLight: #fef3c7;         // Creamy Peach
 
-$grey300: #425466;
-$dark: #343a40;
+  $info: #a3d8f4;                // Soft Sky — calm & clear (very light blue)
+  $infoDark: #7ec8e3;             // Gentle Azure
+  $infoLight: #e1f3fb;            // Ice Mist
 
-$bg100: #f8f8f9;
+  $success: #a8e6cf;              // Soft Mint — fresh & clean
+  $successDark: #7dcea0;          // Gentle Jade
+  $successLight: #e0f5ed;         // Mint Cream
 
-// Text Colors
-$textPrimary: #242c3a;
-$textSecondary: #1b212c;
-$textDark: #12171e;
-$textHint: #00000061;
+  // ================= GREYS (LUXURY NEUTRAL • WARM UNDERTONES) ================= //
 
-// Text Dark Color
-$textDarkPrimary: #bbc0c7;
-$textDarkSecondary: #babfc9;
-$textDarkDark: #fff;
-$texDarkHint: #94919161;
+  $grey100: #fefefe;              // Pure White
+  $grey200: #fbfaf8;              // Warm Milk
+  $grey300: #f5f3f0;              // Soft Linen
+  $grey400: #e5e0d8;              // Warm Pebble
+  $grey500: #cdc6bc;              // Soft Taupe
 
-// Background Color
-$background: #f0f2f8;
-$backgoundDark: #181e2b;
+  $dark: #2d2a26;                 // Warm Charcoal
 
-// Paper Color
-$paper: #ffffff;
-$paperDark: #232b38;
+  // ================= BACKGROUND & SURFACE (LIGHT & BREATHABLE) ================= //
 
-$menuHover: #dadada;
+  $bg100: #ffffff;                // Pure white base
 
-// this will use in javascript
-:export {
-  primary: $primary;
-  primaryDark: $primaryDark;
-  primaryLight: $primaryLight;
-  primary100: $primary100;
+  $background: #fefcf9;           // Light mode — warm cream
+  $backgroundSoft: #fdfaf5;       // Soft champagne mist
+  $backgoundDark: #2d2a26;        // Dark mode — warm charcoal
 
-  secondary: $secondary;
-  secondaryDark: $secondaryDark;
-  secondaryDark: $secondaryDark;
+  $paper: #ffffff;                // Pure white — crisp & clean
+  $paperDark: #3a3530;            // Warm dark stone — cozy luxury
 
-  error: $error;
-  errorDark: $errorDark;
-  errorLight: $errorLight;
+  $menuHover: rgba(183, 148, 244, 0.08);  // Soft lavender tint
 
-  warning: $warning;
-  warningDark: $warningDark;
-  warningLight: $warningLight;
+  // ================= TEXT (LIGHT MODE - GENTLE CONTRAST) ================= //
 
-  info: $info;
-  infoDark: $infoDark;
-  infoLight: $infoLight;
+  $textPrimary: #3a3530;          // Warm charcoal — soft readability
+  $textSecondary: #6b635b;        // Warm stone — comfortable
+  $textDark: #2d2a26;             // Deep espresso — high emphasis
+  $textHint: #b5aba0;             // Soft taupe — subtle hints
 
-  success: $success;
-  successDark: $successDark;
-  successLight: $successLight;
+  // ================= TEXT (DARK MODE - LUNAR LIGHT) ================= //
 
-  grey300: $grey300;
+  $textDarkPrimary: #fefcf9;      // Warm cream — soft contrast
+  $textDarkSecondary: #e5dfd9;    // Soft pearl — easy on eyes
+  $textDarkMuted: #cdc6bc;        // Warm mist — subtle
+  $textDarkHint: #9a9288;         // Soft taupe — minimal emphasis
 
-  bg100: $bg100;
+  // ================= BACKWARD COMPATIBILITY (PRESERVED) ================= //
 
-  // Text Colors
-  textPrimary: $textPrimary;
-  textSecondary: $textSecondary;
-  textDark: $textDark;
-  textHint: $textHint;
+  $textDarkDark: $textDarkPrimary;     // Old var → new system
+  $texDarkHint: $textDarkHint;         // Typo preserved (legacy support)
 
-  // Text Dark Colors
-  textDarkPrimary: $textDarkPrimary;
-  textDarkSecondary: $textDarkSecondary;
-  textDarkDark: $textDarkDark;
-  textDarkHint: $texDarkHint;
+  // ================= PREMIUM EFFECTS (SOFT & ETHEREAL) ================= //
 
-  // Background Color
-  background: $background;
-  backgoundDark: $backgoundDark;
+  $shadowSoft: 0 2px 8px rgba(0, 0, 0, 0.02);
+  $shadowMedium: 0 4px 16px rgba(0, 0, 0, 0.04);
+  $shadowStrong: 0 8px 32px rgba(0, 0, 0, 0.06);
+  $shadowGlow: 0 0 20px rgba(183, 148, 244, 0.15);     // Soft lavender glow
+  $shadowWarm: 0 0 25px rgba(251, 189, 141, 0.12);     // Warm amber glow
 
-  // Paper Color
-  paper: $paper;
-  paperDark: $paperDark;
-  menuHover: $menuHover;
+  $gradientPrimary: linear-gradient(135deg, $primary 0%, $primaryLight 100%);
+  $gradientSoft: linear-gradient(135deg, $secondary 0%, $secondaryLight 100%);
+  $gradientMorning: linear-gradient(135deg, $primaryLight 0%, $secondaryLight 100%);
+  $gradientGlass: linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0.95) 100%);
+  $gradientDarkLuxury: linear-gradient(135deg, $backgoundDark 0%, $paperDark 100%);
 
-}
+  // ================= PREMIUM DESIGN TOKENS ================= //
+
+  $borderRadiusSmall: 8px;
+  $borderRadiusMedium: 16px;
+  $borderRadiusLarge: 24px;
+  $borderRadiusXLarge: 32px;
+  $borderRadiusRound: 9999px;
+
+  $transitionFast: 0.2s ease;
+  $transitionNormal: 0.3s ease;
+  $transitionSlow: 0.5s ease;
+
+  $blurAmount: blur(10px);
+  $blurHeavy: blur(20px);
+
+  // ================= EXTRA LUXURY TOUCHES (FIXED - NO CSS PROPERTIES) ================= //
+
+  $skeletonStart: rgba(183, 148, 244, 0.05);
+  $skeletonEnd: rgba(183, 148, 244, 0.1);
+
+  // Glass effect mixin (use this in your components instead)
+  // @mixin glassEffect {
+  //   background: rgba(255, 255, 255, 0.7);
+  //   backdrop-filter: blur(12px);
+  //   border: 1px solid rgba(255, 255, 255, 0.2);
+  // }
+
+  // ================= EXPORT FOR JAVASCRIPT ================= //
+
+  :export {
+    // Primary Brand
+    primary: $primary;
+    primaryDark: $primaryDark;
+    primaryLight: $primaryLight;
+    primary100: $primary100;
+    primaryAccent: $primaryAccent;
+
+    // Secondary Brand
+    secondary: $secondary;
+    secondaryDark: $secondaryDark;
+    secondaryLight: $secondaryLight;
+
+    // Status Colors (Soft & Gentle)
+    error: $error;
+    errorDark: $errorDark;
+    errorLight: $errorLight;
+
+    warning: $warning;
+    warningDark: $warningDark;
+    warningLight: $warningLight;
+
+    info: $info;
+    infoDark: $infoDark;
+    infoLight: $infoLight;
+
+    success: $success;
+    successDark: $successDark;
+    successLight: $successLight;
+
+    // Greys (Luxury Neutrals)
+    grey100: $grey100;
+    grey200: $grey200;
+    grey300: $grey300;
+    grey400: $grey400;
+    grey500: $grey500;
+    dark: $dark;
+
+    // Backgrounds
+    background: $background;
+    backgroundSoft: $backgroundSoft;
+    backgoundDark: $backgoundDark;
+    bg100: $bg100;
+
+    // Surfaces
+    paper: $paper;
+    paperDark: $paperDark;
+    menuHover: $menuHover;
+
+    // Text Colors — Light Mode
+    textPrimary: $textPrimary;
+    textSecondary: $textSecondary;
+    textDark: $textDark;
+    textHint: $textHint;
+
+    // Text Colors — Dark Mode
+    textDarkPrimary: $textDarkPrimary;
+    textDarkSecondary: $textDarkSecondary;
+    textDarkMuted: $textDarkMuted;
+    textDarkHint: $textDarkHint;
+
+    // Legacy Support (DO NOT REMOVE)
+    textDarkDark: $textDarkDark;
+    texDarkHint: $texDarkHint;
+
+    // Premium Effects
+    shadowSoft: $shadowSoft;
+    shadowMedium: $shadowMedium;
+    shadowStrong: $shadowStrong;
+    shadowGlow: $shadowGlow;
+    shadowWarm: $shadowWarm;
+
+    // Gradients
+    gradientPrimary: $gradientPrimary;
+    gradientSoft: $gradientSoft;
+    gradientMorning: $gradientMorning;
+    gradientGlass: $gradientGlass;
+    gradientDarkLuxury: $gradientDarkLuxury;
+
+    // Border Radius
+    borderRadiusSmall: $borderRadiusSmall;
+    borderRadiusMedium: $borderRadiusMedium;
+    borderRadiusLarge: $borderRadiusLarge;
+    borderRadiusXLarge: $borderRadiusXLarge;
+    borderRadiusRound: $borderRadiusRound;
+
+    // Transitions
+    transitionFast: $transitionFast;
+    transitionNormal: $transitionNormal;
+    transitionSlow: $transitionSlow;
+
+    // Effects
+    blurAmount: $blurAmount;
+    blurHeavy: $blurHeavy;
+  }

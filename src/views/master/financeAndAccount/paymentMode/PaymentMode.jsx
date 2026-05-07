@@ -209,19 +209,23 @@ const PaymentMode = () => {
               >
                 delete
               </Button>
+              
               <Button
                 title="Cancel"
                 onClick={() => closeRegistration()}
               >
                 Cancel
               </Button>
+
             </div>
           </div>
         </Modal>
         </CardContent>
       </Card>
       <ToastContainer/>
-    </>
+      {/* <PaymentButton/> */}
+      </>
+    
   );
 };
 

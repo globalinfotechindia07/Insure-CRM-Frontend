@@ -27,6 +27,7 @@ import CancelIcon from '@mui/icons-material/Cancel';
 import EditIcon from '@mui/icons-material/Edit';
 import theme from 'assets/scss/_themes-vars.module.scss';
 import value from 'assets/scss/_themes-vars.module.scss';
+import swal from 'sweetalert';
 
 // import { axiosInstance } from '../../../api/api.js';
 import { get, post, put, remove } from '../../../api/api.js';
@@ -77,13 +78,45 @@ const BrokerName = () => {
 
     if (!validate()) return;
     try {
+      // if (editIndex !== null) {
+      //   // Update existing
+      //   const id = data[editIndex]._id;
+      //   await put(`brokerName/${id}`, form);
+      //   fetchBrokerNames();
+      //   toast.success('Record Edited Sucessfully');
+      // } 
+
+      // Added pop up #M
       if (editIndex !== null) {
-        // Update existing
-        const id = data[editIndex]._id;
+  const id = data[editIndex]._id;
+
+  swal({
+    title: "Update Broker?",
+    text: `Do you want to update "${form.brokerName}"?`,
+    icon: "warning",
+    buttons: ["Cancel", "Update"],
+  }).then(async (willUpdate) => {
+    if (willUpdate) {
+      try {
         await put(`brokerName/${id}`, form);
         fetchBrokerNames();
-        toast.success('Record Edited Sucessfully');
-      } else {
+
+        setOpen(false);
+        setForm({ brokerName: '' });
+        setEditIndex(null);
+
+        swal("Updated!", "Record updated successfully.", "success");
+      } catch (error) {
+        console.error(error);
+        swal("Error!", "Something went wrong.", "error");
+      }
+    }
+  });
+
+  return; // 🔥 IMPORTANT
+}
+
+      else {
         // Create new
         await post('brokerName', form);
         fetchBrokerNames();
@@ -103,17 +136,44 @@ const BrokerName = () => {
     setOpen(true);
   };
 
+  // const handleDelete = async (index) => {
+  //   try {
+  //     const id = data[index]._id;
+  //     await remove(`brokerName/${id}`);
+  //     fetchBrokerNames();
+  //     toast.success('Record deleted Successfully');
+  //   } catch (error) {
+  //     console.error(error);
+  //     toast.error('Record deleted Failed');
+  //   }
+  // };
+
+
+
+  // added pop up #M
   const handleDelete = async (index) => {
-    try {
-      const id = data[index]._id;
-      await remove(`brokerName/${id}`);
-      fetchBrokerNames();
-      toast.success('Record deleted Successfully');
-    } catch (error) {
-      console.error(error);
-      toast.error('Record deleted Failed');
+  const id = data[index]._id;
+
+  swal({
+    title: "Are you sure?",
+    text: `Delete "${data[index].brokerName}"?`,
+    icon: "warning",
+    buttons: ["Cancel", "Delete"],
+    dangerMode: true,
+  }).then(async (willDelete) => {
+    if (willDelete) {
+      try {
+        await remove(`brokerName/${id}`);
+        fetchBrokerNames();
+
+        swal("Deleted!", "Record deleted successfully.", "success");
+      } catch (error) {
+        console.error(error);
+        swal("Error!", "Something went wrong.", "error");
+      }
     }
-  };
+  });
+};
 
   return (
     <div>

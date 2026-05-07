@@ -36,7 +36,7 @@ const Contact = () => {
             }}
           >
             <iframe
-              title="Amika Softwares Location"
+              title="J P Insurances Location"
               src="https://www.google.com/maps?q=High5%20Coworking%20Space%20Baner%20Pune&output=embed"
               width="100%"
               height="100%"
@@ -56,7 +56,7 @@ const Contact = () => {
               Address
             </Typography>
             <Typography variant="body2" paragraph>
-              Amika Softwares
+              J P Insurances
               <br />
               High5 Coworking Space 2nd Floor, Saykar Classic,
               <br />
