@@ -2,8 +2,8 @@ import axios from 'axios';
 
 // const REACT_APP_API_URL = 'https://miraicrm.com/api/';
 // const REACT_APP_API_URL = 'https://insure.isyncerp.com/api/';
-const REACT_APP_API_URL = 'https://jpinsurancebroker.co.in/api/';
-// const REACT_APP_API_URL = 'http://localhost:5050/api/';
+// const REACT_APP_API_URL = 'https://jpinsurancebroker.co.in/api/';
+const REACT_APP_API_URL = 'http://localhost:5050/api/';
 export default REACT_APP_API_URL;
 //  REACT_APP_API_URL;
 
@@ -140,3 +140,21 @@ export const remove = async (url, ids) => {
 //   },
 //   (error) => Promise.reject(error)
 // );
+
+
+// ==================== PAYMENT TRANSACTION APIS ====================
+
+// Get all transactions
+export const getTransactions = () => get('payment-transaction/get');
+
+// Get transaction by ID
+export const getTransactionById = (id) => get(`payment-transaction/get/${id}`);
+
+// Add new transaction
+export const addTransaction = (data) => post('payment-transaction/add', data);
+
+// Update transaction
+export const updateTransaction = (id, data) => put(`payment-transaction/update/${id}`, data);
+
+// Delete transaction
+export const deleteTransaction = (id) => remove(`payment-transaction/delete/${id}`);
