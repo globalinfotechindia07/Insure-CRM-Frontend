@@ -81,7 +81,7 @@ const AddPage = () => {
         </Typography>
       </Breadcrumb>
 
-      <Button sx={{ mb: 2 }} variant="contained" onClick={() => navigate('/users/company-staff')}>
+      <Button sx={{ mb: 2 }} variant="contained" onClick={() => navigate('/staff-master/company-staff')}>
         Back
       </Button>
       {/* Tabs for Master Selection */}
@@ -103,7 +103,7 @@ const AddPage = () => {
           <Tab label='Education' />
           <Tab label='System Rights' />
           <Tab label='Salary & Wages' />
-          <Tab label='Attendance/Leaves' />
+          {/* <Tab label='Attendance/Leaves' /> */}
         </Tabs>
         <Divider />
       </Box>

@@ -25,10 +25,8 @@ import 'react-toastify/dist/ReactToastify.css';
 import SaveIcon from '@mui/icons-material/Save';
 import CancelIcon from '@mui/icons-material/Cancel';
 import EditIcon from '@mui/icons-material/Edit';
-import theme from 'assets/scss/_themes-vars.module.scss';
 import value from 'assets/scss/_themes-vars.module.scss';
 
-// import { axiosInstance } from '../../../api/api.js';
 import { get, post, put, remove } from '../../../api/api.js';
 
 const BranchBroker = () => {
@@ -37,22 +35,32 @@ const BranchBroker = () => {
   const [open, setOpen] = useState(false);
   const [data, setData] = useState([]);
   const [editIndex, setEditIndex] = useState(null);
-  const [isAdmin, setAdmin] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  const handleClose = () => setOpen(false);
+  const handleClose = () => {
+    setOpen(false);
+    setErrors({});
+  };
 
   const handleOpen = () => {
+    setForm({ branchBroker: '' });
+    setEditIndex(null);
+    setErrors({});
     setOpen(true);
   };
 
-  // Fetch all Insurance departments from backend
+  // Fetch all Branch Brokers from backend
   const fetchBranchBrokers = async () => {
+    setLoading(true);
     try {
       const response = await get('branchBroker');
       console.log('branchBroker data:', response.data);
-      setData(response.data);
+      setData(response.data || []);  // ✅ CHANGE 1: || [] ADD KIYA
     } catch (error) {
       console.error(error);
+      setData([]);  // ✅ CHANGE 2: setData([]) ADD KIYA
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -62,10 +70,16 @@ const BranchBroker = () => {
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
+    if (errors[e.target.name]) {
+      setErrors({ ...errors, [e.target.name]: '' });
+    }
   };
+
   const validate = () => {
     const newErrors = {};
-    if (!form.branchBroker) newErrors.branchBroker = 'Branch of Broker Name is required';
+    if (!form.branchBroker || form.branchBroker.trim() === '') {
+      newErrors.branchBroker = 'Branch of Broker Name is required';
+    }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -73,24 +87,25 @@ const BranchBroker = () => {
   const handleSubmit = async () => {
     console.log('Submit ', form);
     if (!validate()) return;
+    
     try {
       if (editIndex !== null) {
         // Update existing
         const id = data[editIndex]._id;
-        await put(`branchBroker/${id}`, form);
-        fetchBranchBrokers();
-        toast.success('Record Edited Sucessfully');
+        await put(`branchBroker/${id}`, { branchBroker: form.branchBroker });
+        toast.success('Record Edited Successfully');
       } else {
         // Create new
-        await post('branchBroker', form);
-        fetchBranchBrokers();
-        toast.success('Record Saved Sucessfully');
+        await post('branchBroker', { branchBroker: form.branchBroker });
+        toast.success('Record Saved Successfully');
       }
       setOpen(false);
       setForm({ branchBroker: '' });
       setEditIndex(null);
+      fetchBranchBrokers();
     } catch (error) {
       console.error(error);
+      toast.error('Operation Failed');
     }
   };
 
@@ -105,10 +120,10 @@ const BranchBroker = () => {
       const id = data[index]._id;
       await remove(`branchBroker/${id}`);
       fetchBranchBrokers();
-      toast.success('Record deleted Successfully');
+      toast.success('Record Deleted Successfully');
     } catch (error) {
       console.error(error);
-      toast.error('Record deleted Failed');
+      toast.error('Delete Failed');
     }
   };
 
@@ -122,24 +137,21 @@ const BranchBroker = () => {
           Broker Branch Name
         </Typography>
       </Breadcrumb>
+      
       <Grid container justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
         <Typography variant="h5">Broker Branch Name</Typography>
         <Button variant="contained" startIcon={<Add />} onClick={handleOpen}>
           Add Broker Branch Name
         </Button>
-        {/* {(positionPermission.Add === true || isAdmin) && (
-                    <Button variant="contained" startIcon={<Add />} onClick={handleOpen}>
-                      Add position
-                    </Button>
-                  )} */}
       </Grid>
+
       {/* Modal Form */}
       <Dialog open={open} onClose={handleClose}>
         <DialogTitle sx={{ m: 0, p: 2 }}>
-          Add Branch of Broker
+          {editIndex !== null ? 'Edit Branch of Broker' : 'Add Branch of Broker'}
           <IconButton
             aria-label="close"
-            onClick={() => setOpen(false)}
+            onClick={handleClose}
             sx={{
               position: 'absolute',
               right: 8,
@@ -160,6 +172,7 @@ const BranchBroker = () => {
             helperText={errors.branchBroker}
             fullWidth
             margin="dense"
+            autoFocus
           />
         </DialogContent>
         <DialogActions>
@@ -186,28 +199,48 @@ const BranchBroker = () => {
               </TableRow>
             </TableHead>
             <TableBody>
-              {data.map((item, index) => (
-                <TableRow key={item.id}>
-                  <TableCell>{index + 1}</TableCell>
-                  <TableCell>{item.branchBroker}</TableCell>
-                  <TableCell>
-                    <Button
-                      size="small"
-                      onClick={() => handleEdit(index)}
-                      sx={{ padding: '1px', minWidth: '24px', height: '24px', mr: '5px' }}
-                    >
-                      <IconButton color="inherit">
-                        <Edit />
-                      </IconButton>
-                    </Button>
-                    <Button color="error" onClick={() => handleDelete(index)} sx={{ padding: '1px', minWidth: '24px', height: '24px' }}>
-                      <IconButton color="inherit">
-                        <Delete />
-                      </IconButton>
-                    </Button>
+              {loading ? (
+                <TableRow>
+                  <TableCell colSpan={3} align="center" sx={{ py: 4 }}>
+                    <Typography>⏳ Loading...</Typography>
                   </TableCell>
                 </TableRow>
-              ))}
+              ) : data && data.length > 0 ? (
+                data.map((item, index) => (
+                  <TableRow key={item._id || index}>
+                    <TableCell>{index + 1}</TableCell>
+                    <TableCell>{item.branchBroker}</TableCell>
+                    <TableCell>
+                      <Button
+                        size="small"
+                        onClick={() => handleEdit(index)}
+                        sx={{ padding: '1px', minWidth: '24px', height: '24px', mr: '5px' }}
+                      >
+                        <IconButton color="inherit" size="small">
+                          <Edit />
+                        </IconButton>
+                      </Button>
+                      <Button 
+                        color="error" 
+                        onClick={() => handleDelete(index)} 
+                        sx={{ padding: '1px', minWidth: '24px', height: '24px' }}
+                      >
+                        <IconButton color="inherit" size="small">
+                          <Delete />
+                        </IconButton>
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={3} align="center" sx={{ py: 4 }}>
+                    <Typography variant="body1" color="text.secondary">
+                       No Broker Branch Names found. Click "Add Broker Branch Name" to create one.
+                    </Typography>
+                  </TableCell>
+                </TableRow>
+              )}
             </TableBody>
           </Table>
         </CardContent>

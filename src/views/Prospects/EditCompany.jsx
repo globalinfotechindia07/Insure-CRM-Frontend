@@ -1021,7 +1021,7 @@ export default EditCompany;
 //             </Button>
 //           </Grid>
 //         </Grid>
-//         <ToastContainer position="top-right" autoClose={5000} />
+//         <ToastContainer position="top-right" autoClose={5050} />
 //       </CardContent>
 //     </Card>
 //   );

@@ -135,7 +135,7 @@ const UpdatePage = () => {
           <Tab label='HR Finance' />
           <Tab label='System Rights' />
           <Tab label='Salary & Wages' />
-          <Tab label='Attendance/Leaves' />
+          {/* <Tab label='Attendance/Leaves' /> */}
         </Tabs>
         <Divider />
       </Box>

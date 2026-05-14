@@ -1,35 +1,63 @@
 import React, { useState } from 'react';
 import { Grid, TextField, Button, MenuItem, Typography, Card, CardContent, Divider } from '@mui/material';
 import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import { Link } from 'react-router-dom';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 
 const AddStaff = () => {
-  const [form, setForm] = useState({});
+  const [form, setForm] = useState({
+    firstName: '',
+    middleName: '',
+    lastName: '',
+    gender: '',
+    phoneNo: '',
+    altphoneNo: '',
+    email: '',
+    altEmail: '',
+    dob: '',
+    aadharNo: '',
+    panNo: '',
+    address: '',
+    emergencyContactPersonName: '',
+    emergencyContactPersonNumber: '',
+    emergencyContactPersonAddress: ''
+  });
   const [errors, setErrors] = useState({});
 
   const dropdownOptions = {
-    gender: ['Male', 'Female', 'Other'],
-    productService: ['Product A', 'Service B'],
-    status: ['New', 'In Progress', 'Closed'],
-    leadType: ['Cold', 'Warm', 'Hot'],
-    assignTo: ['User 1', 'User 2'],
-    country: ['India', 'USA', 'UK']
+    gender: ['Male', 'Female', 'Other']
   };
 
   const validate = () => {
     const newErrors = {};
-    const requiredFields = ['firstName', 'middleName', 'lastName', 'gender', 'phoneNo', 'email', 'address', 'EmergancyContactPersonNumber'];
 
-    requiredFields.forEach((field) => {
-      if (!form[field]) newErrors[field] = 'Required';
-    });
+    // Required fields check
+    if (!form.firstName?.trim()) newErrors.firstName = 'First Name is required';
+    if (!form.middleName?.trim()) newErrors.middleName = 'Middle Name is required';
+    if (!form.lastName?.trim()) newErrors.lastName = 'Last Name is required';
+    if (!form.gender) newErrors.gender = 'Gender is required';
+    if (!form.phoneNo?.trim()) newErrors.phoneNo = 'Phone Number is required';
+    if (!form.email?.trim()) newErrors.email = 'Email is required';
+    if (!form.address?.trim()) newErrors.address = 'Address is required';
+    if (!form.emergencyContactPersonNumber?.trim()) {
+      newErrors.emergencyContactPersonNumber = 'Emergency Contact Number is required';
+    }
 
+    // Email validation
     if (form.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
-      newErrors.email = 'Invalid email';
+      newErrors.email = 'Invalid email format';
     }
     if (form.altEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.altEmail)) {
-      newErrors.altEmail = 'Invalid alt email';
+      newErrors.altEmail = 'Invalid alternate email format';
+    }
+
+    // Phone validation
+    if (form.phoneNo && !/^\d{10}$/.test(form.phoneNo)) {
+      newErrors.phoneNo = 'Enter valid 10-digit number';
+    }
+    if (form.altphoneNo && !/^\d{10}$/.test(form.altphoneNo)) {
+      newErrors.altphoneNo = 'Enter valid 10-digit number';
     }
 
     setErrors(newErrors);
@@ -39,6 +67,9 @@ const AddStaff = () => {
   const handleChange = (e) => {
     const { name, value } = e.target;
     setForm((prev) => ({ ...prev, [name]: value }));
+    if (errors[name]) {
+      setErrors((prev) => ({ ...prev, [name]: '' }));
+    }
   };
 
   const handleSubmit = () => {
@@ -61,10 +92,11 @@ const AddStaff = () => {
       required={required}
       error={!!errors[name]}
       helperText={errors[name]}
+      InputLabelProps={type === 'date' ? { shrink: true } : {}}
     />
   );
 
-  const renderDropdown = (label, name, options) => (
+  const renderDropdown = (label, name, options, required = true) => (
     <TextField
       select
       label={label}
@@ -72,10 +104,11 @@ const AddStaff = () => {
       value={form[name] || ''}
       onChange={handleChange}
       fullWidth
-      required
+      required={required}
       error={!!errors[name]}
       helperText={errors[name]}
     >
+      <MenuItem value="">Select {label}</MenuItem>
       {options.map((opt, i) => (
         <MenuItem key={i} value={opt}>
           {opt}
@@ -100,10 +133,8 @@ const AddStaff = () => {
 
         <Divider sx={{ mb: 2 }} />
 
-        {/* You can conditionally show prospects/clients table here based on leadCategory */}
-
         <Grid container spacing={2} sx={{ mt: 1 }}>
-          {/* Row 1 */}
+          {/* Row 1 - Personal Details */}
           <Grid item xs={12} md={4}>
             {renderTextField('First Name', 'firstName', true)}
           </Grid>
@@ -114,52 +145,51 @@ const AddStaff = () => {
             {renderTextField('Last Name', 'lastName', true)}
           </Grid>
 
-          {/* Row 2 */}
+          {/* Row 2 - Contact Details */}
           <Grid item xs={12} md={3}>
-            {renderDropdown('Gender', 'gender', dropdownOptions.gender)}
+            {renderDropdown('Gender', 'gender', dropdownOptions.gender, true)}
           </Grid>
           <Grid item xs={12} md={3}>
-            {renderTextField('Phone No', 'phoneNo', true, 'number')}
+            {renderTextField('Phone No', 'phoneNo', true, 'text')}
           </Grid>
           <Grid item xs={12} md={3}>
-            {renderTextField('Alt Phone No', 'altphoneNo', true, 'number')}
+            {renderTextField('Alt Phone No', 'altphoneNo', false, 'text')}
           </Grid>
           <Grid item xs={12} md={3}>
             {renderTextField('Email', 'email', true)}
           </Grid>
           <Grid item xs={12} md={3}>
-            {renderTextField('Alternate Email', 'altemail', true)}
+            {renderTextField('Alternate Email', 'altEmail', false)}
           </Grid>
           <Grid item xs={12} md={3}>
-            {renderTextField('DOB', 'dob', true, 'date')}
-          </Grid>
-          {/* <Grid item xs={12} md={3}>
-            {renderTextField('Aniversary Date', 'aniversaryDate', false, 'date')}
-          </Grid> */}
-
-          {/* Row 3 */}
-          <Grid item xs={12} md={3}>
-            {renderTextField('Aadhar No', 'aadharNo')}
-          </Grid>
-          <Grid item xs={12} md={3}>
-            {renderTextField('Pan No', 'panNo', true)}
+            {renderTextField('DOB', 'dob', false, 'date')}
           </Grid>
 
-          {/* Row 4 */}
+          {/* Row 3 - ID Proofs */}
           <Grid item xs={12} md={3}>
+            {renderTextField('Aadhar No', 'aadharNo', false)}
+          </Grid>
+          <Grid item xs={12} md={3}>
+            {renderTextField('Pan No', 'panNo', false)}
+          </Grid>
+
+          {/* Row 4 - Address */}
+          <Grid item xs={12} md={6}>
             {renderTextField('Address', 'address', true)}
           </Grid>
 
-          <Grid item xs={12} md={3}>
-            {renderTextField('Emergancy Contact Person Name', 'EmergancyContactPersonName', true)}
+          {/* Row 5 - Emergency Contact */}
+          <Grid item xs={12} md={4}>
+            {renderTextField('Emergency Contact Person Name', 'emergencyContactPersonName', false)}
           </Grid>
-          <Grid item xs={12} md={3}>
-            {renderTextField('Emergancy Contact Person Number', 'EmergancyContactPersonNumber', true, 'number')}
+          <Grid item xs={12} md={4}>
+            {renderTextField('Emergency Contact Person Number', 'emergencyContactPersonNumber', true, 'text')}
           </Grid>
-          <Grid item xs={12} md={3}>
-            {renderTextField('Emergancy Contact Address', 'EmergancyContactPersonAddress', true)}
+          <Grid item xs={12} md={4}>
+            {renderTextField('Emergency Contact Address', 'emergencyContactPersonAddress', false)}
           </Grid>
 
+          {/* Submit Button */}
           <Grid item xs={12}>
             <Button variant="contained" color="primary" onClick={handleSubmit}>
               Submit

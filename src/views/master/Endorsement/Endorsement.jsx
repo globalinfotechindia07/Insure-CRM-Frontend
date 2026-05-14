@@ -25,12 +25,9 @@ import 'react-toastify/dist/ReactToastify.css';
 import SaveIcon from '@mui/icons-material/Save';
 import CancelIcon from '@mui/icons-material/Cancel';
 import EditIcon from '@mui/icons-material/Edit';
-import theme from 'assets/scss/_themes-vars.module.scss';
 import value from 'assets/scss/_themes-vars.module.scss';
 
-// import { axiosInstance } from '../../../api/api.js';
 import { get, post, put, remove } from '../../../api/api.js';
-import { useSelector } from 'react-redux';
 
 const Endorsement = () => {
   const [form, setForm] = useState({ endorsement: '' });
@@ -38,22 +35,29 @@ const Endorsement = () => {
   const [open, setOpen] = useState(false);
   const [data, setData] = useState([]);
   const [editIndex, setEditIndex] = useState(null);
-  const [isAdmin, setAdmin] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   const handleClose = () => setOpen(false);
 
   const handleOpen = () => {
+    setForm({ endorsement: '' });
+    setEditIndex(null);
+    setErrors({});
     setOpen(true);
   };
 
-  // Fetch all Insurance departments from backend
+  // Fetch all Endorsements from backend
   const fetchEndorsements = async () => {
+    setLoading(true);
     try {
       const response = await get('endorsement');
       console.log('endorsement data:', response.data);
-      setData(response.data);
+      setData(response.data || []);  // ✅ CHANGE 1: || [] ADD KIYA
     } catch (error) {
       console.error(error);
+      setData([]);  // ✅ CHANGE 2: setData([]) ADD KIYA
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -63,35 +67,39 @@ const Endorsement = () => {
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
+    if (errors[e.target.name]) {
+      setErrors({ ...errors, [e.target.name]: '' });
+    }
   };
+
   const validate = () => {
     const newErrors = {};
-    if (!form.endorsement) newErrors.endorsement = 'Endorsement Name is required';
+    if (!form.endorsement || form.endorsement.trim() === '') {
+      newErrors.endorsement = 'Endorsement Name is required';
+    }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = async () => {
-    console.log('Submit ', editIndex);
     if (!validate()) return;
+    
     try {
       if (editIndex !== null) {
-        // Update existing
         const id = data[editIndex]._id;
-        await put(`endorsement/${id}`, form);
-        fetchEndorsements();
-        toast.success('Record Edited Sucessfully');
+        await put(`endorsement/${id}`, { endorsement: form.endorsement });
+        toast.success('Record Edited Successfully');
       } else {
-        // Create new
-        await post('endorsement', form);
-        fetchEndorsements();
-        toast.success('Record Saved Sucessfully');
+        await post('endorsement', { endorsement: form.endorsement });
+        toast.success('Record Saved Successfully');
       }
       setOpen(false);
       setForm({ endorsement: '' });
       setEditIndex(null);
+      fetchEndorsements();
     } catch (error) {
       console.error(error);
+      toast.error('Operation Failed');
     }
   };
 
@@ -106,12 +114,13 @@ const Endorsement = () => {
       const id = data[index]._id;
       await remove(`endorsement/${id}`);
       fetchEndorsements();
-      toast.success('Record deleted Successfully');
+      toast.success('Record Deleted Successfully');
     } catch (error) {
       console.error(error);
-      toast.error('Record deleted Failed');
+      toast.error('Delete Failed');
     }
   };
+
   return (
     <div>
       <Breadcrumb>
@@ -122,24 +131,21 @@ const Endorsement = () => {
           Endorsement
         </Typography>
       </Breadcrumb>
+      
       <Grid container justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
         <Typography variant="h5">Endorsement</Typography>
         <Button variant="contained" startIcon={<Add />} onClick={handleOpen}>
           Add Endorsement
         </Button>
-        {/* {(positionPermission.Add === true || isAdmin) && (
-                        <Button variant="contained" startIcon={<Add />} onClick={handleOpen}>
-                          Add position
-                        </Button>
-                      )} */}
       </Grid>
+
       {/* Modal Form */}
       <Dialog open={open} onClose={handleClose}>
         <DialogTitle sx={{ m: 0, p: 2 }}>
-          Add ENdorsement
+          {editIndex !== null ? 'Edit Endorsement' : 'Add Endorsement'}
           <IconButton
             aria-label="close"
-            onClick={() => setOpen(false)}
+            onClick={handleClose}
             sx={{
               position: 'absolute',
               right: 8,
@@ -186,28 +192,48 @@ const Endorsement = () => {
               </TableRow>
             </TableHead>
             <TableBody>
-              {data.map((item, index) => (
-                <TableRow key={item.id}>
-                  <TableCell>{index + 1}</TableCell>
-                  <TableCell>{item.endorsement}</TableCell>
-                  <TableCell>
-                    <Button
-                      size="small"
-                      onClick={() => handleEdit(index)}
-                      sx={{ padding: '1px', minWidth: '24px', height: '24px', mr: '5px' }}
-                    >
-                      <IconButton color="inherit">
-                        <Edit />
-                      </IconButton>
-                    </Button>
-                    <Button color="error" onClick={() => handleDelete(index)} sx={{ padding: '1px', minWidth: '24px', height: '24px' }}>
-                      <IconButton color="inherit">
-                        <Delete />
-                      </IconButton>
-                    </Button>
+              {loading ? (
+                <TableRow>
+                  <TableCell colSpan={3} align="center" sx={{ py: 4 }}>
+                    <Typography>⏳ Loading...</Typography>
                   </TableCell>
                 </TableRow>
-              ))}
+              ) : data && data.length > 0 ? (
+                data.map((item, index) => (
+                  <TableRow key={item._id || index}>
+                    <TableCell>{index + 1}</TableCell>
+                    <TableCell>{item.endorsement}</TableCell>
+                    <TableCell>
+                      <Button
+                        size="small"
+                        onClick={() => handleEdit(index)}
+                        sx={{ padding: '1px', minWidth: '24px', height: '24px', mr: '5px' }}
+                      >
+                        <IconButton color="inherit" size="small">
+                          <Edit />
+                        </IconButton>
+                      </Button>
+                      <Button 
+                        color="error" 
+                        onClick={() => handleDelete(index)} 
+                        sx={{ padding: '1px', minWidth: '24px', height: '24px' }}
+                      >
+                        <IconButton color="inherit" size="small">
+                          <Delete />
+                        </IconButton>
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={3} align="center" sx={{ py: 4 }}>
+                    <Typography variant="body1" color="text.secondary">
+                      No Endorsement found. Click "Add Endorsement" to create one.
+                    </Typography>
+                  </TableCell>
+                </TableRow>
+              )}
             </TableBody>
           </Table>
         </CardContent>

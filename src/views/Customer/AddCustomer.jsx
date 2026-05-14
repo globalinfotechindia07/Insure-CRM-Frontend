@@ -75,6 +75,9 @@ const AddCustomer = () => {
     };
   }
 
+
+  console.log('Initial Form State:', initialState());
+
   const [form, setForm] = useState(initialState());
   const [errors, setErrors] = useState({});
   const [departmentData, setDepartmentData] = useState([]);

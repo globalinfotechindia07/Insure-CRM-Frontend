@@ -167,17 +167,7 @@ const InsuranceCompany = () => {
             </div>
           </div>
 
-          {loader ? (
-            <Loader />
-          ) : (
-            <>{showData && showData.length === 0 ? <NoDataPlaceholder /> : <DataTable columns={columns} data={finalData} />}</>
-          )}
-          <Modal open={openRegistrationModal}>
-            {type === 'add' ? (
-              <AddCompany close={closeRegistration} getData={getData} />
-            ) : (
-              <EditCompany close={closeRegistration} editData={editData} getData={getData} />
-            )}
+
           </Modal>
           <Modal
             open={openDeleteModal}

@@ -1,6 +1,9 @@
 {
   "name": "nabh",
   "version": "3.0.0",
+  "proxy": "http://localhost:5050", 
+    
+
   "private": true,
   "dependencies": {
     "@editorjs/checklist": "^1.6.0",

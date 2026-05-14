@@ -108,7 +108,7 @@ const AddNursingAndParamedical = () => {
           <Tab label='HR Finance' />
           <Tab label='System Rights' />
           <Tab label='Salary & Wages' />
-          <Tab label='Attendance/Leaves' />
+          <Tab label=' {/* <Tab label='Attendance/Leaves' /> */}' />
         </Tabs>
         <Divider />
       </Box>

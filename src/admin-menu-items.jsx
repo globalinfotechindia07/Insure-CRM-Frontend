@@ -28,7 +28,7 @@ import ManageAccountsIcon from '@mui/icons-material/ManageAccounts';
 import AccountTreeIcon from '@mui/icons-material/AccountTree';
 import ReceiptIcon from '@mui/icons-material/Receipt';
 import { id } from 'google-translate-api-extended/languages';
-import {
+import { 
   Money,
   MoneyOffRounded,
   MoneyTwoTone,
@@ -200,28 +200,82 @@ export default {
                 }
               ]
             },
-            {
+                        {
+              id: 'staff-master',
+              title: 'Staff Master',
+              type: 'collapse',
+              icon: GridViewIcon,
+              children: [
+                {
+                  id: 'company-staff',
+                  title: 'Staff',
+                  type: 'item', 
+                  icon: PeopleIcon,
+                  url: '/staff-master/company-staff'
+                },
+
+                {
+                  id: 'company-exstaff',
+                  title: 'Ex Staff',
+                  type: 'item',
+                  icon: PeopleIcon,
+                  url: '/staff-master/company-exstaff'
+                },
+
+                {
+                  id: 'company-staff-report',
+                  title: 'Staff Report',
+                  type: 'item',
+                  icon: PeopleIcon,
+                  url: '/staff-master/company-staff-report'
+                }
+              ]
+            },
+            // {
+            //   id: 'master-group',
+            //   title: 'Customer Master',
+            //   type: 'collapse',
+            //   icon: GridViewIcon,
+            //   children: [
+            //     {
+            //       id: 'customer-group',
+            //       title: 'Customer Group (Corporate)',
+            //       type: 'item',
+            //       icon: ClassIcon,
+            //       url: '/master/customer-group'
+            //     },
+            //     {
+            //       id: 'subcustomer-group',
+            //       title: 'Sub Customer Group (Corporate)',
+            //       type: 'item',
+            //       icon: TrendingUpIcon,
+            //       url: '/master/subcustomer-group'
+            //     }
+            //   ]
+            // },
+                {
               id: 'master-group',
               title: 'Customer Master',
               type: 'collapse',
               icon: GridViewIcon,
               children: [
                 {
-                  id: 'customer-group',
-                  title: 'Customer Group (Corporate)',
+                  id: 'customer',
+                  title: 'Customer',
                   type: 'item',
                   icon: ClassIcon,
-                  url: '/master/customer-group'
+                  url: '/master/customer'
                 },
-                {
-                  id: 'subcustomer-group',
-                  title: 'Sub Customer Group (Corporate)',
-                  type: 'item',
-                  icon: TrendingUpIcon,
-                  url: '/master/subcustomer-group'
-                }
+                //                 {
+                //   id: 'customers-list',
+                //   title: 'Dinesh',
+                //   type: 'item',
+                //   icon: ClassIcon,
+                //   url: '/master/customers-list'
+                // },
               ]
             },
+            
             {
               id: 'master-group',
               title: 'Insurance Master',
@@ -452,36 +506,7 @@ export default {
           type: 'collapse',
           icon: AdminPanelSettingsIcon,
           children: [
-            {
-              id: 'users',
-              title: 'Users',
-              type: 'collapse',
-              children: [
-                {
-                  id: 'company-staff',
-                  title: 'Staff',
-                  type: 'item',
-                  icon: PeopleIcon,
-                  url: '/users/company-staff'
-                },
 
-                {
-                  id: 'company-exstaff',
-                  title: 'Ex Staff',
-                  type: 'item',
-                  icon: PeopleIcon,
-                  url: '/users/company-exstaff'
-                },
-
-                {
-                  id: 'company-staff-report',
-                  title: 'Staff Report',
-                  type: 'item',
-                  icon: PeopleIcon,
-                  url: '/users/company-staff-report'
-                }
-              ]
-            },
             {
               id: 'attendance-list',
               title: 'Attendance',

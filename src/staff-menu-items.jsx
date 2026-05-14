@@ -263,8 +263,8 @@ const staffMenuIems = {
               url: '/hr/leave-management'
             },
             {
-              id: 'users',
-              title: 'Users',
+              id: 'staff-master',
+              title: 'Staff Master',
               type: 'collapse',
               icon: PeopleIcon,
               children: [
@@ -273,21 +273,21 @@ const staffMenuIems = {
                   title: 'Staff',
                   type: 'item',
                   icon: PeopleIcon,
-                  url: '/users/company-staff'
+                  url: '/staff-master/company-staff'
                 },
                 {
                   id: 'company-exstaff',
                   title: 'Ex Staff',
                   type: 'item',
                   icon: PeopleIcon,
-                  url: '/users/company-exstaff'
+                  url: '/staff-master/company-exstaff'
                 },
                 {
                   id: 'company-staff-report',
                   title: 'Staff Report',
                   type: 'item',
                   icon: PeopleIcon,
-                  url: '/users/company-staff-report'
+                  url: '/staff-master/company-staff-report'
                 }
               ]
             }

@@ -25,12 +25,9 @@ import 'react-toastify/dist/ReactToastify.css';
 import SaveIcon from '@mui/icons-material/Save';
 import CancelIcon from '@mui/icons-material/Cancel';
 import EditIcon from '@mui/icons-material/Edit';
-import theme from 'assets/scss/_themes-vars.module.scss';
 import value from 'assets/scss/_themes-vars.module.scss';
 
-// import { axiosInstance } from '../../../api/api.js';
 import { get, post, put, remove } from '../../../api/api.js';
-import { useSelector } from 'react-redux';
 
 const RiskCode = () => {
   const [form, setForm] = useState({ riskCode: '' });
@@ -38,22 +35,29 @@ const RiskCode = () => {
   const [open, setOpen] = useState(false);
   const [data, setData] = useState([]);
   const [editIndex, setEditIndex] = useState(null);
-  const [isAdmin, setAdmin] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   const handleClose = () => setOpen(false);
 
   const handleOpen = () => {
+    setForm({ riskCode: '' });
+    setEditIndex(null);
+    setErrors({});
     setOpen(true);
   };
 
-  // Fetch all Insurance departments from backend
+  // Fetch all Risk Codes from backend
   const fetchRiskCodes = async () => {
+    setLoading(true);
     try {
       const response = await get('riskCode');
       console.log('riskCode data:', response.data);
-      setData(response.data);
+      setData(response.data || []);  // ✅ CHANGE 1: || [] ADD KIYA
     } catch (error) {
       console.error(error);
+      setData([]);  // ✅ CHANGE 2: setData([]) ADD KIYA
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -63,10 +67,16 @@ const RiskCode = () => {
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
+    if (errors[e.target.name]) {
+      setErrors({ ...errors, [e.target.name]: '' });
+    }
   };
+
   const validate = () => {
     const newErrors = {};
-    if (!form.riskCode) newErrors.riskCode = 'Risk Code is required';
+    if (!form.riskCode || form.riskCode.trim() === '') {
+      newErrors.riskCode = 'Risk Code is required';
+    }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -74,24 +84,25 @@ const RiskCode = () => {
   const handleSubmit = async () => {
     console.log('Submit ', editIndex);
     if (!validate()) return;
+    
     try {
       if (editIndex !== null) {
         // Update existing
         const id = data[editIndex]._id;
-        await put(`riskCode/${id}`, form);
-        fetchRiskCodes();
-        toast.success('Record Edited Sucessfully');
+        await put(`riskCode/${id}`, { riskCode: form.riskCode });
+        toast.success('Record Edited Successfully');
       } else {
         // Create new
-        await post('riskCode', form);
-        fetchRiskCodes();
-        toast.success('Record Saved Sucessfully');
+        await post('riskCode', { riskCode: form.riskCode });
+        toast.success('Record Saved Successfully');
       }
       setOpen(false);
-      setForm({ insDepartment: '' });
+      setForm({ riskCode: '' });
       setEditIndex(null);
+      fetchRiskCodes();
     } catch (error) {
       console.error(error);
+      toast.error('Operation Failed');
     }
   };
 
@@ -106,9 +117,10 @@ const RiskCode = () => {
       const id = data[index]._id;
       await remove(`riskCode/${id}`);
       fetchRiskCodes();
-      toast.success('Record Deleted Sucessfully');
+      toast.success('Record Deleted Successfully');
     } catch (error) {
       console.error(error);
+      toast.error('Delete Failed');
     }
   };
 
@@ -122,24 +134,21 @@ const RiskCode = () => {
           Risk Code
         </Typography>
       </Breadcrumb>
+      
       <Grid container justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
         <Typography variant="h5">Risk Code</Typography>
         <Button variant="contained" startIcon={<Add />} onClick={handleOpen}>
           Add Risk Code
         </Button>
-        {/* {(positionPermission.Add === true || isAdmin) && (
-                        <Button variant="contained" startIcon={<Add />} onClick={handleOpen}>
-                          Add position
-                        </Button>
-                      )} */}
       </Grid>
+
       {/* Modal Form */}
       <Dialog open={open} onClose={handleClose}>
         <DialogTitle sx={{ m: 0, p: 2 }}>
-          Add Risk Code
+          {editIndex !== null ? 'Edit Risk Code' : 'Add Risk Code'}
           <IconButton
             aria-label="close"
-            onClick={() => setOpen(false)}
+            onClick={handleClose}
             sx={{
               position: 'absolute',
               right: 8,
@@ -160,6 +169,7 @@ const RiskCode = () => {
             helperText={errors.riskCode}
             fullWidth
             margin="dense"
+            autoFocus
           />
         </DialogContent>
         <DialogActions>
@@ -186,28 +196,48 @@ const RiskCode = () => {
               </TableRow>
             </TableHead>
             <TableBody>
-              {data.map((item, index) => (
-                <TableRow key={item.id}>
-                  <TableCell>{index + 1}</TableCell>
-                  <TableCell>{item.riskCode}</TableCell>
-                  <TableCell>
-                    <Button
-                      size="small"
-                      onClick={() => handleEdit(index)}
-                      sx={{ padding: '1px', minWidth: '24px', height: '24px', mr: '5px' }}
-                    >
-                      <IconButton color="inherit">
-                        <Edit />
-                      </IconButton>
-                    </Button>
-                    <Button color="error" onClick={() => handleDelete(index)} sx={{ padding: '1px', minWidth: '24px', height: '24px' }}>
-                      <IconButton color="inherit">
-                        <Delete />
-                      </IconButton>
-                    </Button>
+              {loading ? (
+                <TableRow>
+                  <TableCell colSpan={3} align="center" sx={{ py: 4 }}>
+                    <Typography>⏳ Loading...</Typography>
                   </TableCell>
                 </TableRow>
-              ))}
+              ) : data && data.length > 0 ? (
+                data.map((item, index) => (
+                  <TableRow key={item._id || index}>
+                    <TableCell>{index + 1}</TableCell>
+                    <TableCell>{item.riskCode}</TableCell>
+                    <TableCell>
+                      <Button
+                        size="small"
+                        onClick={() => handleEdit(index)}
+                        sx={{ padding: '1px', minWidth: '24px', height: '24px', mr: '5px' }}
+                      >
+                        <IconButton color="inherit" size="small">
+                          <Edit />
+                        </IconButton>
+                      </Button>
+                      <Button 
+                        color="error" 
+                        onClick={() => handleDelete(index)} 
+                        sx={{ padding: '1px', minWidth: '24px', height: '24px' }}
+                      >
+                        <IconButton color="inherit" size="small">
+                          <Delete />
+                        </IconButton>
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={3} align="center" sx={{ py: 4 }}>
+                    <Typography variant="body1" color="text.secondary">
+                       No Risk Codes found. Click "Add Risk Code" to create one.
+                    </Typography>
+                  </TableCell>
+                </TableRow>
+              )}
             </TableBody>
           </Table>
         </CardContent>
