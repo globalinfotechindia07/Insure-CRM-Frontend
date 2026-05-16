@@ -107,6 +107,13 @@ import EditCustomerGroup from 'views/master/CustomerGroup/EditCustomerGroup';
 import CustomerForm from 'views/Customers/CustomerForm';
 import CustomerList from 'views/Customers/CustomerList';
 import CustomerPage from 'views/Customers/CustomerPage';
+// import SurveyorMaster from 'views/ClaimCRM/SurveyorMaster';
+import SurveyorPage from 'views/ClaimCRM/SurveyorPage';
+import TPAPage from 'views/ClaimCRM/TPAPage';
+import PolicyPage from 'views/ClaimCRM/PolicyPage';
+import InvestigatorPage from 'views/ClaimCRM/InvestigatorPage';
+import ClaimPage from 'views/ClaimCRM/ClaimPage';
+// import ClaimDetailsPage from 'views/ClaimCRM/ClaimDetailsPage';
 // const UtilsTypography = Loadable(lazy(() => import('views/Utils/Typography')));
 // const Prefix = Loadable(lazy(() => import('views/master/general-setup/prefix/Prefix')));
 // const Radiology = Loadable(lazy(() => import('views/master/diagnostic-setup/radiology/Radiology')));
@@ -1590,6 +1597,65 @@ const MainRoutes = {
         </PrivateRoute>
       )
     },
+
+            {
+      path: '/master/surveyor',
+      element: (
+        <PrivateRoute
+          allowedRoles={['admin', 'staff', 'Administrative', 'NursingAndParamedical', 'MedicalOfficer', 'Support', 'Consultant']}
+        >
+          <SurveyorPage />
+        </PrivateRoute>
+      )
+    },
+                {
+      path: '/master/tpa-master',
+      element: (
+        <PrivateRoute
+          allowedRoles={['admin', 'staff', 'Administrative', 'NursingAndParamedical', 'MedicalOfficer', 'Support', 'Consultant']}
+        >
+          <TPAPage />
+        </PrivateRoute>
+      )
+    },
+
+                {
+      path: '/master/policy-master',
+      element: (
+        <PrivateRoute
+          allowedRoles={['admin', 'staff', 'Administrative', 'NursingAndParamedical', 'MedicalOfficer', 'Support', 'Consultant']}
+        >
+          <PolicyPage />
+        </PrivateRoute>
+      )
+    },
+                {
+      path: '/master/investigator',
+      element: (
+        <PrivateRoute
+          allowedRoles={['admin', 'staff', 'Administrative', 'NursingAndParamedical', 'MedicalOfficer', 'Support', 'Consultant']}
+        >
+          <InvestigatorPage />
+        </PrivateRoute>
+      )
+    },
+                    {
+      path: '/master/claim-master',
+      element: (
+        <PrivateRoute
+          allowedRoles={['admin', 'staff', 'Administrative', 'NursingAndParamedical', 'MedicalOfficer', 'Support', 'Consultant']}
+        >
+          <ClaimPage />
+        </PrivateRoute>
+      )
+    },
+  
+
+
+
+
+
+
 // {
 //       path: '/master/customers-form',
 //       element: (

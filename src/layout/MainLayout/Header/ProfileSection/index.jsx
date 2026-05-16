@@ -79,6 +79,7 @@ const ProfileSection = () => {
     }
   }, []);
 
+  // console.log('User dinesh:', userData);
   return (
     <>
       {/* Profile Button */}

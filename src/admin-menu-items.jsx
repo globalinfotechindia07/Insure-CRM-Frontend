@@ -146,24 +146,24 @@ export default {
                 }
               ]
             },
-            {
-              id: 'master-group',
-              title: 'TPA Master',
-              type: 'collapse',
-              icon: GridViewIcon,
-              children: [       
-                {
-                  id: 'financial-year',
-                  title: 'Financial Year',
-                  type: 'item',
-                  icon: AccountTreeIcon,
-                  url: '/master/financial-year'
-                },
+            // {
+            //   id: 'master-group',
+            //   title: 'TPA Master',
+            //   type: 'collapse',
+            //   icon: GridViewIcon,
+            //   children: [       
+            //     {
+            //       id: 'financial-year',
+            //       title: 'Financial Year',
+            //       type: 'item',
+            //       icon: AccountTreeIcon,
+            //       url: '/master/financial-year'
+            //     },
 
             
 
-              ]
-            },
+            //   ]
+            // },
             {
               id: 'master-group',
               title: 'Branch Master',
@@ -354,6 +354,51 @@ export default {
                   icon: AccountTreeIcon,
                   url: '/master/risk-code'
                 }
+              ]
+            },
+                        {
+              id: 'master-group',
+              title: 'Claim Master',
+              type: 'collapse',
+              icon: GridViewIcon,
+              children: [
+                {
+                  id: 'surveyor',
+                  title: 'Surveyor',
+                  type: 'item',
+                  icon: AccountTreeIcon,
+                  url: '/master/surveyor'
+                },
+                                {
+                  id: 'tpa-master',
+                  title: 'TPA Master',
+                  type: 'item',
+                  icon: AccountTreeIcon,
+                  url: '/master/tpa-master'
+                },
+                {
+                  id: 'policy-master',
+                  title: 'Policy Master',
+                  type: 'item',
+                  icon: AccountTreeIcon,
+                  url: '/master/policy-master'
+                },
+                                {
+                  id: 'investigator',
+                  title: 'Investigator',
+                  type: 'item',
+                  icon: AccountTreeIcon,
+                  url: '/master/investigator'
+                },
+                                                {
+                  id: 'claim-master',
+                  title: 'Claim Master',
+                  type: 'item',
+                  icon: AccountTreeIcon,
+                  url: '/master/claim-master'
+                },
+ 
+
               ]
             },
             {
@@ -617,18 +662,18 @@ export default {
           icon: PersonIcon,
           url: '/customer'
         },
-        {
-          id: 'policy-management',
-          title: 'Policy Management',
-          type: 'collapse',
-          children: [
-            {
-              id: 'policy-list',
-              title: 'Policy List',
-              type: 'item',
-              icon: PeopleIcon,
-              url: '/policy'
-            }
+        // {
+        //   id: 'policy-management',
+        //   title: 'Policy Management',
+        //   type: 'collapse',
+        //   children: [
+        //     {
+        //       id: 'policy-list',
+        //       title: 'Policy List',
+        //       type: 'item',
+        //       icon: PeopleIcon,
+        //       url: '/policy'
+        //     }
 
             // {
             //   id: 'unbilled-policy',
@@ -645,8 +690,8 @@ export default {
             //   icon: PeopleIcon,
             //   url: '/policy/billed-policy'
             // }
-          ]
-        },
+        //   ]
+        // },
         {
           id: 'renewal-management',
           title: 'Renewal Management',
