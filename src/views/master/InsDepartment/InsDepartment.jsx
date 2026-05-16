@@ -45,15 +45,16 @@ const InsDepartment = () => {
   };
 
   // Fetch all Insurance departments from backend
-  const fetchInsDepartments = async () => {
-    try {
-      const response = await get('insDepartment');
-      console.log('InsDepartment data:', response.data);
-      setData(response.data);
-    } catch (error) {
-      console.error(error);
-    }
-  };
+const fetchInsDepartments = async () => {
+  try {
+    const response = await get('insDepartment');
+    console.log('InsDepartment data:', response.data);
+    setData(response.data || []);  
+  } catch (error) {
+    console.error(error);
+    setData([]);  
+  }
+};
 
   useEffect(() => {
     fetchInsDepartments();
@@ -180,29 +181,43 @@ const InsDepartment = () => {
               </TableRow>
             </TableHead>
             <TableBody>
-              {data.map((item, index) => (
-                <TableRow key={item.id}>
-                  <TableCell>{index + 1}</TableCell>
-                  <TableCell>{item.insDepartment}</TableCell>
-                  <TableCell>
-                    <Button
-                      size="small"
-                      onClick={() => handleEdit(index)}
-                      sx={{ padding: '1px', minWidth: '24px', height: '24px', mr: '5px' }}
-                    >
-                      <IconButton color="inherit">
-                        <Edit />
-                      </IconButton>
-                    </Button>
-                    <Button color="error" onClick={() => handleDelete(index)} sx={{ padding: '1px', minWidth: '24px', height: '24px' }}>
-                      <IconButton color="inherit">
-                        <Delete />
-                      </IconButton>
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
+  {data && data.length > 0 ? (
+    data.map((item, index) => (
+      <TableRow key={item._id || index}>
+        <TableCell>{index + 1}</TableCell>
+        <TableCell>{item.insDepartment}</TableCell>
+        <TableCell>
+          <Button
+            size="small"
+            onClick={() => handleEdit(index)}
+            sx={{ padding: '1px', minWidth: '24px', height: '24px', mr: '5px' }}
+          >
+            <IconButton color="inherit" size="small">
+              <Edit />
+            </IconButton>
+          </Button>
+          <Button 
+            color="error" 
+            onClick={() => handleDelete(index)} 
+            sx={{ padding: '1px', minWidth: '24px', height: '24px' }}
+          >
+            <IconButton color="inherit" size="small">
+              <Delete />
+            </IconButton>
+          </Button>
+        </TableCell>
+      </TableRow>
+    ))
+  ) : (
+    <TableRow>
+      <TableCell colSpan={3} align="center" sx={{ py: 4 }}>
+        <Typography variant="body1" color="text.secondary">
+           No Insurance Department found. Click "Add Department" to create one.
+        </Typography>
+      </TableCell>
+    </TableRow>
+  )}
+</TableBody>
           </Table>
         </CardContent>
       </Card>

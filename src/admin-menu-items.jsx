@@ -28,7 +28,7 @@ import ManageAccountsIcon from '@mui/icons-material/ManageAccounts';
 import AccountTreeIcon from '@mui/icons-material/AccountTree';
 import ReceiptIcon from '@mui/icons-material/Receipt';
 import { id } from 'google-translate-api-extended/languages';
-import {
+import { 
   Money,
   MoneyOffRounded,
   MoneyTwoTone,
@@ -146,24 +146,24 @@ export default {
                 }
               ]
             },
-            {
-              id: 'master-group',
-              title: 'TPA Master',
-              type: 'collapse',
-              icon: GridViewIcon,
-              children: [       
-                {
-                  id: 'financial-year',
-                  title: 'Financial Year',
-                  type: 'item',
-                  icon: AccountTreeIcon,
-                  url: '/master/financial-year'
-                },
+            // {
+            //   id: 'master-group',
+            //   title: 'TPA Master',
+            //   type: 'collapse',
+            //   icon: GridViewIcon,
+            //   children: [       
+            //     {
+            //       id: 'financial-year',
+            //       title: 'Financial Year',
+            //       type: 'item',
+            //       icon: AccountTreeIcon,
+            //       url: '/master/financial-year'
+            //     },
 
             
 
-              ]
-            },
+            //   ]
+            // },
             {
               id: 'master-group',
               title: 'Branch Master',
@@ -200,28 +200,82 @@ export default {
                 }
               ]
             },
-            {
+                        {
+              id: 'staff-master',
+              title: 'Staff Master',
+              type: 'collapse',
+              icon: GridViewIcon,
+              children: [
+                {
+                  id: 'company-staff',
+                  title: 'Staff',
+                  type: 'item', 
+                  icon: PeopleIcon,
+                  url: '/staff-master/company-staff'
+                },
+
+                {
+                  id: 'company-exstaff',
+                  title: 'Ex Staff',
+                  type: 'item',
+                  icon: PeopleIcon,
+                  url: '/staff-master/company-exstaff'
+                },
+
+                {
+                  id: 'company-staff-report',
+                  title: 'Staff Report',
+                  type: 'item',
+                  icon: PeopleIcon,
+                  url: '/staff-master/company-staff-report'
+                }
+              ]
+            },
+            // {
+            //   id: 'master-group',
+            //   title: 'Customer Master',
+            //   type: 'collapse',
+            //   icon: GridViewIcon,
+            //   children: [
+            //     {
+            //       id: 'customer-group',
+            //       title: 'Customer Group (Corporate)',
+            //       type: 'item',
+            //       icon: ClassIcon,
+            //       url: '/master/customer-group'
+            //     },
+            //     {
+            //       id: 'subcustomer-group',
+            //       title: 'Sub Customer Group (Corporate)',
+            //       type: 'item',
+            //       icon: TrendingUpIcon,
+            //       url: '/master/subcustomer-group'
+            //     }
+            //   ]
+            // },
+                {
               id: 'master-group',
               title: 'Customer Master',
               type: 'collapse',
               icon: GridViewIcon,
               children: [
                 {
-                  id: 'customer-group',
-                  title: 'Customer Group (Corporate)',
+                  id: 'customer',
+                  title: 'Customer',
                   type: 'item',
                   icon: ClassIcon,
-                  url: '/master/customer-group'
+                  url: '/master/customer'
                 },
-                {
-                  id: 'subcustomer-group',
-                  title: 'Sub Customer Group (Corporate)',
-                  type: 'item',
-                  icon: TrendingUpIcon,
-                  url: '/master/subcustomer-group'
-                }
+                //                 {
+                //   id: 'customers-list',
+                //   title: 'Dinesh',
+                //   type: 'item',
+                //   icon: ClassIcon,
+                //   url: '/master/customers-list'
+                // },
               ]
             },
+            
             {
               id: 'master-group',
               title: 'Insurance Master',
@@ -300,6 +354,51 @@ export default {
                   icon: AccountTreeIcon,
                   url: '/master/risk-code'
                 }
+              ]
+            },
+                        {
+              id: 'master-group',
+              title: 'Claim Master',
+              type: 'collapse',
+              icon: GridViewIcon,
+              children: [
+                {
+                  id: 'surveyor',
+                  title: 'Surveyor',
+                  type: 'item',
+                  icon: AccountTreeIcon,
+                  url: '/master/surveyor'
+                },
+                                {
+                  id: 'tpa-master',
+                  title: 'TPA Master',
+                  type: 'item',
+                  icon: AccountTreeIcon,
+                  url: '/master/tpa-master'
+                },
+                {
+                  id: 'policy-master',
+                  title: 'Policy Master',
+                  type: 'item',
+                  icon: AccountTreeIcon,
+                  url: '/master/policy-master'
+                },
+                                {
+                  id: 'investigator',
+                  title: 'Investigator',
+                  type: 'item',
+                  icon: AccountTreeIcon,
+                  url: '/master/investigator'
+                },
+                                                {
+                  id: 'claim-master',
+                  title: 'Claim Master',
+                  type: 'item',
+                  icon: AccountTreeIcon,
+                  url: '/master/claim-master'
+                },
+ 
+
               ]
             },
             {
@@ -452,36 +551,7 @@ export default {
           type: 'collapse',
           icon: AdminPanelSettingsIcon,
           children: [
-            {
-              id: 'users',
-              title: 'Users',
-              type: 'collapse',
-              children: [
-                {
-                  id: 'company-staff',
-                  title: 'Staff',
-                  type: 'item',
-                  icon: PeopleIcon,
-                  url: '/users/company-staff'
-                },
 
-                {
-                  id: 'company-exstaff',
-                  title: 'Ex Staff',
-                  type: 'item',
-                  icon: PeopleIcon,
-                  url: '/users/company-exstaff'
-                },
-
-                {
-                  id: 'company-staff-report',
-                  title: 'Staff Report',
-                  type: 'item',
-                  icon: PeopleIcon,
-                  url: '/users/company-staff-report'
-                }
-              ]
-            },
             {
               id: 'attendance-list',
               title: 'Attendance',
@@ -592,18 +662,18 @@ export default {
           icon: PersonIcon,
           url: '/customer'
         },
-        {
-          id: 'policy-management',
-          title: 'Policy Management',
-          type: 'collapse',
-          children: [
-            {
-              id: 'policy-list',
-              title: 'Policy List',
-              type: 'item',
-              icon: PeopleIcon,
-              url: '/policy'
-            }
+        // {
+        //   id: 'policy-management',
+        //   title: 'Policy Management',
+        //   type: 'collapse',
+        //   children: [
+        //     {
+        //       id: 'policy-list',
+        //       title: 'Policy List',
+        //       type: 'item',
+        //       icon: PeopleIcon,
+        //       url: '/policy'
+        //     }
 
             // {
             //   id: 'unbilled-policy',
@@ -620,8 +690,8 @@ export default {
             //   icon: PeopleIcon,
             //   url: '/policy/billed-policy'
             // }
-          ]
-        },
+        //   ]
+        // },
         {
           id: 'renewal-management',
           title: 'Renewal Management',

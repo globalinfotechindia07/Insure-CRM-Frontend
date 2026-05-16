@@ -280,9 +280,9 @@ function SalaryAndWages({ setValue, storedAllData, setStoredAllData }) {
 
       toast.success('Salary details saved successfully');
 
-      if (typeof setValue === 'function') {
-        setValue((prev) => prev + 1);
-      }
+      // if (typeof setValue === 'function') {
+      //   setValue((prev) => prev + 1);
+      // }
     } catch (error) {
       console.error('Error saving salary details:', error);
       toast.error(`Failed to save salary details: ${error.message}`);
@@ -702,7 +702,7 @@ function SalaryAndWages({ setValue, storedAllData, setStoredAllData }) {
                 onClick={handleSave}
                 sx={{ borderRadius: 2 }}
               >
-                {isSaving ? 'Saving...' : 'Save & Next'}
+              {isSaving ? 'Saving...' : 'Save'}
               </Button>
               <Button
                 className="no-print"

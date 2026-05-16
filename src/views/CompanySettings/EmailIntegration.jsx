@@ -15,11 +15,13 @@ const EmailIntegration = ({ onSave }) => {
     mailFrom: '',
   });
 
-  const [loading, setLoading] = useState(false);
+  const [saveLoading, setSaveLoading] = useState(false);
+  const [testLoading, setTestLoading] = useState(false);
   const [loadingConfig, setLoadingConfig] = useState(false);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
 
-  // Load existing config on mount
+  const API_BASE = 'http://localhost:5050/api/email';
+
   useEffect(() => {
     fetchEmailConfig();
   }, []);
@@ -27,7 +29,7 @@ const EmailIntegration = ({ onSave }) => {
   const fetchEmailConfig = async () => {
     setLoadingConfig(true);
     try {
-      const response = await fetch('/api/email/config');
+      const response = await fetch(`${API_BASE}/config`);
       const data = await response.json();
       
       if (response.ok && data.success && data.data) {
@@ -57,9 +59,14 @@ const EmailIntegration = ({ onSave }) => {
   };
 
   const handleSave = async () => {
-    setLoading(true);
+    if (!emailConfig.smtpHost || !emailConfig.smtpPort || !emailConfig.smtpUser || !emailConfig.smtpPass || !emailConfig.mailFrom) {
+      setSnackbar({ open: true, message: 'Please fill all fields', severity: 'warning' });
+      return;
+    }
+
+    setSaveLoading(true);
     try {
-      const response = await fetch('/api/email/config', {
+      const response = await fetch(`${API_BASE}/config`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(emailConfig)
@@ -68,11 +75,7 @@ const EmailIntegration = ({ onSave }) => {
       const data = await response.json();
       
       if (response.ok && data.success) {
-        setSnackbar({ 
-          open: true, 
-          message: 'Email configuration saved successfully!', 
-          severity: 'success' 
-        });
+        setSnackbar({ open: true, message: '✅ Configuration saved successfully!', severity: 'success' });
         if (onSave) onSave(data.data);
         setEmailConfig(prev => ({ ...prev, smtpPass: '' }));
       } else {
@@ -80,58 +83,43 @@ const EmailIntegration = ({ onSave }) => {
       }
     } catch (error) {
       console.error('Save error:', error);
-      setSnackbar({ 
-        open: true, 
-        message: error.message || 'Error saving configuration', 
-        severity: 'error' 
-      });
+      setSnackbar({ open: true, message: '❌ ' + error.message, severity: 'error' });
     } finally {
-      setLoading(false);
+      setSaveLoading(false);
     }
   };
 
   const handleTestEmail = async () => {
     if (!emailConfig.smtpUser || !emailConfig.smtpPass) {
-      setSnackbar({ 
-        open: true, 
-        message: 'Please enter SMTP Username and Password first', 
-        severity: 'warning' 
-      });
+      setSnackbar({ open: true, message: '⚠️ Please enter SMTP Email and Password first', severity: 'warning' });
       return;
     }
 
-    setLoading(true);
+    setTestLoading(true);
     try {
-      const response = await fetch('/api/email/test', {
+      const response = await fetch(`${API_BASE}/test`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          to: emailConfig.smtpUser, 
-          config: emailConfig 
-        })
+        body: JSON.stringify({ to: emailConfig.smtpUser, config: emailConfig })
       });
       
       const data = await response.json();
       
       if (response.ok && data.success) {
-        setSnackbar({ 
-          open: true, 
-          message: 'Test email sent successfully! Check your inbox.', 
-          severity: 'success' 
-        });
+        setSnackbar({ open: true, message: '✅ Test email sent! Check your inbox.', severity: 'success' });
       } else {
         throw new Error(data.error || 'Failed to send');
       }
     } catch (error) {
       console.error('Test email error:', error);
-      setSnackbar({ 
-        open: true, 
-        message: error.message || 'Error sending test email', 
-        severity: 'error' 
-      });
+      setSnackbar({ open: true, message: '❌ ' + error.message, severity: 'error' });
     } finally {
-      setLoading(false);
+      setTestLoading(false);
     }
+  };
+
+  const handleCloseSnackbar = () => {
+    setSnackbar({ ...snackbar, open: false });
   };
 
   if (loadingConfig) {
@@ -150,82 +138,37 @@ const EmailIntegration = ({ onSave }) => {
 
   return (
     <Grid item xs={12} sx={{ mt: 4 }}>
-      <Typography variant="h5" sx={{ mb: 2 }}>
-        Email Integration Configuration
-      </Typography>
+      <Typography variant="h5" sx={{ mb: 2 }}>📧 Email Integration Configuration</Typography>
       <Card>
         <CardContent>
           <Grid container spacing={3}>
             <Grid item xs={12} md={6}>
-              <TextField
-                fullWidth
-                label="SMTP Host"
-                name="smtpHost"
-                value={emailConfig.smtpHost}
-                onChange={handleChange}
-                helperText="e.g., smtp.gmail.com"
-              />
+              <TextField fullWidth label="SMTP Host" name="smtpHost" value={emailConfig.smtpHost} onChange={handleChange} helperText="e.g., smtp.gmail.com" />
             </Grid>
             <Grid item xs={12} md={6}>
-              <TextField
-                fullWidth
-                label="SMTP Port"
-                name="smtpPort"
-                value={emailConfig.smtpPort}
-                onChange={handleChange}
-                helperText="e.g., 465 for SSL, 587 for TLS"
-              />
+              <TextField fullWidth label="SMTP Port" name="smtpPort" value={emailConfig.smtpPort} onChange={handleChange} helperText="e.g., 465 for SSL, 587 for TLS" />
             </Grid>
             <Grid item xs={12} md={6}>
-              <TextField
-                fullWidth
-                label="SMTP Username/Email"
-                name="smtpUser"
-                value={emailConfig.smtpUser}
-                onChange={handleChange}
-              />
+              <TextField fullWidth label="SMTP Username/Email" name="smtpUser" value={emailConfig.smtpUser} onChange={handleChange} placeholder="your-email@gmail.com" />
             </Grid>
             <Grid item xs={12} md={6}>
-              <TextField
-                fullWidth
-                label="SMTP Password"
-                type="password"
-                name="smtpPass"
-                value={emailConfig.smtpPass}
-                onChange={handleChange}
-              />
+              <TextField fullWidth label="SMTP Password" type="password" name="smtpPass" value={emailConfig.smtpPass} onChange={handleChange} placeholder="App Password for Gmail" />
             </Grid>
             <Grid item xs={12} md={6}>
-              <TextField
-                fullWidth
-                label="From Email Address"
-                name="mailFrom"
-                value={emailConfig.mailFrom}
-                onChange={handleChange}
-                helperText="Email address that will appear in 'From' field"
-              />
+              <TextField fullWidth label="From Email Address" name="mailFrom" value={emailConfig.mailFrom} onChange={handleChange} helperText="Email address that will appear in 'From' field" />
             </Grid>
             <Grid item xs={12}>
               <Alert severity="info" sx={{ mb: 2 }}>
-                <strong>Note:</strong> For Gmail, enable 2-Factor Authentication and use App Password.
+                <strong>🔐 Note:</strong> For Gmail, enable 2-Factor Authentication and use App Password (16 digits).
               </Alert>
             </Grid>
             <Grid item xs={12}>
               <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
-                <Button 
-                  variant="outlined" 
-                  onClick={handleTestEmail}
-                  disabled={loading || !emailConfig.smtpUser || !emailConfig.smtpPass}
-                >
-                  {loading ? 'Sending...' : 'Send Test Email'}
+                <Button variant="outlined" onClick={handleTestEmail} disabled={testLoading || saveLoading || !emailConfig.smtpUser || !emailConfig.smtpPass}>
+                  {testLoading ? 'Sending...' : '📧 Send Test Email'}
                 </Button>
-                <Button 
-                  variant="contained" 
-                  color="primary" 
-                  onClick={handleSave}
-                  disabled={loading}
-                >
-                  {loading ? 'Saving...' : 'Save Configuration'}
+                <Button variant="contained" color="primary" onClick={handleSave} disabled={saveLoading || testLoading}>
+                  {saveLoading ? 'Saving...' : '💾 Save Configuration'}
                 </Button>
               </Box>
             </Grid>
@@ -233,12 +176,8 @@ const EmailIntegration = ({ onSave }) => {
         </CardContent>
       </Card>
 
-      <Snackbar 
-        open={snackbar.open} 
-        autoHideDuration={6000} 
-        onClose={() => setSnackbar({ ...snackbar, open: false })}
-      >
-        <Alert severity={snackbar.severity} onClose={() => setSnackbar({ ...snackbar, open: false })}>
+      <Snackbar open={snackbar.open} autoHideDuration={5050} onClose={handleCloseSnackbar} anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}>
+        <Alert severity={snackbar.severity} onClose={handleCloseSnackbar} variant="filled">
           {snackbar.message}
         </Alert>
       </Snackbar>

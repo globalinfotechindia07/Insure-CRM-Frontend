@@ -41,16 +41,17 @@ const BrokerBranch = () => {
   const [editIndex, setEditIndex] = useState(null);
   const [isAdmin, setAdmin] = useState(false);
 
-  const fetchBrokerBranch = async () => {
-    try {
-      const response = await get('brokerBranch');
-      const BrokerData = response.data?.data || response.data || [];
-      setData(BrokerData);
-    } catch (error) {
-      console.error('Error fetching broker branch details:', error);
-      toast.error('Failed to fetch broker branch details');
-    }
-  };
+const fetchBrokerBranch = async () => {
+  try {
+    const response = await get('brokerBranch');
+    const BrokerData = response.data?.data || response.data || [];
+    setData(BrokerData);
+  } catch (error) {
+    console.error('Error fetching broker branch details:', error);
+    toast.error('Failed to fetch broker branch details');
+    setData([]);  // ✅ ADD THIS
+  }
+};
 
   useEffect(() => {
     fetchBrokerBranch();
@@ -256,70 +257,50 @@ const BrokerBranch = () => {
                     <TableCell>Actions</TableCell>
                   </TableRow>
                 </TableHead>
-                {data.length > 0 ? (
-                  <>
-                    <TableBody>
-                      {data.map((entry, index) => (
-                        <TableRow key={index}>
-                          <TableCell>{index + 1}</TableCell>
-                          <TableCell>{entry.branchName}</TableCell>
-                          <TableCell>{entry.branchCode}</TableCell>
-                          <TableCell>{entry.branchId}</TableCell>
-                          <TableCell>{entry.email}</TableCell>
-                          <TableCell>{entry.mobile}</TableCell>
-                          <TableCell>{entry.address}</TableCell>
-                          <TableCell>{entry.pinCode}</TableCell>
-                          <TableCell
-                            sx={{
-                              display: 'flex',
-                              flexWrap: 'nowrap'
-                            }}
+                <TableBody>
+                  {data && data.length > 0 ? (
+                    data.map((entry, index) => (
+                      <TableRow key={entry._id || index}>
+                        <TableCell>{index + 1}</TableCell>
+                        <TableCell>{entry.branchName || '-'}</TableCell>
+                        <TableCell>{entry.branchCode || '-'}</TableCell>
+                        <TableCell>{entry.branchId || '-'}</TableCell>
+                        <TableCell>{entry.email || '-'}</TableCell>
+                        <TableCell>{entry.mobile || '-'}</TableCell>
+                        <TableCell>{entry.address || '-'}</TableCell>
+                        <TableCell>{entry.pinCode || '-'}</TableCell>
+                        <TableCell sx={{ display: 'flex', flexWrap: 'nowrap' }}>
+                          <Button
+                            size="small"
+                            onClick={() => handleEdit(index)}
+                            sx={{ padding: '1px', minWidth: '24px', height: '24px', mr: '5px' }}
                           >
-                            {/* {(bankDetailsPermission.Edit===true || isAdmin)  &&  */}
-                            <Button
-                              size="small"
-                              onClick={() => handleEdit(index)}
-                              sx={{
-                                padding: '1px', // Reduced padding
-                                minWidth: '24px', // Set minimum width
-                                height: '24px',
-                                mr: '5px'
-                              }}
-                            >
-                              <IconButton color="inherit">
-                                <Edit />
-                              </IconButton>
-                            </Button>
-                            {/* } */}
-                            {/* {(bankDetailsPermission.Delete===true || isAdmin) &&  */}
-                            <Button
-                              color="error"
-                              onClick={() => handleDelete(index)}
-                              sx={{
-                                padding: '1px', // Reduced padding
-                                minWidth: '24px', // Set minimum width
-                                height: '24px'
-                              }}
-                            >
-                              <IconButton color="inherit">
-                                <Delete />
-                              </IconButton>
-                            </Button>
-                            {/* } */}
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </>
-                ) : (
-                  <>
-                    <TableBody>
-                      <TableRow>
-                        <TableCell>DATA NOT FOUND</TableCell>
+                            <IconButton color="inherit" size="small">
+                              <Edit />
+                            </IconButton>
+                          </Button>
+                          <Button
+                            color="error"
+                            onClick={() => handleDelete(index)}
+                            sx={{ padding: '1px', minWidth: '24px', height: '24px' }}
+                          >
+                            <IconButton color="inherit" size="small">
+                              <Delete />
+                            </IconButton>
+                          </Button>
+                        </TableCell>
                       </TableRow>
-                    </TableBody>
-                  </>
-                )}
+                    ))
+                  ) : (
+                    <TableRow>
+                      <TableCell colSpan={9} align="center" sx={{ py: 4 }}>
+                        <Typography variant="body1" color="text.secondary">
+                          No Broker Branches found. Click "Add Branch" to create one.
+                        </Typography>
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
               </Table>
             </Grid>
           </Box>

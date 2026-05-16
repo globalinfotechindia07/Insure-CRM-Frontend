@@ -119,7 +119,7 @@ const SuperAdminDashboard = () => {
       const res = await post(`/invoiceRegistration/revenue-summary`, { fy: selectedFY3 });
       console.log(res);
 
-      // res should be like { Apr: 25000, May: 30000, Jun: 22000, ... }
+      // res should be like { Apr: 25050, May: 30000, Jun: 22000, ... }
       const months = ['Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec', 'Jan', 'Feb', 'Mar'];
       const series = months.map((m) => res[m] || 0);
 

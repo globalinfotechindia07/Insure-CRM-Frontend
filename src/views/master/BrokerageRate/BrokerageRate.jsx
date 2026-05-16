@@ -25,13 +25,10 @@ import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import CancelIcon from '@mui/icons-material/Cancel';
 import EditIcon from '@mui/icons-material/Edit';
-import theme from 'assets/scss/_themes-vars.module.scss';
 import value from 'assets/scss/_themes-vars.module.scss';
 import swal from 'sweetalert';
 
-// import { axiosInstance } from '../../../api/api.js';
 import { get, post, put, remove } from '../../../api/api.js';
-import { useSelector } from 'react-redux';
 
 const BrokerageRate = () => {
   const [form, setForm] = useState({ brokerageRate: '' });
@@ -39,22 +36,34 @@ const BrokerageRate = () => {
   const [open, setOpen] = useState(false);
   const [data, setData] = useState([]);
   const [editIndex, setEditIndex] = useState(null);
-  const [isAdmin, setAdmin] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  const handleClose = () => setOpen(false);
+  const MAX_LENGTH = 5;
+
+  const handleClose = () => {
+    setOpen(false);
+    setErrors({});
+  };
 
   const handleOpen = () => {
+    setForm({ brokerageRate: '' });
+    setEditIndex(null);
+    setErrors({});
     setOpen(true);
   };
 
-  // Fetch all Insurance departments from backend
+  // Fetch all Brokerage Rates from backend
   const fetchBrokerageRate = async () => {
+    setLoading(true);
     try {
       const response = await get('brokerageRate');
-      // console.log('BrokerageRate data:', response.data);
-      setData(response.data);
+      console.log('BrokerageRate data:', response.data);
+      setData(response.data || []);  // ✅ CHANGE 1: || [] ADD KIYA
     } catch (error) {
       console.error(error);
+      setData([]);  // ✅ CHANGE 2: setData([]) ADD KIYA
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -62,97 +71,76 @@ const BrokerageRate = () => {
     fetchBrokerageRate();
   }, []);
 
+  const handleChange = (e) => {
+    const { name, value } = e.target;
 
-  // Added Validation for only numbers and max length #M
+    // float allow (12.5)
+    if (!/^\d*\.?\d*$/.test(value)) return;
 
+    // max length
+    if (value.length > MAX_LENGTH) return;
 
-  // const handleChange = (e) => {
-  //   setForm({ ...form, [e.target.name]: e.target.value });
-  // };
+    setForm({ ...form, [name]: value });
+    
+    if (errors[name]) {
+      setErrors({ ...errors, [name]: '' });
+    }
+  };
 
-const MAX_LENGTH = 5;
+  const validate = () => {
+    const newErrors = {};
 
-const handleChange = (e) => {
-  const { name, value } = e.target;
+    if (!form.brokerageRate) {
+      newErrors.brokerageRate = 'Brokerage Rate is required';
+    } else if (form.brokerageRate.length > MAX_LENGTH) {
+      newErrors.brokerageRate = `Max ${MAX_LENGTH} characters allowed`;
+    } else if (isNaN(form.brokerageRate)) {
+      newErrors.brokerageRate = 'Only numeric value allowed';
+    }
 
-  // float allow (12.5)
-  if (!/^\d*\.?\d*$/.test(value)) return;
-
-  // max length
-  if (value.length > MAX_LENGTH) return;
-
-  setForm({ ...form, [name]: value });
-};
-
-
-
-
-
-const validate = () => {
-  const newErrors = {};
-
-  if (!form.brokerageRate) {
-    newErrors.brokerageRate = 'Brokerage Rate is required';
-  } else if (form.brokerageRate.length > MAX_LENGTH) {
-    newErrors.brokerageRate = `Max ${MAX_LENGTH} characters allowed`;
-  } else if (isNaN(form.brokerageRate)) {
-    newErrors.brokerageRate = 'Only numeric value allowed';
-  }
-
-  setErrors(newErrors);
-  return Object.keys(newErrors).length === 0;
-};
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
   const handleSubmit = async () => {
     if (!validate()) return;
+    
     try {
-      // if (editIndex !== null) {
-      //   // Update existing
-      //   const id = data[editIndex]._id;
-      //   await put(`brokerageRate/${id}`, form);
-      //   fetchBrokerageRate();
-
-      //   toast.success('Record Edited Sucessfully');
-      // }
       if (editIndex !== null) {
-  const id = data[editIndex]._id;
+        const id = data[editIndex]._id;
 
-  swal({
-    title: "Update Brokerage Rate?",
-    text: "Do you want to update this record?",
-    icon: "warning",
-    buttons: ["Cancel", "Update"],
-  }).then(async (willUpdate) => {
-    if (willUpdate) {
-      try {
-        await put(`brokerageRate/${id}`, form);
+        swal({
+          title: "Update Brokerage Rate?",
+          text: "Do you want to update this record?",
+          icon: "warning",
+          buttons: ["Cancel", "Update"],
+        }).then(async (willUpdate) => {
+          if (willUpdate) {
+            try {
+              await put(`brokerageRate/${id}`, { brokerageRate: form.brokerageRate });
+              fetchBrokerageRate();
+              setOpen(false);
+              setForm({ brokerageRate: '' });
+              setEditIndex(null);
+              swal("Updated!", "Record updated successfully.", "success");
+            } catch (error) {
+              console.error(error);
+              swal("Error!", "Something went wrong.", "error");
+            }
+          }
+        });
+        return;
+      } else {
+        await post('brokerageRate', { brokerageRate: form.brokerageRate });
         fetchBrokerageRate();
-
-        setOpen(false);
-        setForm({ brokerageRate: '' });
-        setEditIndex(null);
-
-        swal("Updated!", "Record updated successfully.", "success");
-      } catch (error) {
-        console.error(error);
-        swal("Error!", "Something went wrong.", "error");
-      }
-    }
-  });
-
-  return; // 🔥 IMPORTANT
-}
-       else {
-        // Create new
-        await post('brokerageRate', form);
-        fetchBrokerageRate();
-        toast.success('Record Saved Sucessfully');
+        toast.success('Record Saved Successfully');
       }
       setOpen(false);
       setForm({ brokerageRate: '' });
       setEditIndex(null);
     } catch (error) {
       console.error(error);
+      toast.error('Operation Failed');
     }
   };
 
@@ -162,42 +150,28 @@ const validate = () => {
     setOpen(true);
   };
 
-  // const handleDelete = async (index) => {
-  //   try {
-  //     const id = data[index]._id;
-  //     await remove(`brokerageRate/${id}`);
-  //     fetchBrokerageRate();
-  //     toast.success('Record Deleted Sucessfully');
-  //   } catch (error) {
-  //     console.error(error);
-  //     toast.error('Record Deletion Failed');
-  //   }
-  // };
-  // added pop up #M
   const handleDelete = (index) => {
-  const id = data[index]._id;
+    const id = data[index]._id;
 
-  swal({
-    title: "Are you sure?",
-    text: "Once deleted, you will not be able to recover this record!",
-    icon: "warning",
-    buttons: ["Cancel", "Delete"],
-    dangerMode: true,
-  }).then(async (willDelete) => {
-    if (willDelete) {
-      try {
-        await remove(`brokerageRate/${id}`);
-        fetchBrokerageRate();
-
-        swal("Deleted!", "Record deleted successfully.", "success");
-      } catch (error) {
-        console.error(error);
-        swal("Error!", "Something went wrong.", "error");
+    swal({
+      title: "Are you sure?",
+      text: "Once deleted, you will not be able to recover this record!",
+      icon: "warning",
+      buttons: ["Cancel", "Delete"],
+      dangerMode: true,
+    }).then(async (willDelete) => {
+      if (willDelete) {
+        try {
+          await remove(`brokerageRate/${id}`);
+          fetchBrokerageRate();
+          swal("Deleted!", "Record deleted successfully.", "success");
+        } catch (error) {
+          console.error(error);
+          swal("Error!", "Something went wrong.", "error");
+        }
       }
-    }
-  });
-};
-
+    });
+  };
 
   return (
     <div>
@@ -209,16 +183,12 @@ const validate = () => {
           Brokerage Rate
         </Typography>
       </Breadcrumb>
+      
       <Grid container justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
-        <Typography variant="h5">Bokerage Rate</Typography>
+        <Typography variant="h5">Brokerage Rate</Typography>
         <Button variant="contained" startIcon={<Add />} onClick={handleOpen}>
           Add Rate
         </Button>
-        {/* {(positionPermission.Add === true || isAdmin) && (
-                <Button variant="contained" startIcon={<Add />} onClick={handleOpen}>
-                  Add position
-                </Button>  
-              )} */}
       </Grid>
 
       <Card>
@@ -231,11 +201,16 @@ const validate = () => {
                 <TableCell>Action</TableCell>
               </TableRow>
             </TableHead>
-            {/* {data.length > 0 ? ( */}
-            <>
-              <TableBody>
-                {data.map((item, index) => (
-                  <TableRow key={item.id}>
+            <TableBody>
+              {loading ? (
+                <TableRow>
+                  <TableCell colSpan={3} align="center" sx={{ py: 4 }}>
+                    <Typography>⏳ Loading...</Typography>
+                  </TableCell>
+                </TableRow>
+              ) : data && data.length > 0 ? (
+                data.map((item, index) => (
+                  <TableRow key={item._id || index}>
                     <TableCell>{index + 1}</TableCell>
                     <TableCell>{item.brokerageRate}</TableCell>
                     <TableCell>
@@ -244,23 +219,32 @@ const validate = () => {
                         onClick={() => handleEdit(index)}
                         sx={{ padding: '1px', minWidth: '24px', height: '24px', mr: '5px' }}
                       >
-                        <IconButton color="inherit">
+                        <IconButton color="inherit" size="small">
                           <Edit />
                         </IconButton>
                       </Button>
-                      <Button color="error" onClick={() => handleDelete(index)} sx={{ padding: '1px', minWidth: '24px', height: '24px' }}>
-                        <IconButton color="inherit">
+                      <Button 
+                        color="error" 
+                        onClick={() => handleDelete(index)} 
+                        sx={{ padding: '1px', minWidth: '24px', height: '24px' }}
+                      >
+                        <IconButton color="inherit" size="small">
                           <Delete />
                         </IconButton>
                       </Button>
                     </TableCell>
                   </TableRow>
-                ))}
-              </TableBody>
-            </>
-            {/* ) : ( */}
-            {/* <>No Data Found</> */}
-            {/* )} */}
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={3} align="center" sx={{ py: 4 }}>
+                    <Typography variant="body1" color="text.secondary">
+                      No Brokerage Rates found. Click "Add Rate" to create one.
+                    </Typography>
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
           </Table>
         </CardContent>
       </Card>
@@ -268,10 +252,10 @@ const validate = () => {
       {/* Modal Form */}
       <Dialog open={open} onClose={handleClose}>
         <DialogTitle sx={{ m: 0, p: 2 }}>
-          Add Brokerage Rate
+          {editIndex !== null ? 'Edit Brokerage Rate' : 'Add Brokerage Rate'}
           <IconButton
             aria-label="close"
-            onClick={() => setOpen(false)}
+            onClick={handleClose}
             sx={{
               position: 'absolute',
               right: 8,
@@ -292,7 +276,8 @@ const validate = () => {
             helperText={errors.brokerageRate}
             fullWidth
             margin="dense"
-            inputProps={{ maxLength: MAX_LENGTH }} 
+            inputProps={{ maxLength: MAX_LENGTH }}
+            autoFocus
           />
         </DialogContent>
         <DialogActions>

@@ -137,7 +137,7 @@ const InvoiceAnalyticalReport = () => {
   //     legend: { position: 'bottom' },
   //     colors: ['#2196f3', '#3f51b5', '#00bcd4', '#009688', '#8bc34a', '#cddc39']
   //   },
-  //   series: [25000, 30000, 22000, 28000, 35000, 29000]
+  //   series: [25050, 30000, 22000, 28000, 35050, 29000]
   // };
 
   const [chartData, setChartData] = useState({
@@ -170,7 +170,7 @@ const InvoiceAnalyticalReport = () => {
       const res = await post(`/invoiceRegistration/revenue-summary`, { fy: selectedFY3 });
       console.log(res);
 
-      // res should be like { Apr: 25000, May: 30000, Jun: 22000, ... }
+      // res should be like { Apr: 25050, May: 30000, Jun: 22000, ... }
       const months = ['Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec', 'Jan', 'Feb', 'Mar'];
       const series = months.map((m) => res[m] || 0);
 
