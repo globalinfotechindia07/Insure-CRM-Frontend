@@ -1,1003 +1,1004 @@
-import React, { useEffect, useState, useCallback, useMemo } from 'react';
+import React, { useEffect, useState, useMemo } from "react";
 import {
+  Grid,
+  Button,
   Typography,
-  Box,
+  Card,
+  CardContent,
+  TextField,
   Table,
-  TableBody,
-  TableCell,
-  TableContainer,
   TableHead,
   TableRow,
-  Paper,
-  TextField,
+  TableCell,
+  TableBody,
   MenuItem,
-  Select,
+  Chip,
+  Box,
   FormControl,
   InputLabel,
-  Grid,
-  Card,
-  Button,
-  Dialog,
-  DialogTitle,
-  Divider,
-  DialogContent,
-  CardContent,
-  DialogActions,
-  IconButton,
-  TablePagination,
+  Select,
+  Paper,
+  Tab,
+  Tabs,
   CircularProgress,
-  Skeleton
-} from '@mui/material';
+  Alert
+} from "@mui/material";
+import {
+  TrendingUp,
+  CheckCircle,
+  Pending,
+  Refresh,
+  BarChart as BarChartIcon,
+  Delete
+} from "@mui/icons-material";
+import {
+  getClaims,
+  deleteClaim,
+} from "../../../services/claim.service";
+import {
+  getPolicies,
+} from "../../../services/policy.service";
+import {
+  getSurveyors,
+} from "../../../services/surveyor.service";
+import {
+  getTPAs,
+} from "../../../services/tpa.service";
+import {
+  getInvestigators,
+} from "../../../services/investigator.service";
+import { get } from "../../../api/api.js";
 
-import { useTheme } from '@mui/material/styles';
-
-import ReportCard from './ReportCard';
-import { gridSpacing } from 'config.js';
-import { get, post, put, remove } from '../../../api/api.js';
-
-import TrendingUpIcon from '@mui/icons-material/TrendingUp';
-import TrendingDownIcon from '@mui/icons-material/TrendingDown';
-import MonetizationOnTwoTone from '@mui/icons-material/MonetizationOnTwoTone';
-import PersonIcon from '@mui/icons-material/Person';
-import DepartmentOpdPieChart from '../Charts/PieChart/DepartmentOPD';
-import DepartmentBarChart from '../Charts/BarCharts/DepartmentBarChart/DepartmentBarChart';
-import MonthlyBarChart from '../Charts/BarCharts/MonthlyBarChart/MonthlyBarChart';
-import ReusableBarChart from '../Charts/BarCharts/ReusbaleBarChart';
-import { useSelector } from 'react-redux';
-import { Delete, Edit, Info as InfoIcon } from '@mui/icons-material';
-import { toast } from 'react-toastify';
-import { round } from 'lodash';
-
-const inputData = [
-  { department: 'Cardiology', label: 'Dr. Smith', value: 5 },
-  { department: 'Orthopedics', label: 'Dr. Brown', value: 8 },
-  { department: 'Orthopedics', label: 'Dr. White', value: 3 },
-  { department: 'Pediatrics', label: 'Dr. Green', value: 2 },
-  { department: 'Cardiology', label: 'Dr. Red', value: 20 },
-  { department: 'Orthopedics', label: 'Dr. Blue', value: 10 },
-  { department: 'Orthopedics', label: 'Dr. Yellow', value: 7 },
-  { department: 'Pediatrics', label: 'Dr. Purple', value: 12 }
-];
-
-const Default = () => {
-  const theme = useTheme();
-  const [done, setDone] = useState(false);
+const ClaimPage = () => {
+  const [data, setData] = useState([]);
+  const [policies, setPolicies] = useState([]);
+  const [surveyors, setSurveyors] = useState([]);
+  const [tpas, setTPAs] = useState([]);
+  const [investigators, setInvestigators] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [filter, setFilter] = useState('byFinancialYear');
-  const [selectedChart, setSelectedChart] = useState('Revenue');
-  const [doctorOpdData, setDoctorOpdData] = useState(inputData);
-  const [leads, setLeads] = useState([]);
-  const [addFollowIndex, setAddFollowIndex] = useState(null);
-  const [openAddFollowUp, setOpenAddFollowUp] = useState(false);
-  const [statusOptions, setStatusOptions] = useState([]);
-  const [editFollowUpId, setEditFollowUpId] = useState(null);
-  const [followUpData, setFollowUpData] = useState([]);
-  const [isEditMode, setIsEditMode] = useState(false);
-  const [client, setclient] = useState([]);
-  const [selectedStaff, setSelectedStaff] = useState('');
-  const [paid, setPaid] = useState(0);
-  const [unpaid, setUnpaid] = useState(0);
-  const [pending, setPending] = useState(0);
-  const [leadColours, setLeadColours] = useState([]);
-  const [rleadCounts, setrLeadCounts] = useState([]);
-  const [leadCounts, setLeadCounts] = useState([]);
-  const [leadLabels, setLeadLabels] = useState([]);
-  const [rleadLabels, setrLeadLabels] = useState([]);
-  const [chartInvoice, setChartInvoive] = useState([]);
-  const [chartInvoiceMoney, setChartInvoiveMoney] = useState([]);
-  const [chartInvoiceLabels, setChartInvoiveLabels] = useState([]);
-  const [clientmonthlabel, setClientMonthLabel] = useState([]);
-  const [clientmonthcount, setClientMonthCount] = useState([]);
-  const [rowsPerPage, setRowsPerPage] = useState(10);
-  const [page, setPage] = useState(0);
-  const [selectedProduct, setSelectedProduct] = useState('');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [isAdmin, setAdmin] = useState(false);
-  const systemRights = useSelector((state) => state.systemRights.systemRights);
-  const [productCategories, setProductCategories] = useState([]);
-  const [chartInvoicePaidMoney, setChartInvoicePaidMoney] = useState([]);
-
-  const [form, setForm] = useState({
-    followupDate: '',
-    followupTime: '',
-    leadstatus: '',
-    comment: '',
-    leadId: ''
-  });
-
-  const [staff, setStaff] = useState([]);
-  const [birthday, setBirthDay] = useState([]);
-  const [policy, setPolicy] = useState([]);
-  const [premium, setPremium] = useState(0);
+  const [error, setError] = useState(null);
+  
+  // Financial Year States
   const [financialYearData, setFinancialYearData] = useState([]);
   const [selectedFY, setSelectedFY] = useState('');
-  const [selectedYearId, setSelectedYearId] = useState('');
+  
+  // Staff and Client for Birthdays
+  const [staff, setStaff] = useState([]);
+  const [client, setClient] = useState([]);
+  
+  // Analytics States
+  const [selectedPeriod, setSelectedPeriod] = useState('monthly');
+  const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7));
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [selectedTPA, setSelectedTPA] = useState('all');
+  const [selectedDepartment, setSelectedDepartment] = useState('all');
+  const [activeTab, setActiveTab] = useState(0);
 
-  const handleYearChange = (event) => {
-    setSelectedYearId(event.target.value);
-    console.log('Year ', selectedYearId);
-  };
-
-  // const [invoice, setinvoice] = useState([]);
-
-  const handleChangePage = (event, newPage) => {
-    setPage(newPage);
-  };
-
-  // Handle rows per page change
-  const handleChangeRowsPerPage = (event) => {
-    setRowsPerPage(parseInt(event.target.value, 10));
-    setPage(0);
-  };
-
+  // ================= FETCH FINANCIAL YEAR =================
   const fetchFYData = async () => {
-    const res = await get('financialYear');
-    console.log('FY data:', res.data);
-    if (res.data) {
-      setFinancialYearData(res.data);
-    } else setFinancialYearData([]);
+    try {
+      const res = await get('financialYear');
+      if (res.data) {
+        setFinancialYearData(res.data);
+      }
+    } catch (error) {
+      console.error('Error fetching FY:', error);
+    }
   };
 
+  // ================= FETCH STAFF =================
   const fetchStaff = async () => {
     try {
       const response = await get('/administrative');
       setStaff(response.data || []);
-      console.log('Fetched staff:', response.data);
     } catch (error) {
       console.error('Error fetching staff:', error);
     }
   };
 
-  useEffect(() => {
-    // fetchPolicyCount();
-    fetchFYData();
-    fetchStaff();
-    // fetchPolicy();
-  }, []);
-
-  const [invoicetotal, setinvoicetotal] = useState(0);
-  const [leadtotal, setleadtotal] = useState(0);
-  const fetchinvoice = async () => {
-    try {
-      const response = await get('invoiceRegistration');
-      if (response.status === true) {
-        const filteredData = response.invoices.filter((invoice) => invoice.gstType === 'gst');
-        const nonGstData = response.invoices.filter((invoice) => invoice.gstType === 'non-gst');
-        // setGstData(filteredData || []);
-        // setNonGstData(nonGstData || []);
-        // console.log('filterdata', response);
-        // console.log('nongst:', nonGstData);
-
-        // console.log('Fetched invoice:', response.data);
-        setinvoicetotal(response?.invoices.length);
-        // console.log('total invoice', invoicetotal);
-      }
-    } catch (error) {
-      console.error('Error fetching  invoice:', error);
-    }
-  };
-
-  useEffect(() => {
-    const loginRole = localStorage.getItem('loginRole');
-    if (loginRole === 'admin') {
-      setAdmin(true);
-    }
-    // if (systemRights?.actionPermissions?.['lead']) {
-    //   setLeadPermission(systemRights.actionPermissions['lead']);
-    // }
-    fetchLeadStatusOptions();
-  }, [systemRights]);
-
-  const fetchLeadStatusOptions = async () => {
-    try {
-      const response = await get('leadstatus');
-      setStatusOptions(response.data || []);
-    } catch (err) {
-      toast.error('Failed to load leadstatus options');
-      console.error(err);
-    }
-  };
-
-  const handleInfoClose = () => {
-    setOpenAddFollowUp(false);
-    setForm({
-      followupDate: '',
-      followupTime: '',
-      leadstatus: '',
-      comment: ''
-    });
-    setAddFollowIndex(null);
-    setEditFollowUpId(null);
-    setIsEditMode(false);
-  };
-
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setForm((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const handleEditFollowUp = (id, data) => {
-    setEditFollowUpId(id);
-    setIsEditMode(true);
-    setForm({
-      followupDate: data.followupDate || '',
-      followupTime: data.followupTime || '',
-      leadstatus: data.leadstatus?._id || data.leadstatus || '',
-      comment: data.comment || ''
-    });
-  };
-
-  const handleDeleteFollowUp = async (followUpId) => {
-    try {
-      await remove(`lead/followup/${followUpId}`);
-      toast.success('Follow-up deleted');
-      setFollowUpData((prev) => prev.filter((item) => item._id !== followUpId));
-    } catch (error) {
-      console.error(error);
-      toast.error('Failed to delete follow-up');
-    }
-  };
-
-  const handleSubmit = async () => {
-    try {
-      if (isEditMode && editFollowUpId) {
-        await put(`lead/followup/${editFollowUpId}`, form);
-        toast.success('Follow-up updated successfully');
-      } else {
-        // console.log(form, addFollowIndex);
-        const payload = { ...form, leadId: addFollowIndex };
-        await post('lead/followup', payload);
-        toast.success('Follow-up added successfully');
-      }
-
-      await fetchFollowUps(addFollowIndex);
-      // await getLeadData();
-
-      setForm({
-        followupDate: '',
-        followupTime: '',
-        leadstatus: '',
-        comment: ''
-      });
-      setEditFollowUpId(null);
-      setIsEditMode(false);
-    } catch (error) {
-      console.error('Submit error:', error);
-      toast.error('Failed to save follow-up');
-    }
-  };
-
-  useEffect(() => {
-    fetchinvoice();
-  }, []);
-
+  // ================= FETCH CLIENT =================
   const fetchClient = async () => {
     try {
       const role = localStorage.getItem('loginRole');
       let url = role === 'super-admin' ? 'clientRegistration' : 'admin-clientRegistration';
       const response = await get(url);
-      setclient(response.data || []);
-      // console.log(response.data.length);
+      setClient(response.data || []);
     } catch (error) {
       console.error('Error fetching client:', error);
     }
   };
-  useEffect(() => {
-    fetchClient();
-  }, []);
 
-  const fetchLeads = async () => {
-    try {
-      const response = await get('lead');
-
-      const filteredLeads = (response.data || []).filter((lead) => Array.isArray(lead.followups) && lead.followups.length > 0);
-
-      const now = new Date();
-
-      const sortedLeads = filteredLeads.sort((a, b) => {
-        const lastA = a.followups[a.followups.length - 1];
-        const lastB = b.followups[b.followups.length - 1];
-
-        const dateA = new Date(`${lastA.followupDate}T${lastA.followupTime}`);
-        const dateB = new Date(`${lastB.followupDate}T${lastB.followupTime}`);
-
-        const isPastA = dateA < now;
-        const isPastB = dateB < now;
-
-        // Past first
-        if (isPastA && !isPastB) return -1;
-        if (!isPastA && isPastB) return 1;
-
-        // Inside same group → sort ascending (nearest first)
-        return dateA - dateB;
-      });
-
-      setLeads(sortedLeads);
-      setleadtotal(sortedLeads.length);
-    } catch (error) {
-      console.error('Error fetching leads:', error);
-    }
-  };
-
-  useEffect(() => {
-    fetchLeads();
-  }, []);
-
-  const fetchProductCategories = async () => {
-    try {
-      const response = await get('/productOrServiceCategory');
-      setProductCategories(response.data || []);
-    } catch (error) {
-      console.error('Error fetching product categories:', error);
-    }
-  };
-  useEffect(() => {
-    fetchProductCategories();
-  }, []);
-
-  const filteredLeads = leads.filter((lead) => {
-    const fullName = `${lead.firstName} ${lead.lastName}`.toLowerCase();
-    const assignedTo = `${lead.assignTo?.basicDetails?.firstName || ''} ${lead.assignTo?.basicDetails?.lastName || ''}`.trim();
-    const product = lead.productService?.productName || '';
-
-    const matchesStaff = !selectedStaff || assignedTo === selectedStaff;
-    const matchesProduct = !selectedProduct || product === selectedProduct;
-    const matchesSearch = !searchQuery || fullName.includes(searchQuery.toLowerCase());
-
-    return matchesStaff && matchesProduct && matchesSearch;
-  });
-
-  const invoicePaymentStatusData = {
-    type: 'donut',
-    head: 'Invoice Payment Status',
-    height: 320,
-    series: [paid, pending, unpaid], // counts
-    options: {
-      labels: ['Paid', 'Partially Paid', 'Unpaid'],
-      colors: ['#4caf50', '#ff9800', '#f44336'],
-      legend: { position: 'bottom' },
-      tooltip: {
-        y: { formatter: (val) => `${val} Invoices` }
-      }
-    }
-  };
-
-  const getLeadNos = async () => {
-    const res = await get('lead/status');
-
-    setLeadColours(res?.colors || []);
-    setLeadCounts(res?.counts || []);
-    setLeadLabels(res?.labels || []);
-    setrLeadLabels(res?.rlabels || []);
-    setrLeadCounts(res?.rcounts || []);
-
-    // console.log(res);
-  };
-  const getInvoiceNos = async () => {
-    const res = await get('invoiceRegistration/status');
-    console.log(res);
-    setChartInvoicePaidMoney(res?.monthlyPaidTotals);
-    setPaid(res?.summary?.paid);
-    setUnpaid(res?.summary?.unpaid);
-    setPending(res?.summary?.pending);
-    setChartInvoive(res?.monthlyCounts);
-    setChartInvoiveMoney(res?.monthlyTotals);
-    setChartInvoiveLabels(res?.monthLabels);
-    // console.log(res);
-  };
-  const getClientNos = async () => {
-    const res = await get('admin-clientRegistration/status');
-    setClientMonthCount(res?.monthlyCounts);
-    setClientMonthLabel(res?.monthlyCounts);
-    // console.log(res);
-  };
-
-  useEffect(() => {
-    getInvoiceNos();
-    getLeadNos();
-    getClientNos();
-  }, []);
-
-  const fetchFollowUps = async (leadId) => {
-    try {
-      const response = await get(`lead/followup`);
-      setFollowUpData(response.data || []);
-    } catch (err) {
-      console.error('Error loading followups:', err);
-      toast.error('Unable to fetch follow-up data');
-    }
-  };
-
-  const handleopenAddFollowUp = (leadId) => {
-    setAddFollowIndex(leadId);
-    fetchFollowUps(leadId);
-    setOpenAddFollowUp(true);
-    const selectedLead = followUpData.find((lead) => String(lead._id) === String(leadId));
-    setDone(selectedLead?.status === 'LS' || selectedLead?.status === 'LW');
-  };
-
-  // console.log(leadColours);
-
-  const leadStatusData = {
-    type: 'donut',
-    head: ' Lead Status',
-    height: 320,
-    series: [...leadCounts],
-    // series: [],
-    options: {
-      labels: [...leadLabels],
-      // labels: [],
-      colors: [...leadColours],
-      // colors: [],
-      legend: { position: 'bottom' },
-      tooltip: {
-        y: { formatter: (val) => `${val} Leads` }
-      }
-    }
-  };
-
-  const referenceSourceData = {
-    type: 'donut',
-    head: ' Lead References',
-    height: 320,
-    series: [...rleadCounts],
-    options: {
-      labels: [...rleadLabels],
-      // colors: ['#29b6f6', '#8e24aa', '#43a047', '#ff7043', '#fdd835'],
-      legend: { position: 'bottom' },
-      tooltip: {
-        y: { formatter: (val) => `${val} Customers` }
-      }
-    }
-  };
-  // --- existing datasets ---
-  const invoiceDataFY = {
-    title: 'Monthly Invoices (FY)',
-    xLabels: [...chartInvoiceLabels],
-    seriesData: [[...chartInvoice]],
-    seriesLabelMap: { Invoice: 'Invoices' },
-    colors: ['#1E88E5']
-  };
-
-  const clientDataFY = {
-    title: 'Monthly Clients (FY)',
-    xLabels: invoiceDataFY.xLabels,
-    seriesData: [[...clientmonthcount]],
-    seriesLabelMap: { Client: 'Clients' },
-    colors: ['#43A047']
-  };
-
-  const revenueDataFY = {
-    title: 'Monthly Revenue (FY)',
-    xLabels: invoiceDataFY.xLabels,
-    seriesData: [[...chartInvoiceMoney], [...chartInvoicePaidMoney]],
-    seriesLabelMap: {
-      Revenue: 'Revenue',
-      Paid: 'Paid'
-    },
-    colors: ['#FB8C00', '#43A047']
-  };``
-
-  // map for easy access
-  const chartOptions = {
-    Invoice: invoiceDataFY,
-    Client: clientDataFY,
-    Revenue: revenueDataFY
-  };
-
-  // Merged financial year data
-  const mergedDataFY = {
-    title: 'Financial Year Overview',
-    xLabels: invoiceDataFY.xLabels,
-    seriesData: [invoiceDataFY.seriesData[0], clientDataFY.seriesData[0], revenueDataFY.seriesData[0]],
-    seriesLabelMap: {
-      Invoice: 'Invoices',
-      Client: 'Clients',
-      Revenue: 'Revenue'
-    },
-    colors: [invoiceDataFY.colors[0], clientDataFY.colors[0], revenueDataFY.colors[0]]
-  };
-
-  const paginatedLeads = filteredLeads.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
-
-  const leadStatusChange = async (status) => {
-    try {
-      const selectedLead = followUpData.find((lead) => String(lead._id) === String(addFollowIndex));
-
-      if (!selectedLead) {
-        toast.error('No lead selected');
-        return;
-      }
-
-      const confirmAction = window.confirm(`Are you sure you want to mark this lead as ${status === 'LW' ? 'Won' : 'Lost'}?`);
-
-      if (!confirmAction) return;
-
-      const response = await put(`lead/leadban/${selectedLead._id}`, { status }, { params: { companyId: selectedLead.companyId } });
-
-      console.log(response);
-
-      if (response.success) {
-        toast.success(`Lead marked as ${status === 'LW' ? 'Won' : 'Lost'}`);
-      } else {
-        toast.error(response.message || 'Failed to update lead status');
-      }
-      handleInfoClose();
-    } catch (error) {
-      console.error('Error updating lead status:', error);
-      toast.error('Something went wrong');
-    }
-  };
-
-  const handleFilter = (e) => {
-    console.log('filter changed ', e.target.value);
-    setSelectedFY(e.target.value);
-  };
-
-  useEffect(() => {
-    if (financialYearData.length === 0) return;
-
-    const now = new Date(); // Jan 19, 2026
-    const currentFinancialYear = financialYearData.find((year) => new Date(year.fromDate) <= now && new Date(year.toDate) >= now);
-
-    if (currentFinancialYear?._id && selectedFY === '') {
-      setSelectedFY(currentFinancialYear._id);
-      localStorage.setItem('selectedFY', currentFinancialYear._id);
-    }
-  }, [financialYearData]);
-
-  console.log('Selected Year', selectedFY);
-
-  const fetchPolicyDetail = useCallback(async () => {
-    console.log('calling policy data ', selectedFY);
-    if (!selectedFY) return; // Don't call if no FY
-
+  // ================= FETCH CLAIMS =================
+  const fetchClaims = async () => {
     setLoading(true);
+    setError(null);
     try {
-      console.log('Fetching with FY:', selectedFY);
-      const res = await get(`policyDetail?financialYear=${selectedFY}`);
-      console.log('policyDetail data:', res);
-      if (res.status) {
-        setPolicy(res.data);
-        const totalPremiumSum = policy.reduce((sum, p) => {
-          // console.log(`SUM: ${sum} ,tatolA ${p.totalAmount} `);
-          // if (p.financialYear === selectedFY) {
-          //   // yearCount = yearCount + 1;
-          return Number(sum) + (Number(p.totalAmount) || 0);
-          // }
-          // return sum;
-        }, 0);
-
-        const totalPerLakh = (totalPremiumSum / 100000).toFixed(2);
-
-        setPremium(parseFloat(totalPerLakh));
-      } else setPolicy([]);
-      // console.log('Policy ', policy);
+      const res = await getClaims();
+      console.log("Claims response:", res.data);
+      const claimsData = res.data?.data?.data || res.data?.data || res.data || [];
+      setData(Array.isArray(claimsData) ? claimsData : []);
     } catch (error) {
-      console.error(error);
+      console.error("Error fetching claims:", error);
+      setError("Failed to load claims data");
+      setData([]);
     } finally {
       setLoading(false);
     }
-  }, [selectedFY]);
+  };
+
+  const fetchPolicies = async () => {
+    try {
+      const res = await getPolicies();
+      const policiesData = res.data?.data?.data || res.data?.data || res.data || [];
+      setPolicies(Array.isArray(policiesData) ? policiesData : []);
+    } catch (error) {
+      console.error("Error fetching policies:", error);
+    }
+  };
+
+  const fetchSurveyors = async () => {
+    try {
+      const res = await getSurveyors();
+      const surveyorsData = res.data?.data?.data || res.data?.data || res.data || [];
+      setSurveyors(Array.isArray(surveyorsData) ? surveyorsData : []);
+    } catch (error) {
+      console.error("Error fetching surveyors:", error);
+    }
+  };
+
+  const fetchTPAs = async () => {
+    try {
+      const res = await getTPAs();
+      const tpasData = res.data?.data?.data || res.data?.data || res.data || [];
+      setTPAs(Array.isArray(tpasData) ? tpasData : []);
+    } catch (error) {
+      console.error("Error fetching TPAs:", error);
+    }
+  };
+
+  const fetchInvestigators = async () => {
+    try {
+      const res = await getInvestigators();
+      const investigatorsData = res.data?.data?.data || res.data?.data || res.data || [];
+      setInvestigators(Array.isArray(investigatorsData) ? investigatorsData : []);
+    } catch (error) {
+      console.error("Error fetching investigators:", error);
+    }
+  };
+
+  useEffect(() => {
+    fetchFYData();
+    fetchStaff();
+    fetchClient();
+    fetchClaims();
+    fetchPolicies();
+    fetchSurveyors();
+    fetchTPAs();
+    fetchInvestigators();
+  }, []);
+
+  // ================= SET DEFAULT FINANCIAL YEAR =================
+  useEffect(() => {
+    if (financialYearData.length === 0) return;
+    const now = new Date();
+    const currentFinancialYear = financialYearData.find((year) => 
+      new Date(year.fromDate) <= now && new Date(year.toDate) >= now
+    );
+    if (currentFinancialYear?._id && selectedFY === '') {
+      setSelectedFY(currentFinancialYear._id);
+    }
+  }, [financialYearData]);
+
+  // ================= BIRTHDAY FUNCTIONS =================
+  const isBirthdayToday = (dob) => {
+    if (!dob) return false;
+    const today = new Date();
+    const birthDate = new Date(dob);
+    return today.getDate() === birthDate.getDate() && today.getMonth() === birthDate.getMonth();
+  };
+
+  const isAnniversaryToday = (doj) => {
+    if (!doj) return false;
+    const today = new Date();
+    const joiningDate = new Date(doj);
+    return today.getDate() === joiningDate.getDate() && today.getMonth() === joiningDate.getMonth();
+  };
+
+  const todaysStaffBirthdays = staff.filter((item) => isBirthdayToday(item?.basicDetails?.dateOfBirth));
+  const todaysStaffAnniversaries = staff.filter((item) => isAnniversaryToday(item?.basicDetails?.dateOfJoining));
+  const todaysClientBirthdays = client.filter((item) => isBirthdayToday(item?.basicDetails?.dateOfBirth));
+  const todaysClientAnniversaries = client.filter((item) => isAnniversaryToday(item?.basicDetails?.dateOfAnniversary));
+
+  const filteredFY = Array.from(
+    new Map(
+      financialYearData
+        .filter((year) => new Date(year.fromDate) <= new Date())
+        .map((item) => [`${item.fromDate}-${item.toDate}`, item])
+    ).values()
+  ).sort((a, b) => new Date(b.fromDate) - new Date(a.fromDate));
+
+  const handleFilter = (e) => {
+    setSelectedFY(e.target.value);
+  };
+
+  // ================= ANALYTICS FUNCTIONS =================
+  
+  const uniqueDepartments = useMemo(() => {
+    if (!data || data.length === 0) return [];
+    return [...new Set(data.map(claim => claim.department).filter(Boolean))];
+  }, [data]);
+
+  const getFilteredClaims = useMemo(() => {
+    if (!data || data.length === 0) return [];
+    
+    let filtered = [...data];
+    
+    if (selectedTPA !== 'all') {
+      filtered = filtered.filter(claim => {
+        const claimTpaId = claim.tpaId?._id || claim.tpaId;
+        return claimTpaId === selectedTPA;
+      });
+    }
+    
+    if (selectedDepartment !== 'all') {
+      filtered = filtered.filter(claim => claim.department === selectedDepartment);
+    }
+    
+    filtered = filtered.filter(claim => {
+      if (!claim.dateOfLoss) return false;
+      const claimDate = new Date(claim.dateOfLoss);
+      
+      if (selectedPeriod === 'monthly') {
+        const [year, month] = selectedMonth.split('-');
+        return claimDate.getFullYear() === parseInt(year) && 
+               claimDate.getMonth() === parseInt(month) - 1;
+      } else if (selectedPeriod === 'yearly') {
+        return claimDate.getFullYear() === parseInt(selectedYear);
+      }
+      return true;
+    });
+    
+    return filtered;
+  }, [data, selectedTPA, selectedDepartment, selectedPeriod, selectedMonth, selectedYear]);
+
+  const getMaxValue = (data, key) => {
+    if (!data.length) return 10;
+    return Math.max(...data.map(item => item[key]), 10);
+  };
+
+  const reportedData = useMemo(() => {
+    if (!getFilteredClaims.length) return [];
+    const departmentMap = new Map();
+    getFilteredClaims.forEach(claim => {
+      const dept = claim.department || 'Other';
+      departmentMap.set(dept, (departmentMap.get(dept) || 0) + 1);
+    });
+    return Array.from(departmentMap.entries()).map(([department, reported]) => ({ department, reported }));
+  }, [getFilteredClaims]);
+
+  const settledData = useMemo(() => {
+    if (!getFilteredClaims.length) return [];
+    const departmentMap = new Map();
+    getFilteredClaims.forEach(claim => {
+      if (claim.status === 'Approved') {
+        const dept = claim.department || 'Other';
+        departmentMap.set(dept, (departmentMap.get(dept) || 0) + 1);
+      }
+    });
+    return Array.from(departmentMap.entries()).map(([department, settled]) => ({ department, settled }));
+  }, [getFilteredClaims]);
+
+  const outstandingData = useMemo(() => {
+    if (!getFilteredClaims.length) return [];
+    const departmentMap = new Map();
+    getFilteredClaims.forEach(claim => {
+      if (claim.status !== 'Approved' && claim.status !== 'Rejected') {
+        const dept = claim.department || 'Other';
+        departmentMap.set(dept, (departmentMap.get(dept) || 0) + 1);
+      }
+    });
+    return Array.from(departmentMap.entries()).map(([department, outstanding]) => ({ department, outstanding }));
+  }, [getFilteredClaims]);
+
+  const tpaWiseData = useMemo(() => {
+    if (!getFilteredClaims.length) return [];
+    const tpaMap = new Map();
+    getFilteredClaims.forEach(claim => {
+      const tpaName = claim.tpaId?.tpaName || 'No TPA';
+      tpaMap.set(tpaName, (tpaMap.get(tpaName) || 0) + 1);
+    });
+    return Array.from(tpaMap.entries()).map(([name, value]) => ({ name, value }));
+  }, [getFilteredClaims]);
+
+  const trendData = useMemo(() => {
+    if (!getFilteredClaims.length) return [];
+    const monthMap = new Map();
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    
+    getFilteredClaims.forEach(claim => {
+      if (!claim.dateOfLoss) return;
+      const date = new Date(claim.dateOfLoss);
+      const monthName = `${months[date.getMonth()]} ${date.getFullYear()}`;
+      
+      if (!monthMap.has(monthName)) {
+        monthMap.set(monthName, { month: monthName, reported: 0, settled: 0, outstanding: 0 });
+      }
+      
+      const entry = monthMap.get(monthName);
+      entry.reported += 1;
+      if (claim.status === 'Approved') entry.settled += 1;
+      else if (claim.status !== 'Approved' && claim.status !== 'Rejected') entry.outstanding += 1;
+    });
+    
+    return Array.from(monthMap.values());
+  }, [getFilteredClaims]);
+
+  const summary = useMemo(() => {
+    const totalReported = getFilteredClaims.length;
+    const totalSettled = getFilteredClaims.filter(c => c.status === 'Approved').length;
+    const totalOutstanding = getFilteredClaims.filter(c => c.status !== 'Approved' && c.status !== 'Rejected').length;
+    const settlementRate = totalReported > 0 ? ((totalSettled / totalReported) * 100).toFixed(1) : 0;
+    return { totalReported, totalSettled, totalOutstanding, settlementRate };
+  }, [getFilteredClaims]);
+
+  // Policy Data for Summary Cards
+  const [policy, setPolicy] = useState([]);
+  const [premium, setPremium] = useState(0);
+
+  const fetchPolicyDetail = async () => {
+    if (!selectedFY) return;
+    try {
+      const res = await get(`policyDetail?financialYear=${selectedFY}`);
+      if (res.status) {
+        setPolicy(res.data);
+        const totalPremiumSum = res.data.reduce((sum, p) => {
+          return Number(sum) + (Number(p.totalAmount) || 0);
+        }, 0);
+        setPremium(parseFloat(totalPremiumSum.toFixed(2)));
+      }
+    } catch (error) {
+      console.error(error);
+    }
+  };
 
   useEffect(() => {
     if (selectedFY) {
       fetchPolicyDetail();
     }
-  }, [selectedFY, fetchPolicyDetail]);
+  }, [selectedFY]);
 
-  useEffect(() => {
-    if (!policy || policy.length === 0 || !selectedFY) {
-      setPremium(0);
-      return;
-    }
-
-    const totalPremiumSum = policy.reduce((sum, p) => {
-      return sum + (Number(p.totalAmount) || 0);
-    }, 0);
-
-    // console.log('Total Premium Sum:', totalPremiumSum);
-    const totalPerLakh = totalPremiumSum.toFixed(2);
-    // console.log('Premium Per Lakh:', totalPerLakh);
-    setPremium(parseFloat(totalPerLakh));
-  }, [policy, selectedFY]); // ✅ Runs when policy OR selectedFY changes
-
-  const departmentSummary = policy?.reduce((acc, item) => {
-    const dept = item?.insDepartment?.insDepartment;
-    const amount = Number(item.totalAmount) || 0;
-
-    if (!dept) return acc;
-
-    if (!acc[dept]) {
-      acc[dept] = {
-        department: dept,
-        count: 0,
-        totalAmount: 0
-      };
-    }
-
-    acc[dept].count += 1;
-    acc[dept].totalAmount += amount;
-
-    return acc;
-  }, {});
-
-  const departmentArray = Object.values(departmentSummary);
-
-  const FY_MONTH_ORDER = [3, 4, 5, 6, 7, 8, 9, 10, 11, 0, 1, 2];
-
-  const monthlyAmountArray = useMemo(() => {
-    const summary = policy.reduce((acc, item) => {
-      if (!item.startDate) return acc;
-
-      const date = new Date(item.startDate);
-      const monthIndex = date.getMonth();
-      const month = date.toLocaleString('default', { month: 'short' });
-      const amount = Number(item.totalAmount) || 0;
-
-      acc[monthIndex] ??= {
-        month,
-        totalAmount: 0,
-        count: 0,
-        monthIndex
-      };
-
-      // acc[monthIndex] ??= { month, totalAmount: 0, monthIndex };
-      acc[monthIndex].totalAmount += amount;
-      acc[monthIndex].count += 1;
-
-      return acc;
-    }, {});
-
-    return Object.values(summary)
-      .sort((a, b) => FY_MONTH_ORDER.indexOf(a.monthIndex) - FY_MONTH_ORDER.indexOf(b.monthIndex))
-      .map(({ month, totalAmount, count }) => ({
-        month,
-        totalAmount,
-        count
-      }));
-  }, [policy]);
-
-  const monthlyArray = Object.values(monthlyAmountArray);
-
-  const isBirthdayToday = (dob) => {
-    if (!dob) return false;
-
-    const today = new Date();
-    const birthDate = new Date(dob);
-
-    return today.getDate() === birthDate.getDate() && today.getMonth() === birthDate.getMonth();
+  // Simple Bar Chart Component
+  const SimpleBarChart = ({ data, dataKey, fill, height = 300 }) => {
+    const maxValue = getMaxValue(data, dataKey);
+    
+    return (
+      <Box sx={{ height, width: '100%', overflowX: 'auto' }}>
+        <Box sx={{ display: 'flex', alignItems: 'flex-end', gap: 2, minWidth: 400, height: '100%', pt: 2 }}>
+          {data.map((item, idx) => (
+            <Box key={idx} sx={{ flex: 1, textAlign: 'center' }}>
+              <Box
+                sx={{
+                  height: `${(item[dataKey] / maxValue) * 250}px`,
+                  backgroundColor: fill,
+                  borderRadius: '4px 4px 0 0',
+                  transition: 'height 0.3s ease',
+                  '&:hover': { opacity: 0.8 }
+                }}
+              />
+              <Typography variant="caption" sx={{ mt: 1, display: 'block' }}>
+                {item.department || item.name}
+              </Typography>
+              <Typography variant="body2" fontWeight="bold">
+                {item[dataKey]}
+              </Typography>
+            </Box>
+          ))}
+        </Box>
+      </Box>
+    );
   };
 
-  const todaysBirthdays = staff.filter((item) => isBirthdayToday(item?.basicDetails?.dateOfBirth));
+  // Simple Line Chart Component
+  const SimpleLineChart = ({ data }) => {
+    const maxValue = Math.max(...data.flatMap(d => [d.reported, d.settled, d.outstanding]), 10);
+    
+    return (
+      <Box sx={{ width: '100%', overflowX: 'auto' }}>
+        <Box sx={{ minWidth: 500, position: 'relative', height: 300, mt: 4 }}>
+          {[0, 0.25, 0.5, 0.75, 1].map((ratio, i) => (
+            <Box
+              key={i}
+              sx={{
+                position: 'absolute',
+                left: 60,
+                right: 20,
+                top: `${(1 - ratio) * 250}px`,
+                borderTop: '1px dashed #ccc',
+                '&::before': {
+                  content: `"${Math.round(maxValue * ratio)}"`,
+                  position: 'absolute',
+                  left: -50,
+                  top: -10,
+                  fontSize: 12,
+                  color: '#666'
+                }
+              }}
+            />
+          ))}
+          
+          <Box sx={{ position: 'absolute', left: 60, right: 20, top: 0, bottom: 0 }}>
+            {data.map((item, idx) => {
+              const xPos = (idx / (data.length - 1 || 1)) * 100;
+              const reportedY = 250 - (item.reported / maxValue) * 250;
+              
+              return (
+                <React.Fragment key={idx}>
+                  <Box
+                    sx={{
+                      position: 'absolute',
+                      left: `${xPos}%`,
+                      top: 0,
+                      bottom: 0,
+                      width: 1,
+                      backgroundColor: '#eee'
+                    }}
+                  />
+                  {idx > 0 && (
+                    <Box
+                      sx={{
+                        position: 'absolute',
+                        left: `${((idx - 1) / (data.length - 1 || 1)) * 100}%`,
+                        top: `${250 - (data[idx - 1].reported / maxValue) * 250}px`,
+                        width: `${(1 / (data.length - 1 || 1)) * 100}%`,
+                        height: '2px',
+                        backgroundColor: '#8884d8',
+                        transformOrigin: 'left center'
+                      }}
+                    />
+                  )}
+                  <Box
+                    sx={{
+                      position: 'absolute',
+                      left: `${xPos}%`,
+                      top: `${reportedY}px`,
+                      width: 8,
+                      height: 8,
+                      borderRadius: '50%',
+                      backgroundColor: '#8884d8',
+                      transform: 'translate(-50%, -50%)'
+                    }}
+                  />
+                </React.Fragment>
+              );
+            })}
+          </Box>
+          
+          <Box sx={{ position: 'absolute', left: 60, right: 20, bottom: -30, display: 'flex' }}>
+            {data.map((item, idx) => (
+              <Typography key={idx} variant="caption" sx={{ flex: 1, textAlign: 'center' }}>
+                {item.month}
+              </Typography>
+            ))}
+          </Box>
+        </Box>
+      </Box>
+    );
+  };
 
-  // added filter for sorting financial year - #M
-const filteredFY = Array.from(
-  new Map(
-    financialYearData
-      .filter((year) => new Date(year.fromDate) <= new Date()) // remove future
-      .map((item) => [
-        `${item.fromDate}-${item.toDate}`, // unique key
-        item
-      ])
-  ).values()
-).sort((a, b) => new Date(b.fromDate) - new Date(a.fromDate));
+  // Simple Pie Chart Component
+  const SimplePieChart = ({ data }) => {
+    const total = data.reduce((sum, item) => sum + item.value, 0);
+    let currentAngle = 0;
+    const colors = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8', '#82CA9D', '#FF6B6B', '#4ECDC4'];
+    
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', flexWrap: 'wrap', gap: 4 }}>
+        <Box sx={{ position: 'relative', width: 250, height: 250 }}>
+          <svg viewBox="-100 -100 200 200" style={{ width: '100%', height: '100%' }}>
+            {data.map((item, idx) => {
+              const angle = (item.value / total) * 360;
+              const startAngle = currentAngle;
+              const endAngle = currentAngle + angle;
+              currentAngle += angle;
+              
+              const startRad = (startAngle * Math.PI) / 180;
+              const endRad = (endAngle * Math.PI) / 180;
+              
+              const x1 = 80 * Math.cos(startRad);
+              const y1 = 80 * Math.sin(startRad);
+              const x2 = 80 * Math.cos(endRad);
+              const y2 = 80 * Math.sin(endRad);
+              
+              const largeArc = angle > 180 ? 1 : 0;
+              
+              return (
+                <path
+                  key={idx}
+                  d={`M 0 0 L ${x1} ${y1} A 80 80 0 ${largeArc} 1 ${x2} ${y2} Z`}
+                  fill={colors[idx % colors.length]}
+                  stroke="#fff"
+                  strokeWidth="2"
+                />
+              );
+            })}
+            <circle cx="0" cy="0" r="40" fill="#fff" />
+          </svg>
+          <Typography variant="h6" sx={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }}>
+            Total<br/>{total}
+          </Typography>
+        </Box>
+        <Box>
+          {data.map((item, idx) => (
+            <Box key={idx} sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+              <Box sx={{ width: 16, height: 16, backgroundColor: colors[idx % colors.length], borderRadius: '50%' }} />
+              <Typography variant="body2">{item.name}: {item.value} ({((item.value / total) * 100).toFixed(1)}%)</Typography>
+            </Box>
+          ))}
+        </Box>
+      </Box>
+    );
+  };
 
-// making graph clickable for changing data - #M
+  const resetFilters = () => {
+    setSelectedTPA('all');
+    setSelectedDepartment('all');
+    setSelectedPeriod('monthly');
+    setSelectedMonth(new Date().toISOString().slice(0, 7));
+    setSelectedYear(new Date().getFullYear());
+  };
 
-const [selectedGraph, setSelectedGraph] = useState('staff');
-
-
-
-
-
-
-
-
+  const handleDelete = async (id) => {
+    if (window.confirm("Are you sure you want to delete this claim?")) {
+      try {
+        await deleteClaim(id);
+        fetchClaims();
+        alert("Claim deleted successfully!");
+      } catch (error) {
+        console.error("Error deleting claim:", error);
+        alert("Failed to delete claim");
+      }
+    }
+  };
 
   return (
-    <>
-      {loading && (
-        <Box
-          sx={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: 'rgba(0,0,0,0.5)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 9999
-          }}
-        >
-          <Paper elevation={6} sx={{ p: 4, textAlign: 'center' }}>
-            <CircularProgress size={40} sx={{ mb: 2 }} />
-            <Typography variant="h6">Loading Dashboard...</Typography>
-          </Paper>
-        </Box>
-      )}
+    <div style={{ padding: '20px' }}>
+      <Grid container justifyContent="space-between" alignItems="center" sx={{ mb: 3 }}>
+        <Typography variant="h4" fontWeight="bold">Claim Analytics Dashboard</Typography>
+      </Grid>
 
-      <Grid container spacing={gridSpacing}>
-        {/* <Card> */}
+      {/* Financial Year Filter */}
+      <Grid container spacing={2} sx={{ mb: 3 }}>
         <Grid item xs={12} sm={3}>
-          <FormControl fullWidth>
-            <InputLabel id="filter">Filter</InputLabel>
-            <Select labelId="filter" label="filter" name="filter" value={filter} onChange={(e) => setFilter(e.target.value)}>
+          <FormControl fullWidth size="small">
+            <InputLabel>Filter</InputLabel>
+            <Select value="byFinancialYear" label="Filter">
               <MenuItem value="byFinancialYear">By Financial Year</MenuItem>
-              {/* <MenuItem value="byMonth">By Month</MenuItem> */}
-              {/* <MenuItem value="byCompany">Insurance Company</MenuItem> */}
-              {/* <MenuItem value="byDepartment">Department</MenuItem> */}
             </Select>
           </FormControl>
         </Grid>
-        {filter === 'byFinancialYear' ? (
-          <>
-            <Grid item xs={12} sm={3}>
-              <TextField
-                select
-                fullWidth
-                labelId="financialYear"
-                label="FinancialYear"
-                name="financialYear"
-                type="financialYear"
-                value={selectedFY}
-                onChange={(e) => handleFilter(e)}
-              >
-                
+        <Grid item xs={12} sm={3}>
+          <TextField
+            select
+            fullWidth
+            size="small"
+            label="Financial Year"
+            value={selectedFY}
+            onChange={handleFilter}
+          >
+            {financialYearData.length > 0 &&
+              filteredFY.map((type) => (
+                <MenuItem key={type._id} value={type._id}>
+                  {new Date(type.fromDate).getFullYear()} - {new Date(type.toDate).getFullYear()}
+                </MenuItem>
+              ))}
+          </TextField>
+        </Grid>
+      </Grid>
 
-                {financialYearData.length > 0 &&
-                  // financialYearData.map((type) => (
-                    filteredFY.map((type) => (
-                    <MenuItem
-                      key={type._id}
-                      value={type._id}
-                      style={{
-                        textAlign: 'center'
-                        // padding: '8px 8px'
-                      }}
-                    >
-                      {new Date(type.fromDate).getFullYear()} - {new Date(type.toDate).getFullYear()}
-                    </MenuItem>
-                  ))}
-              </TextField>
-            </Grid>
-          </>
-        ) : null}
+      {error && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>{error}</Alert>}
 
+      {/* Summary Cards */}
+      <Grid container spacing={2} sx={{ mb: 3 }}>
+        <Grid item xs={12} sm={6} md={3}>
+          <Card sx={{ bgcolor: '#e3f2fd' }}>
+            <CardContent>
+              <Box display="flex" justifyContent="space-between">
+                <Box>
+                  <Typography variant="subtitle2" color="textSecondary">Total Policies</Typography>
+                  <Typography variant="h3" fontWeight="bold">{policy.length}</Typography>
+                </Box>
+                <TrendingUp sx={{ fontSize: 40, color: '#1976d2' }} />
+              </Box>
+            </CardContent>
+          </Card>
+        </Grid>
         
-        {/* </Card> */}
-
-        {/* Top Summary Cards */}
-        <Grid item xs={12}>
-          <Grid container spacing={gridSpacing}>
-            <Grid item lg={4} sm={6} xs={12}>
-              <ReportCard
-                primary={staff.length.toLocaleString('en-IN')}
-                secondary="Total Staff"
-                color={theme.palette.error.main}
-                footerData=""
-                iconPrimary={TrendingUpIcon}
-              />
-            </Grid>
-
+        <Grid item xs={12} sm={6} md={3}>
+          <Card sx={{ bgcolor: '#e8f5e9' }}>
+            <CardContent>
+              <Box display="flex" justifyContent="space-between">
+                <Box>
+                  <Typography variant="subtitle2" color="textSecondary">Total Premium</Typography>
+                  <Typography variant="h3" fontWeight="bold">₹{premium.toLocaleString('en-IN')}</Typography>
+                </Box>
+                <CheckCircle sx={{ fontSize: 40, color: '#4caf50' }} />
+              </Box>
+            </CardContent>
+          </Card>
+        </Grid>
         
-
-
-
-
-
-
-            <Grid item lg={4} sm={6} xs={12}>
-              <ReportCard
-                primary={policy.length.toLocaleString('en-IN')}
-                secondary="Total Policies"
-                color={theme.palette.info.main}
-                footerData=""
-                iconPrimary={TrendingDownIcon}
-              />
-            </Grid>
-            {/* <Grid item lg={3} sm={6} xs={12}>
-            <ReportCard
-              primary={leadtotal.toString()}
-              secondary="Total Endorsement"
-              color={theme.palette.warning.main}
-              footerData=""
-              iconPrimary={MonetizationOnTwoTone}
-            />
-          </Grid> */}
-            <Grid item lg={4} sm={6} xs={12}>
-              <ReportCard
-                primary={premium.toLocaleString('en-IN', {
-                  minimumFractionDigits: 2,
-                  maximumFractionDigits: 2
-                })}
-                secondary="Total Premium"
-                color={theme.palette.secondary.main}
-                footerData=""
-                iconPrimary={PersonIcon}
-              />
-            </Grid>
-          </Grid>
-        </Grid>
-
-        <Grid item xs={12}>
-          <Card spacing={gridSpacing} sx={{ p: 2 }}>
-            <Box sx={{ width: '100%', height: 350 }}>{departmentArray?.length > 0 && <DepartmentBarChart data={departmentArray} />}</Box>
+        <Grid item xs={12} sm={6} md={3}>
+          <Card sx={{ bgcolor: '#fff3e0' }}>
+            <CardContent>
+              <Box display="flex" justifyContent="space-between">
+                <Box>
+                  <Typography variant="subtitle2" color="textSecondary">Claims Reported</Typography>
+                  <Typography variant="h3" fontWeight="bold">{summary.totalReported}</Typography>
+                </Box>
+                <Pending sx={{ fontSize: 40, color: '#ff9800' }} />
+              </Box>
+            </CardContent>
           </Card>
         </Grid>
-
-        <Grid item xs={12}>
-          <Card spacing={gridSpacing} sx={{ p: 2 }}>
-            <Box sx={{ width: '100%', height: 350 }}>{monthlyArray?.length > 0 && <MonthlyBarChart data={monthlyArray} />}</Box>
-          </Card>
-        </Grid>
-
-        <Grid item xs={12}>
-          <Card spacing={gridSpacing} sx={{ p: 2 }}>
-            <Box sx={{ display: 'flex', gap: 2 }}>
-              <Box sx={{ width: '50%', height: 100 }}>
-                <Typography variant="h6" sx={{ mb: 1, fontWeight: 600, textAlign: 'center' }}>
-                  🎂 Today's Staff Birthdays
-                </Typography>
-                <Table sx={{ tableLayout: 'auto', minWidth: '100%' }}>
-                  <TableHead>
-                    <TableRow sx={{ height: 'auto' }}>
-                      <TableCell>SN</TableCell>
-                      <TableCell>Staff Name</TableCell>
-                      <TableCell>DOB</TableCell>
-                      {/* <TableCell>Date of Aniversary</TableCell> */}
-                      {/* <TableCell sx={{ width: 80, px: 1, py: 0.2 }}>Actions</TableCell> */}
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {todaysBirthdays.length > 0 ? (
-                      todaysBirthdays.map((item, index) => (
-                        <TableRow key={item.id}>
-                          <TableCell>{index + 1}</TableCell>
-                          <TableCell>{item.basicDetails.firstName}</TableCell>
-                          <TableCell>
-                            {item.basicDetails.dateOfBirth
-                              ? new Date(item.basicDetails.dateOfBirth).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })
-                              : 'N/A'}
-                          </TableCell>
-                        </TableRow>
-                      ))
-                    ) : (
-                      <TableRow>
-                        <TableCell colSpan={3} align="center">
-                          No Staff Birthday Today
-                        </TableCell>
-                      </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
+        
+        <Grid item xs={12} sm={6} md={3}>
+          <Card sx={{ bgcolor: '#f3e5f5' }}>
+            <CardContent>
+              <Box display="flex" justifyContent="space-between">
+                <Box>
+                  <Typography variant="subtitle2" color="textSecondary">Settlement Rate</Typography>
+                  <Typography variant="h3" fontWeight="bold">{summary.settlementRate}%</Typography>
+                </Box>
+                <BarChartIcon sx={{ fontSize: 40, color: '#9c27b0' }} />
               </Box>
-
-              <Box sx={{ width: '50%', height: 150 }}>
-                <Typography variant="h6" sx={{ mb: 1, fontWeight: 600, textAlign: 'center' }}>
-                  💍 Today's Staff Anniversaries
-                </Typography>
-                <Table sx={{ tableLayout: 'auto', minWidth: '100%' }}>
-                  <TableHead>
-                    <TableRow sx={{ height: 'auto' }}>
-                      <TableCell>SN</TableCell>
-                      <TableCell>Staff Name</TableCell>
-                      <TableCell>DOA</TableCell>
-                      {/* <TableCell sx={{ width: 80, px: 1, py: 0.2 }}>Actions</TableCell> */}
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {todaysBirthdays.length > 0 ? (
-                      todaysBirthdays.map((item, index) => (
-                        <TableRow key={item.id}>
-                          <TableCell>{index + 1}</TableCell>
-                          <TableCell>{item.basicDetails.firstName}</TableCell>
-                          <TableCell>
-                            {item.basicDetails.dateOfBirth
-                              ? new Date(item.basicDetails.dateOfBirth).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })
-                              : 'N/A'}
-                          </TableCell>
-                        </TableRow>
-                      ))
-                    ) : (
-                      <TableRow>
-                        <TableCell colSpan={3} align="center">
-                          No Staff Anniversary Today
-                        </TableCell>
-                      </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
-              </Box>
-            </Box>
-          </Card>
-        </Grid>
-        <Grid item xs={12}>
-          <Card spacing={gridSpacing} sx={{ p: 2 }}>
-            <Box sx={{ display: 'flex', gap: 2 }}>
-              <Box sx={{ width: '50%', height: 100 }}>
-                <Typography variant="h6" sx={{ mb: 1, fontWeight: 600, textAlign: 'center' }}>
-                  🎂 Today's Client Birthdays
-                </Typography>
-                <Table sx={{ tableLayout: 'auto', minWidth: '100%' }}>
-                  <TableHead>
-                    <TableRow sx={{ height: 'auto' }}>
-                      <TableCell>SN</TableCell>
-                      <TableCell>Client Name</TableCell>
-                      <TableCell>DOB</TableCell>
-                      {/* <TableCell>Date of Aniversary</TableCell> */}
-                      {/* <TableCell sx={{ width: 80, px: 1, py: 0.2 }}>Actions</TableCell> */}
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {todaysBirthdays.length > 0 ? (
-                      todaysBirthdays.map((item, index) => (
-                        <TableRow key={item.id}>
-                          <TableCell>{index + 1}</TableCell>
-                          <TableCell>{item.basicDetails.firstName}</TableCell>
-                          <TableCell>
-                            {item.basicDetails.dateOfBirth
-                              ? new Date(item.basicDetails.dateOfBirth).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })
-                              : 'N/A'}
-                          </TableCell>
-                        </TableRow>
-                      ))
-                    ) : (
-                      <TableRow>
-                        <TableCell colSpan={3} align="center">
-                          No Client's Birthday Today
-                        </TableCell>
-                      </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
-              </Box>
-
-              <Box sx={{ width: '50%', height: 150 }}>
-                <Typography variant="h6" sx={{ mb: 1, fontWeight: 600, textAlign: 'center' }}>
-                  💍 Today's Client Anniversaries
-                </Typography>
-                <Table sx={{ tableLayout: 'auto', minWidth: '100%' }}>
-                  <TableHead>
-                    <TableRow sx={{ height: 'auto' }}>
-                      <TableCell>SN</TableCell>
-                      <TableCell>Client Name</TableCell>
-                      <TableCell>DOA</TableCell>
-                      {/* <TableCell>Date of Aniversary</TableCell> */}
-                      {/* <TableCell sx={{ width: 80, px: 1, py: 0.2 }}>Actions</TableCell> */}
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {todaysBirthdays.length > 0 ? (
-                      todaysBirthdays.map((item, index) => (
-                        <TableRow key={item.id}>
-                          <TableCell>{index + 1}</TableCell>
-                          <TableCell>{item.basicDetails.firstName}</TableCell>
-                          <TableCell>
-                            {item.basicDetails.dateOfBirth
-                              ? new Date(item.basicDetails.dateOfBirth).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })
-                              : 'N/A'}
-                          </TableCell>
-                        </TableRow>
-                      ))
-                    ) : (
-                      <TableRow>
-                        <TableCell colSpan={3} align="center">
-                          No Client's Anniversary Today
-                        </TableCell>
-                      </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
-              </Box>
-            </Box>
+            </CardContent>
           </Card>
         </Grid>
       </Grid>
-    </>
+
+      {/* Staff Birthdays & Anniversaries Section */}
+      <Grid item xs={12} sx={{ mb: 3 }}>
+        <Card sx={{ p: 2 }}>
+          <Typography variant="h6" sx={{ mb: 2, fontWeight: 600, textAlign: 'center' }}>
+             Staff Celebrations 
+          </Typography>
+          <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+            <Box sx={{ width: '48%', minWidth: '300px' }}>
+              <Typography variant="subtitle1" sx={{ mb: 1, fontWeight: 600, textAlign: 'center', color: '#1976d2' }}>
+                 Today's Staff Birthdays
+              </Typography>
+              <Table size="small">
+                <TableHead>
+                  <TableRow>
+                    <TableCell>SN</TableCell>
+                    <TableCell>Staff Name</TableCell>
+                    <TableCell>DOB</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {todaysStaffBirthdays.length > 0 ? (
+                    todaysStaffBirthdays.map((item, index) => (
+                      <TableRow key={item._id || index}>
+                        <TableCell>{index + 1}</TableCell>
+                        <TableCell>{item.basicDetails?.firstName || 'N/A'}</TableCell>
+                        <TableCell>
+                          {item.basicDetails?.dateOfBirth
+                            ? new Date(item.basicDetails.dateOfBirth).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })
+                            : 'N/A'}
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  ) : (
+                    <TableRow>
+                      <TableCell colSpan={3} align="center">No Staff Birthday Today</TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </Box>
+
+            <Box sx={{ width: '48%', minWidth: '300px' }}>
+              <Typography variant="subtitle1" sx={{ mb: 1, fontWeight: 600, textAlign: 'center', color: '#ff9800' }}>
+                 Today's Staff Anniversaries
+              </Typography>
+              <Table size="small">
+                <TableHead>
+                  <TableRow>
+                    <TableCell>SN</TableCell>
+                    <TableCell>Staff Name</TableCell>
+                    <TableCell>DOJ</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {todaysStaffAnniversaries.length > 0 ? (
+                    todaysStaffAnniversaries.map((item, index) => (
+                      <TableRow key={item._id || index}>
+                        <TableCell>{index + 1}</TableCell>
+                        <TableCell>{item.basicDetails?.firstName || 'N/A'}</TableCell>
+                        <TableCell>
+                          {item.basicDetails?.dateOfJoining
+                            ? new Date(item.basicDetails.dateOfJoining).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })
+                            : 'N/A'}
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  ) : (
+                    <TableRow>
+                      <TableCell colSpan={3} align="center">No Staff Anniversary Today</TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </Box>
+          </Box>
+        </Card>
+      </Grid>
+
+      {/* Client Birthdays & Anniversaries Section */}
+      <Grid item xs={12} sx={{ mb: 3 }}>
+        <Card sx={{ p: 2 }}>
+          <Typography variant="h6" sx={{ mb: 2, fontWeight: 600, textAlign: 'center' }}>
+             Client Celebrations 
+          </Typography>
+          <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+            <Box sx={{ width: '48%', minWidth: '300px' }}>
+              <Typography variant="subtitle1" sx={{ mb: 1, fontWeight: 600, textAlign: 'center', color: '#4caf50' }}>
+                 Today's Client Birthdays
+              </Typography>
+              <Table size="small">
+                <TableHead>
+                  <TableRow>
+                    <TableCell>SN</TableCell>
+                    <TableCell>Client Name</TableCell>
+                    <TableCell>DOB</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {todaysClientBirthdays.length > 0 ? (
+                    todaysClientBirthdays.map((item, index) => (
+                      <TableRow key={item._id || index}>
+                        <TableCell>{index + 1}</TableCell>
+                        <TableCell>{item.basicDetails?.firstName || 'N/A'}</TableCell>
+                        <TableCell>
+                          {item.basicDetails?.dateOfBirth
+                            ? new Date(item.basicDetails.dateOfBirth).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })
+                            : 'N/A'}
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  ) : (
+                    <TableRow>
+                      <TableCell colSpan={3} align="center">No Client Birthday Today</TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </Box>
+
+            <Box sx={{ width: '48%', minWidth: '300px' }}>
+              <Typography variant="subtitle1" sx={{ mb: 1, fontWeight: 600, textAlign: 'center', color: '#9c27b0' }}>
+               Today's Client Anniversaries
+              </Typography>
+              <Table size="small">
+                <TableHead>
+                  <TableRow>
+                    <TableCell>SN</TableCell>
+                    <TableCell>Client Name</TableCell>
+                    <TableCell>DOA</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {todaysClientAnniversaries.length > 0 ? (
+                    todaysClientAnniversaries.map((item, index) => (
+                      <TableRow key={item._id || index}>
+                        <TableCell>{index + 1}</TableCell>
+                        <TableCell>{item.basicDetails?.firstName || 'N/A'}</TableCell>
+                        <TableCell>
+                          {item.basicDetails?.dateOfAnniversary
+                            ? new Date(item.basicDetails.dateOfAnniversary).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })
+                            : 'N/A'}
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  ) : (
+                    <TableRow>
+                      <TableCell colSpan={3} align="center">No Client Anniversary Today</TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </Box>
+          </Box>
+        </Card>
+      </Grid>
+
+      {/* Analytics Filters */}
+      <Card sx={{ mb: 3 }}>
+        <CardContent>
+          <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+            <Typography variant="h6">Claim Analytics Dashboard</Typography>
+            <Button startIcon={<Refresh />} onClick={resetFilters} size="small">Reset Filters</Button>
+          </Box>
+          <Grid container spacing={2}>
+            <Grid item xs={12} sm={6} md={2}>
+              <FormControl fullWidth size="small">
+                <InputLabel>Period</InputLabel>
+                <Select value={selectedPeriod} onChange={(e) => setSelectedPeriod(e.target.value)}>
+                  <MenuItem value="monthly">Monthly</MenuItem>
+                  <MenuItem value="yearly">Yearly</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+            {selectedPeriod === 'monthly' && (
+              <Grid item xs={12} sm={6} md={2}>
+                <TextField fullWidth size="small" type="month" value={selectedMonth} onChange={(e) => setSelectedMonth(e.target.value)} InputLabelProps={{ shrink: true }} />
+              </Grid>
+            )}
+            {selectedPeriod === 'yearly' && (
+              <Grid item xs={12} sm={6} md={2}>
+                <TextField fullWidth size="small" type="number" value={selectedYear} onChange={(e) => setSelectedYear(e.target.value)} />
+              </Grid>
+            )}
+            <Grid item xs={12} sm={6} md={3}>
+              <FormControl fullWidth size="small">
+                <InputLabel>TPA Wise</InputLabel>
+                <Select value={selectedTPA} onChange={(e) => setSelectedTPA(e.target.value)}>
+                  <MenuItem value="all">All TPAs</MenuItem>
+                  {tpas.map(tpa => <MenuItem key={tpa._id} value={tpa._id}>{tpa.tpaName}</MenuItem>)}
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid item xs={12} sm={6} md={3}>
+              <FormControl fullWidth size="small">
+                <InputLabel>Department</InputLabel>
+                <Select value={selectedDepartment} onChange={(e) => setSelectedDepartment(e.target.value)}>
+                  <MenuItem value="all">All Departments</MenuItem>
+                  {uniqueDepartments.map(dept => <MenuItem key={dept} value={dept}>{dept}</MenuItem>)}
+                </Select>
+              </FormControl>
+            </Grid>
+          </Grid>
+        </CardContent>
+      </Card>
+
+      {/* Tabs for Charts */}
+      <Paper sx={{ mb: 3 }}>
+        <Tabs value={activeTab} onChange={(e, v) => setActiveTab(v)} variant="scrollable">
+          <Tab label="1. Claims Reported" />
+          <Tab label="2. Claims Settled" />
+          <Tab label="3. Claims Outstanding" />
+          <Tab label="4. Monthly Trend" />
+          <Tab label="5. TPA Distribution" />
+        </Tabs>
+      </Paper>
+
+      {loading ? (
+        <Box display="flex" justifyContent="center" p={5}><CircularProgress /></Box>
+      ) : (
+        <>
+          {activeTab === 0 && (
+            <Card>
+              <CardContent>
+                <Typography variant="h6" gutterBottom> Claims Reported - Department Wise</Typography>
+                {reportedData.length === 0 ? (
+                  <Box p={5} textAlign="center"><Typography color="textSecondary">No data available</Typography></Box>
+                ) : (
+                  <SimpleBarChart data={reportedData} dataKey="reported" fill="#8884d8" />
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          {activeTab === 1 && (
+            <Card>
+              <CardContent>
+                <Typography variant="h6" gutterBottom> Claims Settled - Department Wise</Typography>
+                {settledData.length === 0 ? (
+                  <Box p={5} textAlign="center"><Typography color="textSecondary">No settled claims data</Typography></Box>
+                ) : (
+                  <SimpleBarChart data={settledData} dataKey="settled" fill="#82ca9d" />
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          {activeTab === 2 && (
+            <Card>
+              <CardContent>
+                <Typography variant="h6" gutterBottom> Claims Outstanding - Department Wise</Typography>
+                {outstandingData.length === 0 ? (
+                  <Box p={5} textAlign="center"><Typography color="textSecondary">No outstanding claims data</Typography></Box>
+                ) : (
+                  <SimpleBarChart data={outstandingData} dataKey="outstanding" fill="#ffc658" />
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          {activeTab === 3 && (
+            <Card>
+              <CardContent>
+                <Typography variant="h6" gutterBottom>Monthly Claim Trend Analysis</Typography>
+                {trendData.length === 0 ? (
+                  <Box p={5} textAlign="center"><Typography color="textSecondary">No trend data available</Typography></Box>
+                ) : (
+                  <SimpleLineChart data={trendData} />
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          {activeTab === 4 && (
+            <Card>
+              <CardContent>
+                <Typography variant="h6" gutterBottom> TPA Wise Claim Distribution</Typography>
+                {tpaWiseData.length === 0 ? (
+                  <Box p={5} textAlign="center"><Typography color="textSecondary">No TPA data available</Typography></Box>
+                ) : (
+                  <SimplePieChart data={tpaWiseData} />
+                )}
+              </CardContent>
+            </Card>
+          )}
+        </>
+      )}
+
+      {/* Claims Table */}
+      <Card>
+        <CardContent>
+          <Typography variant="h6" gutterBottom>All Claims List</Typography>
+          {loading ? (
+            <Box display="flex" justifyContent="center" p={3}><CircularProgress /></Box>
+          ) : (
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableCell>SN</TableCell>
+                  <TableCell>Claim No</TableCell>
+                  <TableCell>Policy No</TableCell>
+                  <TableCell>Insured Name</TableCell>
+                  <TableCell>Department</TableCell>
+                  <TableCell>Surveyor</TableCell>
+                  <TableCell>TPA</TableCell>
+                  <TableCell>Status</TableCell>
+                  <TableCell>Action</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {data.length > 0 ? data.map((item, idx) => (
+                  <TableRow key={item._id}>
+                    <TableCell>{idx + 1}</TableCell>
+                    <TableCell>{item.claimNo}</TableCell>
+                    <TableCell>{item.policyNo}</TableCell>
+                    <TableCell>{item.insuredName}</TableCell>
+                    <TableCell>{item.department}</TableCell>
+                    <TableCell>{item.surveyorId?.surveyorName}</TableCell>
+                    <TableCell>{item.tpaId?.tpaName}</TableCell>
+                    <TableCell>
+                      <Chip label={item.status} color={item.status === "Approved" ? "success" : item.status === "Rejected" ? "error" : "warning"} size="small" />
+                    </TableCell>
+                    <TableCell>
+                      <Button 
+                        color="error" 
+                        onClick={() => handleDelete(item._id)} 
+                        size="small"
+                        variant="outlined"
+                        startIcon={<Delete />}
+                      >
+                        Delete
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                )) : (
+                  <TableRow><TableCell colSpan={9} align="center">No Claims Found</TableCell></TableRow>
+                )}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
+    </div>
   );
 };
 
-export default Default;
+export default ClaimPage;
