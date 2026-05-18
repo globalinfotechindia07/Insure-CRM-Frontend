@@ -33,24 +33,26 @@ const MenuList = () => {
     setPatients([]);
   };
   const systemRights = useSelector((state) => state.systemRights.systemRights);
+
+  console.log('System Rights from Redux:', systemRights);
   const isLoading = useSelector((state) => state.systemRights.isLoading);
-  // const getSystemRights = async () => {
-  //   try {
-  //     const loginData = JSON.parse(localStorage.getItem('loginData'));
-  //     const userId = loginData?._id;
-  //     if (!userId) return;
-  //     const response = await get(`admin/user/system-rights/${userId}`);
-  //     if (response?.success) {
-  //       setSystemRights(response.systemRights);
-  //     } else {
-  //       console.error('Failed to fetch system rights:', response.message);
-  //     }
-  //   } catch (error) {
-  //     console.error('Error fetching system rights:', error);
-  //   } finally {
-  //     setIsLoading(false);
-  //   }
-  // };
+  const getSystemRights = async () => {
+    try {
+      const loginData = JSON.parse(localStorage.getItem('loginData'));
+      const userId = loginData?._id;
+      if (!userId) return;
+      const response = await get(`admin/user/system-rights/${userId}`);
+      if (response?.success) {
+        setSystemRights(response.systemRights);
+      } else {
+        console.error('Failed to fetch system rights:', response.message);
+      }
+    } catch (error) {
+      console.error('Error fetching system rights:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const [secondLogo, setSecondLogo] = useState(null);
 

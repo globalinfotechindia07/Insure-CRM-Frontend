@@ -33,8 +33,8 @@ const AuthLogin = ({ ...rest }) => {
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = React.useState(false);
   
-  // Get loading state from Redux
-  const { loginLoading, loginError, isAuthenticated } = useSelector((state) => state.patient);
+  // ✅ Get loading state from Redux - CHANGE 'patient' to 'auth'
+  const { loginLoading, loginError, isAuthenticated } = useSelector((state) => state.auth);
 
   const handleClickShowPassword = () => {
     setShowPassword(!showPassword);
@@ -65,28 +65,50 @@ const AuthLogin = ({ ...rest }) => {
         })}
         onSubmit={async (values, { setSubmitting, setErrors }) => {
           try {
-            // ✅ Dispatch login action
+            // ✅ Dispatch login action - Redux slice automatically stores data
             const result = await dispatch(loginUser({
               email: values.email,
               password: values.password
             })).unwrap();
             
-            console.log('Login successful:', result);
+            console.log('✅ Login successful. Full response:', result);
+            console.log('✅ User refId:', result.login?.refId);
+            console.log('✅ Admin ID:', result.adminId);
+            console.log('✅ Role:', result.role);
+            
+            // ✅ Store additional data in localStorage as backup
+            localStorage.setItem('refId', result.login?.refId);
+            localStorage.setItem('adminId', result.adminId);
+            localStorage.setItem('userRole', result.role);
+            localStorage.setItem('userEmail', result.Email);
+            localStorage.setItem('userName', result.Name);
+            localStorage.setItem('token', result.token);
+            
             toast.success(result.msg || 'Login successful!');
             
-            // ✅ After login, fetch user rights
-            const adminId = result.adminId || result.login?._id;
-            if (adminId) {
-              await dispatch(fetchUserRights(adminId));
-            }
+            // ✅ OPTIONAL: Fetch user rights if needed (only if you have rights API)
+            // const adminId = result.adminId || result.login?._id;
+            // if (adminId) {
+            //   await dispatch(fetchUserRights(adminId));
+            // }
             
             // ✅ Redirect to dashboard
             navigate('/dashboard');
             
           } catch (error) {
-            console.error('Login error:', error);
-            setErrors({ submit: error || 'Invalid email or password' });
-            toast.error(error || 'Login failed');
+            console.error('❌ Login error:', error);
+            let errorMessage = 'Invalid email or password';
+            
+            if (typeof error === 'string') {
+              errorMessage = error;
+            } else if (error?.message) {
+              errorMessage = error.message;
+            } else if (error?.msg) {
+              errorMessage = error.msg;
+            }
+            
+            setErrors({ submit: errorMessage });
+            toast.error(errorMessage);
           } finally {
             setSubmitting(false);
           }
@@ -145,7 +167,7 @@ const AuthLogin = ({ ...rest }) => {
               </Box>
             )}
 
-            {(loginError) && (
+            {loginError && (
               <Box mt={2}>
                 <FormHelperText error>{loginError}</FormHelperText>
               </Box>

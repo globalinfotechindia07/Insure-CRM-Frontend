@@ -8,87 +8,93 @@ import {
   IconButton,
   CardContent,
   Divider,
-  Box
+  Box,
+  CircularProgress
 } from '@mui/material';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import Breadcrumb from 'component/Breadcrumb';
 import { gridSpacing } from 'config.js';
-import { FaTrash } from 'react-icons/fa';
-import REACT_APP_API_URL, { get, put } from 'api/api';
+import { FaTrash, FaUpload } from 'react-icons/fa';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { ArrowBack } from '@mui/icons-material';
+import { useSelector } from 'react-redux';
 
 const UpdateCompanySettings = () => {
   const navigate = useNavigate();
   const { id } = useParams();
   let pincodeTimeout = useRef();
 
-  // 🔴 DEBUG: Check if id is coming from URL
-  console.log('🔴 URL Params - Full params object:', useParams());
-  console.log('🔴 Extracted ID from URL:', id);
+  const { user } = useSelector((state) => state.auth || {});
+  const refId = user?.refId || localStorage.getItem('refId');
+
+  console.log('🔴 URL ID:', id);
+  console.log('🟢 RefId:', refId);
 
   const [logoPreview, setLogoPreview] = useState('');
+  const [logoFile, setLogoFile] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [fetchLoading, setFetchLoading] = useState(false);
+  const [isNewRecord, setIsNewRecord] = useState(false);
 
   const [form, setForm] = useState({
-    clientName: '',
-    officialMailId: '',
-    officialPhoneNo: '',
-    altPhoneNo: '',
-    website: '',
+    companyName: '',
+    email: '',
+    mobileNumber: '',
+    alternateMobileNumber: '',
+    websiteLink: '',
     gstNo: '',
-    officeAddress: '',
+    address: '',
     pincode: '',
     country: '',
     state: '',
     city: '',
-    companyLogo: null
+    companyLogo: ''
   });
 
   const [errors, setErrors] = useState({});
 
-  // Check if id exists when component mounts
   useEffect(() => {
-    console.log('🟢 Component mounted. ID from URL:', id);
-    if (!id) {
-      console.log('🔴 No ID found in URL!');
-      toast.error('Company ID not found in URL');
-      navigate('/company-settings');
+    if (!id || id === 'new') {
+      setIsNewRecord(true);
+    } else {
+      setIsNewRecord(false);
     }
-  }, [id, navigate]);
+  }, [id]);
 
   // Fetch existing company data
   useEffect(() => {
     const fetchCompany = async () => {
-      if (!id) {
-        console.log('🔴 Skipping fetch - No ID available');
-        return;
-      }
+      if (!id || id === 'new') return;
 
-      console.log('🟡 Fetching company with ID:', id);
-      setLoading(true);
+      setFetchLoading(true);
       try {
-        const res = await get(`company-settings/${id}`);
+        const token = localStorage.getItem('token');
+        const response = await fetch(`http://localhost:5050/api/companySettings/${id}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        
+        const res = await response.json();
         console.log('🟢 Fetch response:', res);
 
-        if (res.status === true && res.data) {
+        if (res.status === 'true' && res.data) {
           const d = res.data;
           setForm({
-            clientName: d.clientName || '',
-            officialMailId: d.officialMailId || '',
-            officialPhoneNo: d.officialPhoneNo || '',
-            altPhoneNo: d.altPhoneNo || '',
-            website: d.website || '',
+            companyName: d.companyName || '',
+            email: d.email || '',
+            mobileNumber: d.mobileNumber || '',
+            alternateMobileNumber: d.alternateMobileNumber || '',
+            websiteLink: d.websiteLink || '',
             gstNo: d.gstNo || '',
-            officeAddress: d.officeAddress || '',
+            address: d.address || '',
             pincode: d.pincode || '',
             country: d.country || '',
             state: d.state || '',
             city: d.city || '',
-            companyLogo: d.logo || null
+            companyLogo: d.companyLogo || ''
           });
-          setLogoPreview(d.logo || '');
         } else {
           toast.error('Failed to fetch data.');
         }
@@ -96,7 +102,7 @@ const UpdateCompanySettings = () => {
         console.error('🔴 Error fetching company:', err);
         toast.error('Error fetching data');
       } finally {
-        setLoading(false);
+        setFetchLoading(false);
       }
     };
 
@@ -117,6 +123,7 @@ const UpdateCompanySettings = () => {
           state: State,
           country: Country
         }));
+        toast.success('Location auto-filled from pincode');
       } else {
         toast.error('Invalid pincode');
       }
@@ -130,8 +137,21 @@ const UpdateCompanySettings = () => {
     const { name, files, value } = e.target;
 
     if (files && files[0]) {
-      setForm((prev) => ({ ...prev, [name]: files[0] }));
-      setLogoPreview(URL.createObjectURL(files[0]));
+      const file = files[0];
+      const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+      
+      if (!validTypes.includes(file.type)) {
+        toast.error('Only image files are allowed (JPEG, PNG, GIF, WEBP)');
+        return;
+      }
+      
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error('File size should be less than 5MB');
+        return;
+      }
+      
+      setLogoFile(file);
+      setLogoPreview(URL.createObjectURL(file));
     } else {
       setForm((prev) => ({ ...prev, [name]: value }));
 
@@ -147,20 +167,18 @@ const UpdateCompanySettings = () => {
   const validateForm = () => {
     const err = {};
     
-    if (!form.clientName?.trim()) err.clientName = 'Company name is required';
-    if (!form.officialMailId?.trim()) err.officialMailId = 'Email is required';
-    if (form.officialMailId && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.officialMailId)) 
-      err.officialMailId = 'Valid email required';
-    
-    if (!form.officialPhoneNo?.trim()) err.officialPhoneNo = 'Phone number is required';
-    if (form.officialPhoneNo && !/^\d{10}$/.test(form.officialPhoneNo)) 
-      err.officialPhoneNo = '10-digit mobile required';
-    
-    if (form.altPhoneNo && !/^\d{10}$/.test(form.altPhoneNo)) 
-      err.altPhoneNo = '10-digit alt mobile';
-    
-    if (!form.website?.trim()) err.website = 'Website required';
-    if (!form.officeAddress?.trim()) err.officeAddress = 'Address required';
+    if (!form.companyName?.trim()) err.companyName = 'Company name is required';
+    if (!form.email?.trim()) err.email = 'Email is required';
+    if (form.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) 
+      err.email = 'Valid email required';
+    if (!form.mobileNumber?.trim()) err.mobileNumber = 'Phone number is required';
+    if (form.mobileNumber && !/^\d{10}$/.test(form.mobileNumber)) 
+      err.mobileNumber = '10-digit mobile required';
+    if (form.alternateMobileNumber && !/^\d{10}$/.test(form.alternateMobileNumber)) 
+      err.alternateMobileNumber = '10-digit alt mobile required';
+    if (!form.websiteLink?.trim()) err.websiteLink = 'Website required';
+    if (!form.gstNo?.trim()) err.gstNo = 'GST number required';
+    if (!form.address?.trim()) err.address = 'Address required';
     if (!form.pincode?.trim()) err.pincode = 'Pincode required';
     if (form.pincode && !/^\d{6}$/.test(form.pincode)) err.pincode = '6-digit pincode required';
     if (!form.city?.trim()) err.city = 'City required';
@@ -171,180 +189,215 @@ const UpdateCompanySettings = () => {
     return Object.keys(err).length === 0;
   };
 
-  const getLogoUrl = (logoPath) => {
-    if (!logoPath) return "";
-    const normalized = logoPath.replace(/\\/g, "/");
-    return `${REACT_APP_API_URL}/${normalized}`;
+  const handleDeleteLogo = () => {
+    setLogoFile(null);
+    setLogoPreview('');
+    setForm(prev => ({ ...prev, companyLogo: '' }));
   };
 
   const handleSubmit = async () => {
-    console.log('🟡 handleSubmit called. Current ID:', id);
-    
-    if (!id) {
-      console.log('🔴 CRITICAL: No ID available for update!');
-      toast.error('Company ID is missing! Cannot update.');
-      navigate('/company-settings');
-      return;
-    }
-
     if (!validateForm()) {
       toast.error('Please fill all required fields correctly');
       return;
     }
 
     setLoading(true);
+    
     try {
-      const formData = new FormData();
-
-      Object.entries(form).forEach(([key, value]) => {
-        if (key !== 'companyLogo' && value !== null && value !== undefined && value !== '') {
-          formData.append(key, value);
-        }
-      });
-
-      if (form.companyLogo instanceof File) {
-        formData.append('logo', form.companyLogo);
-      }
-
-      console.log('🟡 Updating company with ID:', id);
-      console.log('🟡 API Endpoint:', `company-settings/${id}`);
+      const token = localStorage.getItem('token');
       
-      const res = await put(`company-settings/${id}`, formData);
-      console.log('🟢 Update response:', res);
-
-      if (res.status === true) {
-        toast.success('Company updated successfully!');
+      // Send as JSON payload (without refId to avoid validation error)
+      const payload = {
+        companyName: form.companyName,
+        email: form.email,
+        mobileNumber: form.mobileNumber,
+        alternateMobileNumber: form.alternateMobileNumber || '',
+        websiteLink: form.websiteLink,
+        gstNo: form.gstNo,
+        address: form.address,
+        pincode: form.pincode,
+        country: form.country,
+        state: form.state,
+        city: form.city
+      };
+      
+      // Only add refId if it's a new record and refId exists
+      if (isNewRecord && refId) {
+        payload.refId = refId;
+      }
+      
+      console.log('🟡 Submitting payload:', payload);
+      
+      let url = 'http://localhost:5050/api/companySettings/';
+      let method = 'POST';
+      
+      if (!isNewRecord) {
+        url = `http://localhost:5050/api/companySettings/${id}`;
+        method = 'PUT';
+      }
+      
+      const response = await fetch(url, {
+        method: method,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(payload)
+      });
+      
+      const data = await response.json();
+      console.log('🟢 API Response:', data);
+      
+      if (data.status === 'true') {
+        toast.success(isNewRecord ? 'Company created successfully!' : 'Company updated successfully!');
+        
+        // Upload logo separately if exists
+        if (logoFile) {
+          const logoFormData = new FormData();
+          logoFormData.append('companyLogo', logoFile);
+          
+          const logoResponse = await fetch(`http://localhost:5050/api/companySettings/${data.data._id}/logo`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${token}`
+            },
+            body: logoFormData
+          });
+          
+          const logoData = await logoResponse.json();
+          if (logoData.status === 'true') {
+            toast.success('Logo uploaded successfully!');
+          } else {
+            toast.warning('Company saved but logo upload failed');
+          }
+        }
+        
         setTimeout(() => navigate('/company-settings'), 1500);
       } else {
-        toast.error(res.message || 'Update failed');
+        toast.error(data.message || 'Operation failed');
       }
     } catch (error) {
-      console.error('🔴 Error updating company:', error);
-      toast.error(error.response?.data?.message || 'Error updating company');
+      console.error('🔴 Error:', error);
+      toast.error(error.message || 'Error saving company');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleDeleteLogo = () => {
-    setForm((prev) => ({ ...prev, companyLogo: null }));
-    setLogoPreview('');
-  };
-
-  // Show loading or error state
-  if (loading && !form.clientName) {
+  if (fetchLoading) {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" minHeight="60vh">
-        <Typography>Loading company data...</Typography>
-      </Box>
-    );
-  }
-
-  if (!id) {
-    return (
-      <Box display="flex" justifyContent="center" alignItems="center" minHeight="60vh" flexDirection="column">
-        <Typography variant="h5" color="error" gutterBottom>Invalid Company ID</Typography>
-        <Button variant="contained" onClick={() => navigate('/company-settings')}>
-          Go Back to Company Settings
-        </Button>
+        <CircularProgress />
+        <Typography sx={{ ml: 2 }}>Loading company data...</Typography>
       </Box>
     );
   }
 
   return (
     <>
-      <Breadcrumb title="Company Settings">
-        <Typography component={Link} to="/" variant="subtitle2" color="inherit" className="link-breadcrumb">
+      <Breadcrumb>
+        <Typography component={Link} to="/" variant="subtitle2" color="inherit">
           Home
         </Typography>
-        <Typography variant="subtitle2" color="primary" className="link-breadcrumb">
+        <Typography component={Link} to="/company-settings" variant="subtitle2" color="inherit">
           Company Settings
+        </Typography>
+        <Typography variant="subtitle2" color="primary">
+          {isNewRecord ? 'Create Company' : 'Update Company'}
         </Typography>
       </Breadcrumb>
 
       <Grid container spacing={gridSpacing}>
         <Grid item xs={12}>
           <Grid container justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
-            <Typography variant="h5">Update Company Settings</Typography>
-            <Typography variant="body2" color="textSecondary">Company ID: {id}</Typography>
-            <Button variant="contained" onClick={() => navigate('/company-settings')}>
-              <ArrowBack /> Back
+            <Typography variant="h5">
+              {isNewRecord ? 'Create New Company' : 'Update Company Details'}
+            </Typography>
+            <Button variant="outlined" onClick={() => navigate('/company-settings')}>
+              <ArrowBack /> Back to List
             </Button>
           </Grid>
+          
           <Card>
-            <Divider />
             <CardContent>
-              <Grid container spacing={2}>
-                <Grid item xs={12} sm={4}>
+              <Grid container spacing={3}>
+                {/* Company Name */}
+                <Grid item xs={12} sm={6} md={4}>
                   <TextField
                     label="Company Name *"
-                    name="clientName"
-                    value={form.clientName}
+                    name="companyName"
+                    value={form.companyName}
                     onChange={handleChange}
-                    error={!!errors.clientName}
-                    helperText={errors.clientName}
+                    error={!!errors.companyName}
+                    helperText={errors.companyName}
                     fullWidth
                     required
                   />
                 </Grid>
                 
-                <Grid item xs={12} sm={4}>
+                {/* Email */}
+                <Grid item xs={12} sm={6} md={4}>
                   <TextField
-                    label="Email *"
-                    name="officialMailId"
+                    label="Email Address *"
+                    name="email"
                     type="email"
-                    value={form.officialMailId}
+                    value={form.email}
                     onChange={handleChange}
-                    error={!!errors.officialMailId}
-                    helperText={errors.officialMailId}
+                    error={!!errors.email}
+                    helperText={errors.email}
                     fullWidth
                     required
                   />
                 </Grid>
                 
-                <Grid item xs={12} sm={4}>
+                {/* Mobile Number */}
+                <Grid item xs={12} sm={6} md={4}>
                   <TextField
-                    label="Mobile No. *"
-                    name="officialPhoneNo"
-                    value={form.officialPhoneNo}
+                    label="Mobile Number *"
+                    name="mobileNumber"
+                    value={form.mobileNumber}
                     onChange={handleChange}
-                    error={!!errors.officialPhoneNo}
-                    helperText={errors.officialPhoneNo}
+                    error={!!errors.mobileNumber}
+                    helperText={errors.mobileNumber}
                     inputProps={{ maxLength: 10 }}
                     fullWidth
                     required
                   />
                 </Grid>
                 
-                <Grid item xs={12} sm={4}>
+                {/* Alternate Mobile Number */}
+                <Grid item xs={12} sm={6} md={4}>
                   <TextField
-                    label="Alternate Mobile No."
-                    name="altPhoneNo"
-                    value={form.altPhoneNo}
+                    label="Alternate Mobile Number"
+                    name="alternateMobileNumber"
+                    value={form.alternateMobileNumber}
                     onChange={handleChange}
-                    error={!!errors.altPhoneNo}
-                    helperText={errors.altPhoneNo}
+                    error={!!errors.alternateMobileNumber}
+                    helperText={errors.alternateMobileNumber}
                     inputProps={{ maxLength: 10 }}
                     fullWidth
                   />
                 </Grid>
                 
-                <Grid item xs={12} sm={4}>
+                {/* Website Link */}
+                <Grid item xs={12} sm={6} md={4}>
                   <TextField
-                    label="Website Link *"
-                    name="website"
-                    value={form.website}
+                    label="Website URL *"
+                    name="websiteLink"
+                    value={form.websiteLink}
                     onChange={handleChange}
-                    error={!!errors.website}
-                    helperText={errors.website}
+                    error={!!errors.websiteLink}
+                    helperText={errors.websiteLink}
+                    placeholder="https://example.com"
                     fullWidth
                     required
                   />
                 </Grid>
                 
-                <Grid item xs={12} sm={4}>
+                {/* GST Number */}
+                <Grid item xs={12} sm={6} md={4}>
                   <TextField
-                    label="GST No."
+                    label="GST Number *"
                     name="gstNo"
                     value={form.gstNo}
                     onChange={handleChange}
@@ -352,37 +405,43 @@ const UpdateCompanySettings = () => {
                     helperText={errors.gstNo}
                     inputProps={{ maxLength: 15 }}
                     fullWidth
+                    required
                   />
                 </Grid>
                 
-                <Grid item xs={12} sm={8}>
+                {/* Address */}
+                <Grid item xs={12}>
                   <TextField
-                    label="Address *"
-                    name="officeAddress"
-                    value={form.officeAddress}
+                    label="Office Address *"
+                    name="address"
+                    value={form.address}
                     onChange={handleChange}
-                    error={!!errors.officeAddress}
-                    helperText={errors.officeAddress}
+                    error={!!errors.address}
+                    helperText={errors.address}
+                    multiline
+                    rows={2}
                     fullWidth
                     required
                   />
                 </Grid>
                 
-                <Grid item xs={12} sm={4}>
+                {/* Pincode */}
+                <Grid item xs={12} sm={6} md={3}>
                   <TextField
                     label="Pincode *"
                     name="pincode"
                     value={form.pincode}
                     onChange={handleChange}
                     error={!!errors.pincode}
-                    helperText={errors.pincode}
+                    helperText={errors.pincode || "Auto-fetches city, state, country"}
                     inputProps={{ maxLength: 6 }}
                     fullWidth
                     required
                   />
                 </Grid>
                 
-                <Grid item xs={12} sm={4}>
+                {/* Country */}
+                <Grid item xs={12} sm={6} md={3}>
                   <TextField
                     label="Country *"
                     name="country"
@@ -395,7 +454,8 @@ const UpdateCompanySettings = () => {
                   />
                 </Grid>
                 
-                <Grid item xs={12} sm={4}>
+                {/* State */}
+                <Grid item xs={12} sm={6} md={3}>
                   <TextField
                     label="State *"
                     name="state"
@@ -408,7 +468,8 @@ const UpdateCompanySettings = () => {
                   />
                 </Grid>
                 
-                <Grid item xs={12} sm={4}>
+                {/* City */}
+                <Grid item xs={12} sm={6} md={3}>
                   <TextField
                     label="City *"
                     name="city"
@@ -421,59 +482,123 @@ const UpdateCompanySettings = () => {
                   />
                 </Grid>
 
-                <Grid item xs={12} sm={4}>
+                {/* Logo Upload */}
+                <Grid item xs={12}>
+                  <Typography variant="subtitle2" gutterBottom>
+                    Company Logo
+                  </Typography>
+                  
                   {!logoPreview && !form.companyLogo && (
-                    <Button variant="contained" component="label" fullWidth>
-                      Upload Logo
-                      <input type="file" name="companyLogo" hidden accept="image/*" onChange={handleChange} />
+                    <Button
+                      variant="outlined"
+                      component="label"
+                      startIcon={<FaUpload />}
+                    >
+                      Choose Logo
+                      <input
+                        type="file"
+                        name="companyLogo"
+                        hidden
+                        accept="image/*"
+                        onChange={handleChange}
+                      />
                     </Button>
                   )}
 
                   {(logoPreview || form.companyLogo) && (
-                    <Box position="relative" display="inline-block" mt={2}>
-                      <img
-                        src={logoPreview || getLogoUrl(form.companyLogo)}
-                        alt="Company Logo"
-                        style={{ width: 100, height: 100, objectFit: 'contain', borderRadius: 4 }}
-                      />
-                      <IconButton
-                        size="small"
-                        onClick={handleDeleteLogo}
-                        sx={{
-                          position: 'absolute',
-                          top: -8,
-                          left: -8,
-                          backgroundColor: 'white',
-                          border: '1px solid #ccc',
-                          boxShadow: 1,
-                          '&:hover': {
-                            backgroundColor: '#f8d7da',
-                            color: 'red'
-                          }
-                        }}
-                      >
-                        <FaTrash size={12} />
-                      </IconButton>
+                    <Box display="flex" alignItems="flex-start" gap={2}>
+                      <Box position="relative" display="inline-block">
+                        <img
+                          src={logoPreview || form.companyLogo}
+                          alt="Company Logo"
+                          style={{
+                            width: 120,
+                            height: 120,
+                            objectFit: 'contain',
+                            borderRadius: 8,
+                            border: '1px solid #ddd',
+                            padding: 8
+                          }}
+                        />
+                        <IconButton
+                          size="small"
+                          onClick={handleDeleteLogo}
+                          sx={{
+                            position: 'absolute',
+                            top: -8,
+                            right: -8,
+                            backgroundColor: 'white',
+                            border: '1px solid #ccc',
+                            boxShadow: 1,
+                            '&:hover': {
+                              backgroundColor: '#f8d7da',
+                              color: 'red'
+                            }
+                          }}
+                        >
+                          <FaTrash size={12} />
+                        </IconButton>
+                      </Box>
+                      <Box display="flex" flexDirection="column" gap={1}>
+                        {!logoPreview && form.companyLogo && (
+                          <Typography variant="caption" color="textSecondary">
+                            Current Logo
+                          </Typography>
+                        )}
+                        {logoPreview && !form.companyLogo && (
+                          <Typography variant="caption" color="success.main">
+                            New Logo Selected
+                          </Typography>
+                        )}
+                        {logoPreview && form.companyLogo && (
+                          <Typography variant="caption" color="success.main">
+                            Logo Updated
+                          </Typography>
+                        )}
+                        <Button
+                          variant="outlined"
+                          component="label"
+                          size="small"
+                          startIcon={<FaUpload />}
+                        >
+                          Change Logo
+                          <input
+                            type="file"
+                            name="companyLogo"
+                            hidden
+                            accept="image/*"
+                            onChange={handleChange}
+                          />
+                        </Button>
+                      </Box>
                     </Box>
                   )}
                 </Grid>
 
+                {/* Submit Button */}
                 <Grid item xs={12}>
-                  <Button 
-                    variant="contained" 
-                    color="primary" 
-                    onClick={handleSubmit}
-                    disabled={loading}
-                  >
-                    {loading ? 'Updating...' : 'Update Company'}
-                  </Button>
+                  <Divider sx={{ my: 2 }} />
+                  <Box display="flex" gap={2} justifyContent="flex-end">
+                    <Button variant="outlined" onClick={() => navigate('/company-settings')}>
+                      Cancel
+                    </Button>
+                    <Button
+                      variant="contained"
+                      color="primary"
+                      onClick={handleSubmit}
+                      disabled={loading}
+                      size="large"
+                    >
+                      {loading ? <CircularProgress size={24} /> : (isNewRecord ? 'Create Company' : 'Update Company')}
+                    </Button>
+                  </Box>
                 </Grid>
               </Grid>
             </CardContent>
           </Card>
         </Grid>
       </Grid>
-      <ToastContainer />
+      <ToastContainer position="top-right" autoClose={5000} />
     </>
   );
 };

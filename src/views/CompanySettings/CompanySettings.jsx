@@ -12,21 +12,22 @@ import {
   TableCell,
   IconButton,
   Tooltip,
-  Chip
+  Button,
+  CircularProgress
 } from '@mui/material';
-import PersonIcon from '@mui/icons-material/Person';
 import { Link, useNavigate } from 'react-router-dom';
 import Breadcrumb from 'component/Breadcrumb';
 import { gridSpacing } from 'config.js';
-import { Business, ContactPhone, Delete, Edit, Language, LocationOn } from '@mui/icons-material';
-import { get, remove } from '../../api/api.js';
+import { Business, ContactPhone, Delete, Edit, Language, LocationOn, Add } from '@mui/icons-material';
 import { useSelector } from 'react-redux';
 import EmailIntegration from './EmailIntegration.jsx';
-import { toast } from 'react-toastify';
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 const CompanySettings = () => {
-  const navigate = useNavigate(); // Initialize the navigation hook
-  const [clientList, setClientList] = useState([]);
+  const navigate = useNavigate();
+  const [companyList, setCompanyList] = useState([]);
+  const [loading, setLoading] = useState(false);
   const [isAdmin, setAdmin] = useState(false);
   const [companySettingPermission, setCompanySettingPermission] = useState({
     View: false,
@@ -34,13 +35,48 @@ const CompanySettings = () => {
     Edit: false,
     Delete: false
   });
-  const systemRights = useSelector((state) => state.systemRights.systemRights);
+  
+  const systemRights = useSelector((state) => state.systemRights?.systemRights || {});
+  const { user } = useSelector((state) => state.auth || {});
 
-  const handleEditClick = (clientId) => {
-    navigate(`/company-settings/${clientId}`); // Navigate to the edit page with the client ID
-    // navigate(`/clientRegistration/${clientId}`);
+  // Handle Edit
+  const handleEditClick = (companyId) => {
+    navigate(`/company-settings/${companyId}`);
   };
-  // Format date for display
+
+  // Handle Add New
+  const handleAddClick = () => {
+    navigate('/company-settings/new');
+  };
+
+  // Handle Delete
+  const handleDeleteClick = async (companyId, companyName) => {
+    if (window.confirm(`Are you sure you want to delete "${companyName}"?`)) {
+      try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`http://localhost:5050/api/companySettings/${companyId}`, {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        
+        const data = await response.json();
+        
+        if (data.status === 'true') {
+          toast.success('Company deleted successfully!');
+          fetchCompanySettings();
+        } else {
+          toast.error(data.message || 'Delete failed');
+        }
+      } catch (error) {
+        console.error('Delete error:', error);
+        toast.error('Error deleting company');
+      }
+    }
+  };
+
+  // Format date
   const formatDate = (dateString) => {
     if (!dateString) return '-';
     const date = new Date(dateString);
@@ -51,50 +87,62 @@ const CompanySettings = () => {
     });
   };
 
-  const fetchClient = async () => {
+  // Fetch company settings
+  const fetchCompanySettings = async () => {
+    setLoading(true);
     try {
-      let rawRefId = localStorage.getItem('refId');
+      const token = localStorage.getItem('token');
+      console.log('🔗 Fetching company settings...');
+      
+      const response = await fetch('http://localhost:5050/api/companySettings/', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      const data = await response.json();
+      console.log('✅ API Response:', data);
 
-      let parsedRefId;
-      try {
-        parsedRefId = JSON.parse(rawRefId);
-      } catch (e) {
-        parsedRefId = rawRefId;
-      }
-
-      const refId = typeof parsedRefId === 'object' && parsedRefId !== null ? parsedRefId._id || parsedRefId.id : parsedRefId;
-
-      console.log('✅ Final refId used in request:', refId);
-
-      if (!refId || typeof refId !== 'string') {
-        console.error('❌ Invalid refId format:', parsedRefId);
-        return;
-      }
-      console.log('🔗 Fetching client data with refId:', refId);
-      const response = await get(`clientRegistration/${refId}`);
-      console.log('✅ Response is:', response);
-
-      if (response.status === 'true' && response.data) {
-        setClientList(response.data);
+      if (data.status === 'true' && data.data) {
+        setCompanyList(data.data);
+        console.log('✅ Company list set:', data.data);
       } else {
-        console.error('❌ Unexpected response format:', response);
+        console.error('❌ Unexpected response format:', data);
+        toast.error('Failed to fetch company data');
       }
     } catch (error) {
-      console.error('❌ Error in fetchClient:', error);
+      console.error('❌ Error in fetchCompanySettings:', error);
+      toast.error('Error fetching company data');
+    } finally {
+      setLoading(false);
     }
   };
 
-  console.log('Top-level log before useEffect');
   useEffect(() => {
+    // Check admin role
     const loginRole = localStorage.getItem('loginRole');
-    if (loginRole === 'admin') {
+    if (loginRole === 'admin' || user?.role === 'admin') {
       setAdmin(true);
     }
+    
+    // Set permissions
     if (systemRights?.actionPermissions?.['company-settings']) {
       setCompanySettingPermission(systemRights.actionPermissions['company-settings']);
     }
-    fetchClient();
-  }, [systemRights]);
+    
+    // Fetch company settings
+    fetchCompanySettings();
+  }, []);
+
+  // Show loading state
+  if (loading) {
+    return (
+      <Box sx={{ p: 3, textAlign: 'center' }}>
+        <CircularProgress />
+        <Typography sx={{ mt: 2 }}>Loading company data...</Typography>
+      </Box>
+    );
+  }
 
   return (
     <>
@@ -111,146 +159,164 @@ const CompanySettings = () => {
         <Grid item xs={12}>
           <Grid container justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
             <Typography variant="h5">Company Details</Typography>
+            {(companySettingPermission.Add === true || isAdmin) && (
+              <Button
+                variant="contained"
+                color="primary"
+                startIcon={<Add />}
+                onClick={handleAddClick}
+              >
+                Add Company
+              </Button>
+            )}
           </Grid>
+          
           <Card>
             <CardContent>
               <Box sx={{ overflowX: 'auto' }}>
                 <Table>
                   <TableHead>
-                    <TableRow sx={{ verticalAlign: 'top' }}>
-                      <TableCell>Company Name</TableCell>
-                      <TableCell>Contact Info</TableCell>
-                      <TableCell>Location</TableCell>
-                      <TableCell>Registration</TableCell>
-                      <TableCell>GST No</TableCell>
-                      <TableCell>Action</TableCell>
+                    <TableRow>
+                      <TableCell><strong>Company Name</strong></TableCell>
+                      <TableCell><strong>Contact Info</strong></TableCell>
+                      <TableCell><strong>Location</strong></TableCell>
+                      <TableCell><strong>Registration</strong></TableCell>
+                      <TableCell><strong>GST No</strong></TableCell>
+                      <TableCell><strong>Actions</strong></TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    <TableRow sx={{ verticalAlign: 'top' }}>
-                      <TableCell>
-                        <Box sx={{ display: 'flex', flexDirection: 'column' }}>
-                          <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
-                            {clientList?.clientName || 'N/A'}
-                          </Typography>
-                          {/* <Typography variant="caption" color="text.secondary">
-                                                  {company.firstName} {company.lastName}
-                                                </Typography> */}
-                        </Box>
-                      </TableCell>
-                      <TableCell>
-                        <Box sx={{ display: 'flex', flexDirection: 'column' }}>
-                          <Typography variant="body2">
-                            <Tooltip title={clientList?.officialMailId || 'N/A'} placement="top">
-                              <span>{clientList?.officialMailId || 'N/A'}</span>
-                            </Tooltip>
-                          </Typography>
-                          <Typography variant="caption" color="text.secondary">
-                            <ContactPhone fontSize="small" sx={{ mr: 0.5, fontSize: '0.9rem', verticalAlign: 'text-bottom' }} />
-                            {clientList?.officialPhoneNo || 'N/A'}
-                          </Typography>
-                          <Typography variant="caption" color="text.secondary">
-                            <ContactPhone fontSize="small" sx={{ mr: 0.5, fontSize: '0.9rem', verticalAlign: 'text-bottom' }} />
-                            Alt: {clientList?.altPhoneNo || 'N/A'}
-                          </Typography>
-                          <Typography variant="caption" color="text.secondary">
-                            <Language fontSize="small" sx={{ mr: 0.5, fontSize: '0.9rem', verticalAlign: 'text-bottom' }} />
-                            {clientList?.website ? (
-                              <a
-                                href={clientList.website}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                style={{ textDecoration: 'none', color: 'inherit' }}
-                              >
-                                Website
-                              </a>
-                            ) : (
-                              'N/A'
-                            )}
-                          </Typography>
-                        </Box>
-                      </TableCell>
-                      <TableCell>
-                        <Box sx={{ display: 'flex', flexDirection: 'column' }}>
-                          <Typography variant="body2">
-                            {clientList?.city || 'N/A'}, {clientList?.state || 'N/A'}
-                          </Typography>
-                          <Typography variant="caption" color="text.secondary">
-                            <LocationOn fontSize="small" sx={{ mr: 0.5, fontSize: '0.9rem', verticalAlign: 'text-bottom' }} />
-                            {clientList?.country || 'N/A'} {clientList?.pincode ? `- ${clientList?.pincode}` : ''}
-                          </Typography>
-                        </Box>
-                      </TableCell>
-                      <TableCell>
-                        <Box sx={{ display: 'flex', flexDirection: 'column' }}>
-                          <Typography variant="body2">
-                            <Tooltip title="Date of Incorporation" placement="top">
-                              <span>Inc: {formatDate(clientList?.startDate)}</span>
-                            </Tooltip>
-                          </Typography>
-                          <Typography variant="caption" color="text.secondary">
-                            <Business fontSize="small" sx={{ mr: 0.5, fontSize: '0.9rem', verticalAlign: 'text-bottom' }} />
-                            Created: {formatDate(clientList?.createdAt)}
-                          </Typography>
-                        </Box>
-                      </TableCell>
-                      <TableCell>{clientList?.gstNo || 'N/A'}</TableCell>
-                      {/* <TableCell>
-                        <Box display="flex" alignItems="center" gap={1}>
-                          <Button
-                            size="small"
-                            variant="contained"
-                            color="info"
-                            onClick={() => handleEditClick(clientList?._id)}
-                            // component={Link}
-                            // to={`/Company/editCompany/${company._id}`}
+                    {companyList.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={6} align="center">
+                          <Typography>No company data found. Click "Add Company" to create one.</Typography>
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      companyList.map((company) => (
+                        <TableRow key={company._id}>
+                          {/* Company Name */}
+                          <TableCell>
+                            <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
+                              {company.companyName || 'N/A'}
+                            </Typography>
+                          </TableCell>
+                          
+                          {/* Contact Info */}
+                          <TableCell>
+                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                              <Typography variant="body2">
+                                <strong>Email:</strong> {company.email || 'N/A'}
+                              </Typography>
+                              <Typography variant="body2">
+                                <strong>Mobile:</strong> {company.mobileNumber || 'N/A'}
+                              </Typography>
+                              {company.alternateMobileNumber && (
+                                <Typography variant="caption" color="text.secondary">
+                                  Alt: {company.alternateMobileNumber}
+                                </Typography>
+                              )}
+                              {company.websiteLink && (
+                                <Typography variant="caption">
+                                  <Language fontSize="small" sx={{ mr: 0.5, verticalAlign: 'middle' }} />
+                                  <a
+                                    href={company.websiteLink.startsWith('http') ? company.websiteLink : `https://${company.websiteLink}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    style={{ textDecoration: 'none', color: 'inherit' }}
+                                  >
+                                    Website
+                                  </a>
+                                </Typography>
+                              )}
+                            </Box>
+                          </TableCell>
+                          
+                          {/* Location Info */}
+                          <TableCell>
+                            <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+                              <Typography variant="body2">
+                                {company.city || 'N/A'}, {company.state || 'N/A'}
+                              </Typography>
+                              <Typography variant="caption" color="text.secondary">
+                                <LocationOn fontSize="small" sx={{ mr: 0.5, verticalAlign: 'middle' }} />
+                                {company.country || 'N/A'} {company.pincode ? `- ${company.pincode}` : ''}
+                              </Typography>
+                              {company.address && (
+                                <Typography variant="caption" color="text.secondary">
+                                  📍 {company.address}
+                                </Typography>
+                              )}
+                            </Box>
+                          </TableCell>
+                          
+                          {/* Registration Info */}
+                          <TableCell>
+                            <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+                              <Typography variant="caption" color="text.secondary">
+                                <Business fontSize="small" sx={{ mr: 0.5, verticalAlign: 'middle' }} />
+                                Created: {formatDate(company.createdAt)}
+                              </Typography>
+                              <Typography variant="caption" color="text.secondary">
+                                Updated: {formatDate(company.updatedAt)}
+                              </Typography>
+                            </Box>
+                          </TableCell>
+                          
+                          {/* GST No */}
+                          <TableCell>
+                            <Typography variant="body2">
+                              {company.gstNo || 'N/A'}
+                            </Typography>
+                          </TableCell>
+                          
+                          {/* Actions */}
+                          <TableCell>
+                            <Box sx={{ display: 'flex', gap: 1 }}>
+                              {(companySettingPermission.Edit === true || isAdmin) && (
+                                <IconButton
+                                  size="small"
+                                  color="primary"
+                                  onClick={() => {
+                                    if (localStorage.getItem('expired') === 'true') {
+                                      toast.error('Subscription has ended. Please subscribe to continue working.');
+                                      return;
+                                    }
+                                    handleEditClick(company._id);
+                                  }}
+                                  title="Edit Company"
+                                >
+                                  <Edit fontSize="small" />
+                                </IconButton>
+                              )}
 
-                            sx={{ height: '32px', whiteSpace: 'nowrap' }}
-                          >
-                            <Edit />
-                          </Button>
-                        </Box>
-                      </TableCell> */}
-                      <TableCell>
-                        <Box sx={{ display: 'flex', flexWrap: 'nowrap', alignItems: 'center', gap: 1 }}>
-                          {(companySettingPermission.Edit === true || isAdmin) && (
-                            <IconButton
-                              size="small"
-                              color="primary"
-                              onClick={() => {
-                                if (localStorage.getItem('expired') === 'true') {
-                                  toast.error('Subscription has ended. Please subscribe to continue working.');
-                                  return;
-                                }
-                                handleEditClick(clientList?._id);
-                              }}
-                            >
-                              <Edit fontSize="small" />
-                            </IconButton>
-                          )}
-
-                          <IconButton
-                            size="small"
-                            color="error"
-                            sx={{ padding: '4px' }}
-                            onClick={() => {
-                              if (localStorage.getItem('expired') === 'true') {
-                                toast.error('Subscription has ended. Please subscribe to continue working.');
-                                return;
-                              }
-                              // Add your delete handler here if applicable
-                            }}
-                          >
-                            <Delete fontSize="small" />
-                          </IconButton>
-                        </Box>
-                      </TableCell>
-                    </TableRow>
+                              {(companySettingPermission.Delete === true || isAdmin) && (
+                                <IconButton
+                                  size="small"
+                                  color="error"
+                                  onClick={() => {
+                                    if (localStorage.getItem('expired') === 'true') {
+                                      toast.error('Subscription has ended. Please subscribe to continue working.');
+                                      return;
+                                    }
+                                    handleDeleteClick(company._id, company.companyName);
+                                  }}
+                                  title="Delete Company"
+                                >
+                                  <Delete fontSize="small" />
+                                </IconButton>
+                              )}
+                            </Box>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
                   </TableBody>
                 </Table>
               </Box>
             </CardContent>
           </Card>
+          
           <EmailIntegration
             onSave={(config) => {
               if (localStorage.getItem('expired') === 'true') {
@@ -258,13 +324,13 @@ const CompanySettings = () => {
                 return;
               }
               console.log('Saved email integration config:', config);
-              // Make API call to save
             }}
           />
         </Grid>
       </Grid>
+      <ToastContainer position="top-right" autoClose={5000} />
     </>
   );
 };
 
-export default CompanySettings;
+export default CompanySettings; 
