@@ -20,6 +20,8 @@ import 'react-toastify/dist/ReactToastify.css';
 import { ArrowBack } from '@mui/icons-material';
 import { useSelector } from 'react-redux';
 
+const STATIC_BASE_URL = "http://localhost:5050"; 
+
 const UpdateCompanySettings = () => {
   const navigate = useNavigate();
   const { id } = useParams();
@@ -48,8 +50,7 @@ const UpdateCompanySettings = () => {
     pincode: '',
     country: '',
     state: '',
-    city: '',
-    companyLogo: ''
+    city: ''
   });
 
   const [errors, setErrors] = useState({});
@@ -92,9 +93,9 @@ const UpdateCompanySettings = () => {
             pincode: d.pincode || '',
             country: d.country || '',
             state: d.state || '',
-            city: d.city || '',
-            companyLogo: d.companyLogo || ''
+            city: d.city || ''
           });
+          setLogoPreview(d.companyLogo || '');
         } else {
           toast.error('Failed to fetch data.');
         }
@@ -108,6 +109,9 @@ const UpdateCompanySettings = () => {
 
     fetchCompany();
   }, [id]);
+
+  // REMOVED: Duplicate and incorrect fetchLogo useEffect that was causing the error
+  // The error was because fetchLogo was not defined but being used in console.log
 
   // Fetch pincode information
   const fetchPincodeDetails = async (value) => {
@@ -192,9 +196,8 @@ const UpdateCompanySettings = () => {
   const handleDeleteLogo = () => {
     setLogoFile(null);
     setLogoPreview('');
-    setForm(prev => ({ ...prev, companyLogo: '' }));
   };
-
+  
   const handleSubmit = async () => {
     if (!validateForm()) {
       toast.error('Please fill all required fields correctly');
@@ -506,71 +509,37 @@ const UpdateCompanySettings = () => {
                   )}
 
                   {(logoPreview || form.companyLogo) && (
-                    <Box display="flex" alignItems="flex-start" gap={2}>
-                      <Box position="relative" display="inline-block">
-                        <img
-                          src={logoPreview || form.companyLogo}
-                          alt="Company Logo"
-                          style={{
-                            width: 120,
-                            height: 120,
-                            objectFit: 'contain',
-                            borderRadius: 8,
-                            border: '1px solid #ddd',
-                            padding: 8
-                          }}
-                        />
-                        <IconButton
-                          size="small"
-                          onClick={handleDeleteLogo}
-                          sx={{
-                            position: 'absolute',
-                            top: -8,
-                            right: -8,
-                            backgroundColor: 'white',
-                            border: '1px solid #ccc',
-                            boxShadow: 1,
-                            '&:hover': {
-                              backgroundColor: '#f8d7da',
-                              color: 'red'
-                            }
-                          }}
-                        >
-                          <FaTrash size={12} />
-                        </IconButton>
-                      </Box>
-                      <Box display="flex" flexDirection="column" gap={1}>
-                        {!logoPreview && form.companyLogo && (
-                          <Typography variant="caption" color="textSecondary">
-                            Current Logo
-                          </Typography>
-                        )}
-                        {logoPreview && !form.companyLogo && (
-                          <Typography variant="caption" color="success.main">
-                            New Logo Selected
-                          </Typography>
-                        )}
-                        {logoPreview && form.companyLogo && (
-                          <Typography variant="caption" color="success.main">
-                            Logo Updated
-                          </Typography>
-                        )}
-                        <Button
-                          variant="outlined"
-                          component="label"
-                          size="small"
-                          startIcon={<FaUpload />}
-                        >
-                          Change Logo
-                          <input
-                            type="file"
-                            name="companyLogo"
-                            hidden
-                            accept="image/*"
-                            onChange={handleChange}
-                          />
-                        </Button>
-                      </Box>
+                    <Box position="relative" display="inline-block">
+                      <img
+                        src={logoPreview || form.companyLogo}
+                        alt="Company Logo"
+                        style={{
+                          width: 120,
+                          height: 120,
+                          objectFit: 'contain',
+                          borderRadius: 8,
+                          border: '1px solid #ddd',
+                          padding: 8
+                        }}
+                      />
+                      <IconButton
+                        size="small"
+                        onClick={handleDeleteLogo}
+                        sx={{
+                          position: 'absolute',
+                          top: -8,
+                          right: -8,
+                          backgroundColor: 'white',
+                          border: '1px solid #ccc',
+                          boxShadow: 1,
+                          '&:hover': {
+                            backgroundColor: '#f8d7da',
+                            color: 'red'
+                          }
+                        }}
+                      >
+                        <FaTrash size={12} />
+                      </IconButton>
                     </Box>
                   )}
                 </Grid>
