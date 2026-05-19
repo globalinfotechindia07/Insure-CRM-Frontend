@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { useParams } from 'react-router'
 import { get } from 'api/api'
+import REACT_APP_API_URL from '../../../api/api';
 import { Box, Card, CardContent, Typography, Avatar, Grid, Tab, Tabs, Table, TableBody, TableCell, TableRow, Paper } from '@mui/material'
 
 function ViewUserDetails () {
@@ -13,6 +14,7 @@ function ViewUserDetails () {
     ADMINISTRATIVE: 'administrative',
     SUPPORT: 'support'
   }
+
 
   // Validate the userType and fetch user data
   useEffect(() => {

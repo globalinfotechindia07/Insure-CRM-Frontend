@@ -1,15 +1,12 @@
 import PropTypes from 'prop-types';
 import React, { useEffect, useState } from 'react';
-// import logo from '../../../assets/images/iqubx_logo.png';
-import logo from '../../../assets/images/mirailogo.png';
 import insureLogo from '../../../assets/images/insure logo_bg.jpeg';
 
 // material-ui
 import { useTheme } from '@mui/material/styles';
-import { Box, Grid, IconButton, TextField, Typography, Select, MenuItem } from '@mui/material';
+import { Box, Grid, IconButton, Typography } from '@mui/material';
 
 // project import
-import SearchSection from './SearchSection';
 import ProfileSection from './ProfileSection';
 import NotificationSection from './NotificationSection';
 import { drawerWidth } from 'config.js';
@@ -18,11 +15,8 @@ import { financialYearContext } from 'context/financialYearContext';
 // assets
 import MenuTwoToneIcon from '@mui/icons-material/MenuTwoTone';
 import CurrentDate from './CureentDateSection';
-import REACT_APP_API_URL, { get } from 'api/api';
+import { get } from 'api/api';
 import { useDispatch, useSelector } from 'react-redux';
-// import { setHospitalData } from 'reduxSlices/hospitalData';
-// import { cleanDigitSectionValue } from '@mui/x-date-pickers/internals/hooks/useField/useField.utils';
-// import value from 'assets/scss/_themes-vars.module.scss';
 
 import { Dialog, DialogContent, Button, Fade } from '@mui/material';
 import { Close as CloseIcon, AccessTime as AccessTimeIcon } from '@mui/icons-material';
@@ -34,8 +28,10 @@ const Header = ({ drawerToggle }) => {
   const dispatch = useDispatch();
   const { hospitalData } = useSelector((state) => state.hospitalData);
   const loginData = JSON.parse(localStorage.getItem('loginData')) || {};
+  const { user } = useSelector((state) => state.auth || {});
 
-  const [secondLogo, setSecondLogo] = useState(null);
+  const [companyName, setCompanyName] = useState('');
+  const [loading, setLoading] = useState(true);
 
   const end = localStorage.getItem('end');
 
@@ -53,13 +49,10 @@ const Header = ({ drawerToggle }) => {
       setDaysLeft(diffDays);
 
       if (diffDays <= 0) {
-        // expired
         localStorage.setItem('expired', 'true');
         setOpenPopup(true);
       } else {
-        // not expired
         localStorage.setItem('expired', 'false');
-        // Show popup if subscription ends in 30 days or less
         if (diffDays <= 30) {
           setOpenPopup(true);
         }
@@ -68,167 +61,134 @@ const Header = ({ drawerToggle }) => {
   }, [end]);
 
   const handleClose = () => setOpenPopup(false);
-  const handleSubscribe = () => {
-    // window.open('https://your-subscription-link.com', '_blank'); // replace with real link
-  };
+  const handleSubscribe = () => {};
 
-  const getLogoUrl = (logoPath) => {
-    if (!logoPath) return null;
-
-    // normalize slashes
-    const normalized = logoPath.replace(/\\/g, '/');
-
-    // replace public/images with uploads
-    const urlPath = normalized.replace('public/images', 'uploads');
-
-    // prepend backend root URL, not /api/
-    // console.log(`http://localhost:5050/api/${urlPath}`);
-
-    localStorage.setItem('img', `${REACT_APP_API_URL}${urlPath}`);
-    return `${REACT_APP_API_URL}${urlPath}`;
-  };
-
-  useEffect(() => {
-    const fetchSecondLogo = async () => {
-      try {
-        const rawRefId = localStorage.getItem('refId');
-
-        let parsedRefId;
-        try {
-          parsedRefId = JSON.parse(rawRefId);
-        } catch (e) {
-          parsedRefId = rawRefId;
-        }
-
-        if (!parsedRefId) return;
-
-        const response = await get(`companySettings/${parsedRefId}/logo`); // your API endpoint
-        // console.log('------------------------------------------', response);
-
-        const logoUrl = response?.logo; // adjust based on your API response
-
-        if (logoUrl) {
-          setSecondLogo(logoUrl);
-        }
-      } catch (error) {
-        console.error('Error fetching company logo:', error);
+  // ✅ Fetch company settings to get company name
+  const fetchCompanySettings = async () => {
+    try {
+      setLoading(true);
+      
+      // Get refId from Redux or localStorage
+      let refId = user?.refId || localStorage.getItem('refId');
+      
+      if (!refId) {
+        console.log('No refId found');
+        setLoading(false);
+        return;
       }
-    };
+      
+      console.log('🔍 Fetching company settings for refId:', refId);
+      
+      // Fetch all company settings
+      const response = await get('companySettings/');
+      console.log('Company settings response:', response);
+      
+      if (response.status === 'true' && response.data) {
+        // Find company with matching refId
+        const company = response.data.find(c => c.refId === refId);
+        
+        if (company) {
+          // ✅ Set company name
+          setCompanyName(company.companyName || '');
+        } else if (response.data.length > 0) {
+          // If no match by refId, take first company
+          const firstCompany = response.data[0];
+          setCompanyName(firstCompany.companyName || '');
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching company settings:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    const fetchFYData = async () => {
+  // ✅ Fetch financial year data
+  const fetchFYData = async () => {
+    try {
       const res = await get('financialYear');
-      // console.log('FY data:', res.data);
       if (res.data) {
         setFinancialYearData(res.data);
         const now = new Date();
-        const currentFinancialYear = financialYearData.find((year) => new Date(year.fromDate) <= now && new Date(year.toDate) >= now);
-        setSelectedFY(currentFinancialYear?._id);
+        const currentFinancialYear = res.data.find(
+          (year) => new Date(year.fromDate) <= now && new Date(year.toDate) >= now
+        );
+        const savedFY = localStorage.getItem('selectedFY');
+        if (savedFY && res.data.find(y => y._id === savedFY)) {
+          setSelectedFY(savedFY);
+        } else if (currentFinancialYear) {
+          setSelectedFY(currentFinancialYear._id);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching FY data:', error);
+    }
+  };
 
-        console.log(selectedFY);
-      } else setFinancialYearData([]);
-    };
-
-    fetchSecondLogo();
+  useEffect(() => {
+    fetchCompanySettings();
     fetchFYData();
+  }, [user?.refId]);
+
+  // Listen for company settings updates
+  useEffect(() => {
+    const handleCompanyUpdate = () => {
+      console.log('Company settings updated, refetching...');
+      fetchCompanySettings();
+    };
+    
+    window.addEventListener('companySettingsUpdated', handleCompanyUpdate);
+    
+    return () => {
+      window.removeEventListener('companySettingsUpdated', handleCompanyUpdate);
+    };
   }, []);
 
   useEffect(() => {
     if (selectedFY) {
       localStorage.setItem('selectedFY', selectedFY);
-      console.log('FY changed ', selectedFY);
+      window.dispatchEvent(new Event('storage'));
     }
   }, [selectedFY]);
 
   const handleFYChange = (e) => {
     const value = e.target.value;
     setSelectedFY(value);
-    console.log('value changed ', value);
     localStorage.setItem('selectedFY', value);
+    window.dispatchEvent(new Event('storage'));
   };
-
-  useEffect(() => {
-    if (selectedFY) {
-      localStorage.setItem('selectedFY', selectedFY);
-      // ✅ Dispatch custom event so OTHER components react
-      window.dispatchEvent(new Event('storage'));
-    }
-  }, [selectedFY]);
-
-  // const fetchHospitalData = async () => {
-  //   const response = await get('company-setup');
-  //   dispatch(setHospitalData(response.data[0]));
-  // };
-
-  useEffect(() => {
-    // fetchHospitalData();
-    // getLogoUrl();
-  }, []);
 
   return (
     <>
       <financialYearContext.Provider value={selectedFY}>
         <Box width={drawerWidth} sx={{ zIndex: 1201 }}>
-          {/* <Grid container justifyContent="space-between" alignItems="center"> */}
-          <Grid sx={{ display: 'flex', width: '100%' }}>
+          <Grid sx={{ display: 'flex', width: '100%', alignItems: 'center' }}>
             <Grid item>
               <IconButton edge="start" sx={{ mr: theme.spacing(1.25) }} aria-label="open drawer" onClick={drawerToggle} size="large">
                 <MenuTwoToneIcon sx={{ fontSize: '1.5rem' }} />
               </IconButton>
             </Grid>
-            <Box sx={{ display: 'flex', backgroundColor: 'none' }} mt={0.5}>
-              <Box sx={{ display: 'flex', ml: 2, gap: 2 }}>
-                {/* First Logo */}
-                <Box
-                  sx={{
-                    width: '140px',
-                    height: '40px',
-                    display: 'flex',
-                    justifyContent: 'center',
-                    alignItems: 'center',
-
-                    borderRadius: '6px',
-                    overflow: 'hidden'
-                  }}
-                >
-                  <img src={insureLogo} alt="LOGO" style={{ maxWidth: '100%', maxHeight: '100%' }} />
-                </Box>
-
-                {/* Second Logo */}
-                {secondLogo && (
-                  <Box
-                    sx={{
-                      width: '0px',
-                      height: '0px',
-                      display: 'flex',
-                      justifyContent: 'center',
-                      alignItems: 'center',
-                      borderRadius: '6px',
-                      overflow: 'hidden'
-                    }}
-                  >
-                    <img src={getLogoUrl(secondLogo)} alt="Company Logo" style={{ maxWidth: '100%', maxHeight: '100%', cursor:"pointer" }} />
-                  </Box>
-                )}
+            
+            <Box sx={{ display: 'flex', alignItems: 'center', ml: 2, gap: 2 }}>
+              {/* Only Insure Logo */}
+              <Box
+                sx={{
+                  width: '140px',
+                  height: '40px',
+                  display: 'flex',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  borderRadius: '6px',
+                  overflow: 'hidden'
+                }}
+              >
+                <img src={insureLogo} alt="Insure Logo" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
               </Box>
-              {/* <Box sx={{ display: 'flex', marginLeft: '6rem' }}>
-              <Grid item sx={{ display: 'flex' }}>
-                <div
-                  style={{
-                    display: 'flex',
-                    width: '100%',
-                    alignItems: 'center',
-                    gap: '1rem',
-                    whiteSpace: 'nowrap',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis'
-                  }}
-                ></div>
-              </Grid>
-            </Box> */}
             </Box>
           </Grid>
         </Box>
 
+        {/* Subscription Expiry Popup */}
         <Dialog
           open={openPopup}
           onClose={handleClose}
@@ -335,7 +295,7 @@ const Header = ({ drawerToggle }) => {
         </Dialog>
 
         <Box sx={{ flexGrow: 1 }} />
-        {/* {data?.role === 'Administrative' ? <CurrentDate /> : <SearchSection theme="light" />} */}
+        
         <Box
           sx={{
             display: { md: 'flex', xs: 'none' },
@@ -343,6 +303,7 @@ const Header = ({ drawerToggle }) => {
             gap: 1
           }}
         >
+          {/* ✅ Dynamic Company Name from API */}
           <Typography
             variant="h6"
             sx={{
@@ -354,24 +315,9 @@ const Header = ({ drawerToggle }) => {
               textTransform: 'uppercase'
             }}
           >
-            {`${loginData?.names || 'J P Insurance'}  `}
+            {companyName || loginData?.names || 'J P Insurance'}
           </Typography>
           &nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;
-          {/* <select
-            name="finacialYear"
-            id="financialYear"
-            value={selectedFY}
-            onChange={handleFYChange}
-            style={{ backgroundColor: '#247375ff', color: 'white', height: '35px' }}
-          >
-            {financialYearData?.length > 0 &&
-              financialYearData?.map((type) => (
-                <option key={type._id} value={type._id}>
-                  {new Date(type.fromDate).getFullYear()} - {new Date(type.toDate).getFullYear()}
-                </option>
-              ))}
-          </select>
-          &nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp; */}
           <CurrentDate />
         </Box>
 

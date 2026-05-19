@@ -23,7 +23,7 @@ import LockOpenTwoTone from '@mui/icons-material/LockOpenTwoTone';
 import AccountCircleTwoToneIcon from '@mui/icons-material/AccountCircleTwoTone';
 import MeetingRoomTwoToneIcon from '@mui/icons-material/MeetingRoomTwoTone';
 import { logout } from '../../../../reduxSlices/authSlice';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux'; // ✅ Add useSelector
 import { useNavigate } from 'react-router';
 
 const ProfileSection = () => {
@@ -33,8 +33,12 @@ const ProfileSection = () => {
   const [openProfileModal, setOpenProfileModal] = useState(false);
   const anchorRef = React.useRef(null);
   const [savedPattern, setSavedPattern] = useState(null);
-  const [userData, setUserData] = useState(null);
-  const dispatch = useDispatch();
+  
+  // ✅ REDUX SE DATA LO - YEH CHANGE KIYA HAI
+  const userData = useSelector((state) => state.patient.userData); // patient slice se userData
+  const isAuthenticated = useSelector((state) => state.patient.isAuthenticated);
+  
+  const dispatch = useDispatch(); 
   const navigate = useNavigate();
 
   const handleToggle = () => {
@@ -51,7 +55,7 @@ const ProfileSection = () => {
   const handleLogout = () => {
     localStorage.removeItem('companyId');
     localStorage.removeItem('img');
-    dispatch(logout());
+    dispatch(logout()); // ✅ Redux logout call karega, jo localStorage bhi clear karega
     document.cookie = `hmsToken=`;
     window.location.href = '/login';
   };
@@ -65,21 +69,22 @@ const ProfileSection = () => {
     window.location.reload();
   };
 
-  // load pattern + user data from localStorage
+  // load pattern from localStorage only (userData ab Redux se aa raha hai)
   useEffect(() => {
     const lockData = localStorage.getItem('lockData');
     if (lockData) {
       const parsedData = JSON.parse(lockData);
       setSavedPattern(parsedData);
     }
-
-    const loginData = localStorage.getItem('loginData');
-    if (loginData) {
-      setUserData(JSON.parse(loginData));
-    }
+    // ✅ REMOVE KARO - Ab localStorage se userData nahi le rahe
+    // const loginData = localStorage.getItem('loginData');
+    // if (loginData) {
+    //   setUserData(JSON.parse(loginData));
+    // }
   }, []);
 
-  // console.log('User dinesh:', userData);
+  console.log('User data from Redux:', userData); // ✅ Ab Redux se log hoga
+  
   return (
     <>
       {/* Profile Button */}
@@ -128,8 +133,6 @@ const ProfileSection = () => {
                     borderRadius: '10px'
                   }}
                 >
-                  {/* Profile Option */}
-                  {/* <ListItemButton onClick={() => setOpenProfileModal(true)}> */}
                   <ListItemButton onClick={() => navigate('/profile')}>
                     <ListItemIcon>
                       <PersonTwoToneIcon />
@@ -137,7 +140,6 @@ const ProfileSection = () => {
                     <ListItemText primary="Profile" />
                   </ListItemButton>
 
-                  {/* Lock Screen */}
                   <ListItemButton>
                     <ListItemIcon>
                       <LockOpenTwoTone />
@@ -145,7 +147,6 @@ const ProfileSection = () => {
                     <ListItemText onClick={handleOpenLock} primary="Lock Screen" />
                   </ListItemButton>
 
-                  {/* Logout */}
                   <ListItemButton>
                     <ListItemIcon>
                       <MeetingRoomTwoToneIcon />
@@ -179,7 +180,6 @@ const ProfileSection = () => {
             textAlign: 'center'
           }}
         >
-          {/* Profile Avatar */}
           <Box
             sx={{
               width: 80,
@@ -196,23 +196,24 @@ const ProfileSection = () => {
               boxShadow: 3
             }}
           >
-            {userData?.name ? userData.name.charAt(0).toUpperCase() : 'U'}
+            {userData?.name ? userData.name.charAt(0).toUpperCase() : 
+             userData?.Name?.charAt(0).toUpperCase() || 'U'}
           </Box>
 
           <Typography id="profile-modal-title" variant="h6" fontWeight="bold" gutterBottom>
-            {userData?.name || 'User Profile'}
+            {userData?.name || userData?.Name || 'User Profile'}
           </Typography>
 
           {userData ? (
             <Box sx={{ textAlign: 'left', mt: 2 }}>
               <Typography sx={{ mb: 1 }}>
-                <strong>Email:</strong> {userData.email}
+                <strong>Email:</strong> {userData.email || userData.Email || 'N/A'}
               </Typography>
               <Typography sx={{ mb: 1 }}>
-                <strong>Role:</strong> {userData.role}
+                <strong>Role:</strong> {userData.role || 'N/A'}
               </Typography>
               <Typography sx={{ mb: 1 }}>
-                <strong>Created At:</strong> {new Date(userData.createdAt).toLocaleString()}
+                <strong>Created At:</strong> {userData.createdAt ? new Date(userData.createdAt).toLocaleString() : 'N/A'}
               </Typography>
             </Box>
           ) : (

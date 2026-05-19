@@ -1,66 +1,110 @@
-import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
-import REACT_APP_API_URL from '../api/api';
-import axios from 'axios';
+// reduxSlices/authSlice.js
+import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import { post } from '../api/api'; // Your API function
 
-// Async thunk to fetch user rights
-export const fetchUserRights = createAsyncThunk('patient/fetchUserRights', async (id, thunkAPI) => {
-  console.log('Fetching rights for user ID:', id);
-  try {
-    const response = await axios.get(`${REACT_APP_API_URL}admin/user-rights/${id}`);
-    console.log('User rights response:', response.data);
-    return response.data;
-  } catch (error) {
-    console.error('Error fetching user rights:', error);
-    return thunkAPI.rejectWithValue(error.response?.data || error.message);
+export const loginUser = createAsyncThunk(
+  'auth/loginUser',
+  async (credentials, { rejectWithValue }) => {
+    try {
+      const response = await post('auth/login', credentials);
+      if (response.status === 'true') {
+        // ✅ Store token in localStorage as well
+        localStorage.setItem('token', response.token);
+        localStorage.setItem('adminId', response.adminId);
+        localStorage.setItem('loginRole', response.role);
+        return response; // Return full response
+      } else {
+        return rejectWithValue(response.msg || 'Login failed');
+      }
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
   }
-});
+);
 
-const initialState = {
-  authorize: false,
-  userId: null,
-  userData: null,
-  SystemRightData: null,
-  hasFetchedRights: false,
-  isCheckingRights: false // 👈 new flag
-};
+export const fetchUserRights = createAsyncThunk(
+  'auth/fetchUserRights',
+  async (adminId, { rejectWithValue }) => {
+    try {
+      const response = await get(`userRights/${adminId}`);
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
+  }
+);
 
 const authSlice = createSlice({
-  name: 'patient',
-  initialState,
+  name: 'auth',
+  initialState: {
+    user: null,           // Full user data
+    token: null,          // Auth token
+    adminId: null,        // Admin ID
+    isAuthenticated: false,
+    loginLoading: false,
+    loginError: null,
+    userRights: [],       // User permissions
+    systemRights: {}      // System rights from login response
+  },
   reducers: {
-    setRightData: (state, action) => {
-      state.authorize = action.payload;
-    },
     logout: (state) => {
-      state.userId = null;
-      state.userData = null;
-      state.SystemRightData = null;
-      state.hasFetchedRights = false;
-      state.isCheckingRights = false;
-      sessionStorage.removeItem('hasFetchedRights');
+      state.user = null;
+      state.token = null;
+      state.adminId = null;
+      state.isAuthenticated = false;
+      state.userRights = [];
+      state.systemRights = {};
+      localStorage.removeItem('token');
+      localStorage.removeItem('adminId');
+      localStorage.removeItem('loginRole');
     }
   },
   extraReducers: (builder) => {
     builder
-      .addCase(fetchUserRights.pending, (state) => {
-        state.isCheckingRights = true; // start checking
+      // Login pending
+      .addCase(loginUser.pending, (state) => {
+        state.loginLoading = true;
+        state.loginError = null;
       })
+      // Login fulfilled ✅
+      .addCase(loginUser.fulfilled, (state, action) => {
+        state.loginLoading = false;
+        state.isAuthenticated = true;
+        state.token = action.payload.token;
+        state.adminId = action.payload.adminId;
+        
+        // ✅ Store complete user data
+        state.user = {
+          id: action.payload.adminId,
+          email: action.payload.Email,
+          name: action.payload.Name,
+          role: action.payload.role,
+          refId: action.payload.login?.refId,      // Important for API calls
+          refType: action.payload.login?.refType,
+          ...action.payload.login                   // Spread all login object data
+        };
+        
+        // ✅ Store system rights
+        state.systemRights = action.payload.systemRight || {};
+        
+        // ✅ Store in localStorage as backup
+        localStorage.setItem('refId', action.payload.login?.refId);
+        localStorage.setItem('userEmail', action.payload.Email);
+        localStorage.setItem('userName', action.payload.Name);
+        localStorage.setItem('userRole', action.payload.role);
+      })
+      // Login rejected
+      .addCase(loginUser.rejected, (state, action) => {
+        state.loginLoading = false;
+        state.loginError = action.payload || 'Login failed';
+        state.isAuthenticated = false;
+      })
+      // Fetch user rights
       .addCase(fetchUserRights.fulfilled, (state, action) => {
-        const { systemRights, populatedUser } = action.payload;
-        state.SystemRightData = systemRights;
-        state.authorize = populatedUser.refId.access;
-        state.userId = populatedUser._id;
-        state.userData = populatedUser;
-        state.hasFetchedRights = true;
-        state.isCheckingRights = false; // done
-      })
-      .addCase(fetchUserRights.rejected, (state) => {
-        state.isCheckingRights = false;
-        state.authorize = false;
+        state.userRights = action.payload;
       });
   }
 });
 
-// Exports
-export const { setRightData, logout } = authSlice.actions;
+export const { logout } = authSlice.actions;
 export default authSlice.reducer;

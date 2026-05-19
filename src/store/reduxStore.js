@@ -25,5 +25,6 @@ const store = configureStore({
 });
 
 const persistor = persistStore(store);
+// console.log('Redux State:', store.getState());
 
 export { store, persistor };

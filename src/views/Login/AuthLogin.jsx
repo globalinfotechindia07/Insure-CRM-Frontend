@@ -1,36 +1,40 @@
 import React from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { useNavigate } from 'react-router';
+import { Formik } from 'formik';
+import * as Yup from 'yup';
+import { toast } from 'react-toastify';
 
 // material-ui
 import { useTheme } from '@mui/material/styles';
 import {
   Box,
   Button,
-  Divider,
   FormHelperText,
-  Grid,
   TextField,
-  Typography,
   FormControl,
   InputLabel,
   OutlinedInput,
   InputAdornment,
-  IconButton
+  IconButton,
+  CircularProgress
 } from '@mui/material';
-
-//  third party
-import * as Yup from 'yup';
-import { Formik } from 'formik';
 
 // assets
 import Visibility from '@mui/icons-material/Visibility';
 import VisibilityOff from '@mui/icons-material/VisibilityOff';
-import Google from 'assets/images/social-google.svg';
 
-// ==============================|| FIREBASE LOGIN ||============================== //
+// Redux actions
+import { loginUser, fetchUserRights } from '../../reduxSlices/authSlice';
 
 const AuthLogin = ({ ...rest }) => {
   const theme = useTheme();
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
   const [showPassword, setShowPassword] = React.useState(false);
+  
+  // ✅ Get loading state from Redux - CHANGE 'patient' to 'auth'
+  const { loginLoading, loginError, isAuthenticated } = useSelector((state) => state.auth);
 
   const handleClickShowPassword = () => {
     setShowPassword(!showPassword);
@@ -39,6 +43,13 @@ const AuthLogin = ({ ...rest }) => {
   const handleMouseDownPassword = (event) => {
     event.preventDefault();
   };
+
+  // If already authenticated, redirect
+  React.useEffect(() => {
+    if (isAuthenticated) {
+      navigate('/dashboard');
+    }
+  }, [isAuthenticated, navigate]);
 
   return (
     <>
@@ -52,6 +63,56 @@ const AuthLogin = ({ ...rest }) => {
           email: Yup.string().email('Must be a valid email').max(255).required('Email is required'),
           password: Yup.string().max(255).required('Password is required')
         })}
+        onSubmit={async (values, { setSubmitting, setErrors }) => {
+          try {
+            // ✅ Dispatch login action - Redux slice automatically stores data
+            const result = await dispatch(loginUser({
+              email: values.email,
+              password: values.password
+            })).unwrap();
+            
+            console.log('✅ Login successful. Full response:', result);
+            console.log('✅ User refId:', result.login?.refId);
+            console.log('✅ Admin ID:', result.adminId);
+            console.log('✅ Role:', result.role);
+            
+            // ✅ Store additional data in localStorage as backup
+            localStorage.setItem('refId', result.login?.refId);
+            localStorage.setItem('adminId', result.adminId);
+            localStorage.setItem('userRole', result.role);
+            localStorage.setItem('userEmail', result.Email);
+            localStorage.setItem('userName', result.Name);
+            localStorage.setItem('token', result.token);
+            
+            toast.success(result.msg || 'Login successful!');
+            
+            // ✅ OPTIONAL: Fetch user rights if needed (only if you have rights API)
+            // const adminId = result.adminId || result.login?._id;
+            // if (adminId) {
+            //   await dispatch(fetchUserRights(adminId));
+            // }
+            
+            // ✅ Redirect to dashboard
+            navigate('/dashboard');
+            
+          } catch (error) {
+            console.error('❌ Login error:', error);
+            let errorMessage = 'Invalid email or password';
+            
+            if (typeof error === 'string') {
+              errorMessage = error;
+            } else if (error?.message) {
+              errorMessage = error.message;
+            } else if (error?.msg) {
+              errorMessage = error.msg;
+            }
+            
+            setErrors({ submit: errorMessage });
+            toast.error(errorMessage);
+          } finally {
+            setSubmitting(false);
+          }
+        }}
       >
         {({ errors, handleBlur, handleChange, handleSubmit, isSubmitting, touched, values }) => (
           <form noValidate onSubmit={handleSubmit} {...rest}>
@@ -95,18 +156,10 @@ const AuthLogin = ({ ...rest }) => {
               />
               {touched.password && errors.password && (
                 <FormHelperText error id="standard-weight-helper-text">
-                  {' '}
-                  {errors.password}{' '}
+                  {errors.password}
                 </FormHelperText>
               )}
             </FormControl>
-            {/* <Grid container justifyContent="flex-end">
-              <Grid item>
-                <Typography variant="subtitle2" color="primary" sx={{ textDecoration: 'none' }}>
-                  Forgot Password?
-                </Typography>
-              </Grid>
-            </Grid> */}
 
             {errors.submit && (
               <Box mt={3}>
@@ -114,12 +167,24 @@ const AuthLogin = ({ ...rest }) => {
               </Box>
             )}
 
+            {loginError && (
+              <Box mt={2}>
+                <FormHelperText error>{loginError}</FormHelperText>
+              </Box>
+            )}
+
             <Box mt={2}>
-              <Button color="primary" disabled={isSubmitting} fullWidth size="large" type="submit" variant="contained">
-                
+              <Button 
+                color="primary" 
+                disabled={isSubmitting || loginLoading} 
+                fullWidth 
+                size="large" 
+                type="submit" 
+                variant="contained"
+              >
+                {(isSubmitting || loginLoading) ? <CircularProgress size={24} /> : 'Login'}
               </Button>
             </Box>
-
           </form>
         )}
       </Formik>
