@@ -20,7 +20,7 @@ const ForgotPassword = () => {
 
   const sendOtp = async () => {
     try {
-      const response = await post(`/admin/auth/send-otp`, { email });
+      const response = await post(`admin/auth/send-otp`, { email });
       if (response.success === true) {
         setEmailVerified(true);
         alert('OTP sent to your email');
