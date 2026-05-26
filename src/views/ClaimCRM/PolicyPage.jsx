@@ -32,87 +32,86 @@ import {
   deletePolicy,
 } from "../../services/policy.service";
 
+import {
+  getActiveDepartments,
+} from "../../services/departmentApi";
+
 const PolicyPage = () => {
 
   const [open, setOpen] = useState(false);
-
   const [data, setData] = useState([]);
-
+  const [departments, setDepartments] = useState([]);
+  const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
 
     policyNo: "",
-
     corporateType: "",
-
     department: "",
-
     insuredName: "",
-
     contactNo: "",
-
     email: "",
-
     contactPerson: "",
-
     location: "",
-
     renewalType: "",
-
     policyType: "",
-
     wording: "",
-
     additionalWordings: "",
-
     lenders: "",
-
     propertyDescription: "",
-
     sumInsured: "",
-
     insurerName: "",
-
     vehicleNumber: "",
-
     premium: "",
-
     gst: "",
-
     totalAmount: "",
-
     modeOfPayment: "",
-
     startDate: "",
-
     endDate: "",
 
   });
 
-  // ================= FETCH DATA =================
-
+  // ================= FETCH POLICIES =================
   const fetchData = async () => {
-
     try {
-
       const res = await getPolicies();
-
       setData(res.data.data || []);
-
     } catch (error) {
-
       console.log(error);
+    }
+  };
 
+  // ================= FETCH DEPARTMENTS =================
+  const fetchDepartments = async () => {
+    setLoading(true);
+    try {
+      const res = await getActiveDepartments();
+      console.log("Departments API Response:", res);
+      
+      // Response structure: { success: true, data: [...] }
+      if (res.success && Array.isArray(res.data)) {
+        setDepartments(res.data);
+      } else if (Array.isArray(res)) {
+        setDepartments(res);
+      } else if (res.data && Array.isArray(res.data)) {
+        setDepartments(res.data);
+      } else {
+        setDepartments([]);
+      }
+    } catch (error) {
+      console.log("Error fetching departments:", error);
+      setDepartments([]);
+    } finally {
+      setLoading(false);
     }
   };
 
   useEffect(() => {
     fetchData();
+    fetchDepartments();
   }, []);
 
   // ================= HANDLE CHANGE =================
-
   const handleChange = (e) => {
-
     setFormData({
       ...formData,
       [e.target.name]: e.target.value,
@@ -120,88 +119,56 @@ const PolicyPage = () => {
   };
 
   // ================= SUBMIT =================
-
   const handleSubmit = async () => {
-
     try {
-
       await createPolicy(formData);
-
       setOpen(false);
-
       fetchData();
-
       setFormData({
 
         policyNo: "",
-
         corporateType: "",
-
         department: "",
-
         insuredName: "",
-
         contactNo: "",
-
         email: "",
-
         contactPerson: "",
-
         location: "",
-
         renewalType: "",
-
         policyType: "",
-
         wording: "",
-
         additionalWordings: "",
-
         lenders: "",
-
         propertyDescription: "",
-
         sumInsured: "",
-
         insurerName: "",
-
         vehicleNumber: "",
-
         premium: "",
-
         gst: "",
-
         totalAmount: "",
-
         modeOfPayment: "",
-
         startDate: "",
-
         endDate: "",
 
       });
-
+      alert("Policy created successfully!");
     } catch (error) {
-
       console.log(error);
-
+      alert("Error creating policy");
     }
   };
 
   // ================= DELETE =================
-
   const handleDelete = async (id) => {
-
-    try {
-
-      await deletePolicy(id);
-
-      fetchData();
-
-    } catch (error) {
-
-      console.log(error);
-
+    if (window.confirm("Are you sure you want to delete this policy?")) {
+      try {
+        await deletePolicy(id);
+        fetchData();
+        alert("Policy deleted successfully!");
+      } catch (error) {
+        console.log(error);
+        alert("Error deleting policy");
+      }
     }
   };
 
@@ -209,7 +176,6 @@ const PolicyPage = () => {
     <div>
 
       {/* HEADER */}
-
       <Grid
         container
         justifyContent="space-between"
@@ -232,7 +198,6 @@ const PolicyPage = () => {
       </Grid>
 
       {/* DIALOG */}
-
       <Dialog
         open={open}
         onClose={() => setOpen(false)}
@@ -249,7 +214,6 @@ const PolicyPage = () => {
           <Grid container spacing={2} sx={{ mt: 1 }}>
 
             <Grid item xs={12} md={6}>
-
               <TextField
                 fullWidth
                 label="Policy No"
@@ -257,11 +221,9 @@ const PolicyPage = () => {
                 value={formData.policyNo}
                 onChange={handleChange}
               />
-
             </Grid>
 
             <Grid item xs={12} md={6}>
-
               <TextField
                 select
                 fullWidth
@@ -270,33 +232,35 @@ const PolicyPage = () => {
                 value={formData.corporateType}
                 onChange={handleChange}
               >
-
-                <MenuItem value="CORPORATE">
-                  CORPORATE
-                </MenuItem>
-
-                <MenuItem value="RETAIL">
-                  RETAIL
-                </MenuItem>
-
+                <MenuItem value="CORPORATE">CORPORATE</MenuItem>
+                <MenuItem value="RETAIL">RETAIL</MenuItem>
               </TextField>
-
             </Grid>
 
             <Grid item xs={12} md={6}>
-
               <TextField
+                select
                 fullWidth
                 label="Department"
                 name="department"
                 value={formData.department}
                 onChange={handleChange}
-              />
-
+                disabled={loading}
+              >
+                <MenuItem value="">-- Select Department --</MenuItem>
+                {departments.length === 0 && !loading ? (
+                  <MenuItem disabled>No departments found. Please create departments first.</MenuItem>
+                ) : (
+                  departments.map((dept) => (
+                    <MenuItem key={dept._id} value={dept.name}>
+                      {dept.name}
+                    </MenuItem>
+                  ))
+                )}
+              </TextField>
             </Grid>
 
             <Grid item xs={12} md={6}>
-
               <TextField
                 fullWidth
                 label="Name of Insured"
@@ -304,11 +268,9 @@ const PolicyPage = () => {
                 value={formData.insuredName}
                 onChange={handleChange}
               />
-
             </Grid>
 
             <Grid item xs={12} md={6}>
-
               <TextField
                 fullWidth
                 label="Contact No"
@@ -316,11 +278,9 @@ const PolicyPage = () => {
                 value={formData.contactNo}
                 onChange={handleChange}
               />
-
             </Grid>
 
             <Grid item xs={12} md={6}>
-
               <TextField
                 fullWidth
                 label="Email ID"
@@ -328,11 +288,9 @@ const PolicyPage = () => {
                 value={formData.email}
                 onChange={handleChange}
               />
-
             </Grid>
 
             <Grid item xs={12} md={6}>
-
               <TextField
                 fullWidth
                 label="Contact Person"
@@ -340,11 +298,9 @@ const PolicyPage = () => {
                 value={formData.contactPerson}
                 onChange={handleChange}
               />
-
             </Grid>
 
             <Grid item xs={12}>
-
               <TextField
                 fullWidth
                 label="Location of Property"
@@ -352,11 +308,9 @@ const PolicyPage = () => {
                 value={formData.location}
                 onChange={handleChange}
               />
-
             </Grid>
 
             <Grid item xs={12} md={6}>
-
               <TextField
                 fullWidth
                 label="Renewal / New Policy"
@@ -364,11 +318,9 @@ const PolicyPage = () => {
                 value={formData.renewalType}
                 onChange={handleChange}
               />
-
             </Grid>
 
             <Grid item xs={12} md={6}>
-
               <TextField
                 fullWidth
                 label="Type of Policy"
@@ -376,11 +328,9 @@ const PolicyPage = () => {
                 value={formData.policyType}
                 onChange={handleChange}
               />
-
             </Grid>
 
             <Grid item xs={12}>
-
               <TextField
                 fullWidth
                 label="Wording"
@@ -388,11 +338,9 @@ const PolicyPage = () => {
                 value={formData.wording}
                 onChange={handleChange}
               />
-
             </Grid>
 
             <Grid item xs={12}>
-
               <TextField
                 fullWidth
                 label="Additional Wordings"
@@ -400,11 +348,9 @@ const PolicyPage = () => {
                 value={formData.additionalWordings}
                 onChange={handleChange}
               />
-
             </Grid>
 
             <Grid item xs={12}>
-
               <TextField
                 fullWidth
                 label="Financial Institutions & Lenders"
@@ -412,11 +358,9 @@ const PolicyPage = () => {
                 value={formData.lenders}
                 onChange={handleChange}
               />
-
             </Grid>
 
             <Grid item xs={12}>
-
               <TextField
                 fullWidth
                 multiline
@@ -426,11 +370,9 @@ const PolicyPage = () => {
                 value={formData.propertyDescription}
                 onChange={handleChange}
               />
-
             </Grid>
 
             <Grid item xs={12} md={6}>
-
               <TextField
                 fullWidth
                 label="Sum Insured"
@@ -438,11 +380,9 @@ const PolicyPage = () => {
                 value={formData.sumInsured}
                 onChange={handleChange}
               />
-
             </Grid>
 
             <Grid item xs={12} md={6}>
-
               <TextField
                 fullWidth
                 label="Name of Insurer"
@@ -450,11 +390,9 @@ const PolicyPage = () => {
                 value={formData.insurerName}
                 onChange={handleChange}
               />
-
             </Grid>
 
             <Grid item xs={12} md={6}>
-
               <TextField
                 fullWidth
                 label="Vehicle Number"
@@ -462,11 +400,9 @@ const PolicyPage = () => {
                 value={formData.vehicleNumber}
                 onChange={handleChange}
               />
-
             </Grid>
 
             <Grid item xs={12} md={6}>
-
               <TextField
                 fullWidth
                 label="Net Premium"
@@ -474,11 +410,9 @@ const PolicyPage = () => {
                 value={formData.premium}
                 onChange={handleChange}
               />
-
             </Grid>
 
             <Grid item xs={12} md={4}>
-
               <TextField
                 fullWidth
                 label="GST"
@@ -486,11 +420,9 @@ const PolicyPage = () => {
                 value={formData.gst}
                 onChange={handleChange}
               />
-
             </Grid>
 
             <Grid item xs={12} md={4}>
-
               <TextField
                 fullWidth
                 label="Total Amount"
@@ -498,11 +430,9 @@ const PolicyPage = () => {
                 value={formData.totalAmount}
                 onChange={handleChange}
               />
-
             </Grid>
 
             <Grid item xs={12} md={4}>
-
               <TextField
                 fullWidth
                 label="Mode of Payment"
@@ -510,39 +440,30 @@ const PolicyPage = () => {
                 value={formData.modeOfPayment}
                 onChange={handleChange}
               />
-
             </Grid>
 
             <Grid item xs={12} md={6}>
-
               <TextField
                 fullWidth
                 type="date"
                 label="Start Date"
                 name="startDate"
-                InputLabelProps={{
-                  shrink: true,
-                }}
+                InputLabelProps={{ shrink: true }}
                 value={formData.startDate}
                 onChange={handleChange}
               />
-
             </Grid>
 
             <Grid item xs={12} md={6}>
-
               <TextField
                 fullWidth
                 type="date"
                 label="End Date"
                 name="endDate"
-                InputLabelProps={{
-                  shrink: true,
-                }}
+                InputLabelProps={{ shrink: true }}
                 value={formData.endDate}
                 onChange={handleChange}
               />
-
             </Grid>
 
           </Grid>
@@ -550,7 +471,6 @@ const PolicyPage = () => {
         </DialogContent>
 
         <DialogActions>
-
           <Button
             color="error"
             variant="outlined"
@@ -558,30 +478,22 @@ const PolicyPage = () => {
           >
             Cancel
           </Button>
-
           <Button
             variant="contained"
             onClick={handleSubmit}
           >
             Save
           </Button>
-
         </DialogActions>
 
       </Dialog>
 
       {/* TABLE */}
-
       <Card>
-
         <CardContent>
-
           <Table>
-
             <TableHead>
-
               <TableRow>
-
                 <TableCell>SN</TableCell>
                 <TableCell>Policy No</TableCell>
                 <TableCell>Insured Name</TableCell>
@@ -591,102 +503,46 @@ const PolicyPage = () => {
                 <TableCell>Total Amount</TableCell>
                 <TableCell>Status</TableCell>
                 <TableCell>Action</TableCell>
-
               </TableRow>
-
             </TableHead>
 
             <TableBody>
-
               {data.length > 0 ? (
-
                 data.map((item, index) => (
-
                   <TableRow key={item._id}>
-
+                    <TableCell>{index + 1}</TableCell>
+                    <TableCell>{item.policyNo}</TableCell>
+                    <TableCell>{item.insuredName}</TableCell>
+                    <TableCell>{item.department}</TableCell>
+                    <TableCell>{item.policyType}</TableCell>
+                    <TableCell>{item.vehicleNumber}</TableCell>
+                    <TableCell>{item.totalAmount}</TableCell>
                     <TableCell>
-                      {index + 1}
-                    </TableCell>
-
-                    <TableCell>
-                      {item.policyNo}
-                    </TableCell>
-
-                    <TableCell>
-                      {item.insuredName}
-                    </TableCell>
-
-                    <TableCell>
-                      {item.department}
-                    </TableCell>
-
-                    <TableCell>
-                      {item.policyType}
-                    </TableCell>
-
-                    <TableCell>
-                      {item.vehicleNumber}
-                    </TableCell>
-
-                    <TableCell>
-                      {item.totalAmount}
-                    </TableCell>
-
-                    <TableCell>
-
                       <Chip
-                        label={
-                          item.status
-                            ? "Active"
-                            : "Inactive"
-                        }
-                        color={
-                          item.status
-                            ? "success"
-                            : "error"
-                        }
+                        label={item.status ? "Active" : "Inactive"}
+                        color={item.status ? "success" : "error"}
                       />
-
                     </TableCell>
-
                     <TableCell>
-
                       <IconButton
                         color="error"
-                        onClick={() =>
-                          handleDelete(item._id)
-                        }
+                        onClick={() => handleDelete(item._id)}
                       >
                         <Delete />
                       </IconButton>
-
                     </TableCell>
-
                   </TableRow>
-
                 ))
-
               ) : (
-
                 <TableRow>
-
-                  <TableCell
-                    colSpan={9}
-                    align="center"
-                  >
+                  <TableCell colSpan={9} align="center">
                     No Policy Found
                   </TableCell>
-
                 </TableRow>
-
               )}
-
             </TableBody>
-
           </Table>
-
         </CardContent>
-
       </Card>
 
     </div>
