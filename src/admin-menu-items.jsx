@@ -362,6 +362,13 @@ export default {
               type: 'collapse',
               icon: GridViewIcon,
               children: [
+                                {
+                  id: 'department-page',
+                  title: 'Department',
+                  type: 'item',
+                  icon: AccountTreeIcon,
+                  url: '/master/department-page'
+                },
                 {
                   id: 'surveyor',
                   title: 'Surveyor',
