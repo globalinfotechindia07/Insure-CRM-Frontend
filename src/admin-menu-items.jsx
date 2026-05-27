@@ -282,20 +282,35 @@ export default {
               type: 'collapse',
               icon: GridViewIcon,
               children: [
-                {
-                  id: 'insurance-company',
-                  title: 'Insurance Company',
-                  type: 'item',
-                  icon: AccountBalanceIcon,
-                  url: '/master/insurance-company'
-                },
-                {
-                  id: 'departments',
-                  title: 'INS Department',
+                                               {
+                  id: 'department-page',
+                  title: 'Insurance Department',
                   type: 'item',
                   icon: AccountTreeIcon,
-                  url: '/master/ins-department'
+                  url: '/master/department-page'
                 },
+                            {
+                  id: 'company-page',
+                  title: 'Insurance Company',
+                  type: 'item',
+                  icon: AccountTreeIcon,
+                  url: '/master/company'
+                },
+
+                // {
+                //   id: 'insurance-company',
+                //   title: 'Insurance Company',
+                //   type: 'item',
+                //   icon: AccountBalanceIcon,
+                //   url: '/master/insurance-company'
+                // },
+                // {
+                //   id: 'departments',
+                //   title: 'INS Department',
+                //   type: 'item',
+                //   icon: AccountTreeIcon,
+                //   url: '/master/ins-department'
+                // },
                 {
                   id: 'endorsement',
                   title: 'Endorsement',
@@ -340,13 +355,13 @@ export default {
                   icon: AccountTreeIcon,
                   url: '/master/otherAddon'
                 },
-                {
-                  id: 'type-of-vehicle',
-                  title: 'Type of Vehicle',
-                  type: 'item',
-                  icon: AccountTreeIcon,
-                  url: '/master/type-of-vehicle'
-                },
+                // {
+                //   id: 'type-of-vehicle',
+                //   title: 'Type of Vehicle',
+                //   type: 'item',
+                //   icon: AccountTreeIcon,
+                //   url: '/master/type-of-vehicle'
+                // },
                 {
                   id: 'risk-code',
                   title: 'Risk Code',
@@ -362,13 +377,7 @@ export default {
               type: 'collapse',
               icon: GridViewIcon,
               children: [
-                                {
-                  id: 'department-page',
-                  title: 'Department',
-                  type: 'item',
-                  icon: AccountTreeIcon,
-                  url: '/master/department-page'
-                },
+ 
                 {
                   id: 'surveyor',
                   title: 'Surveyor',

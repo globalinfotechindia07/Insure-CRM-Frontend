@@ -29,15 +29,15 @@ import {
 } from "@mui/icons-material";
 
 import {
-  getDepartments,
-  createDepartment,
-  updateDepartment,
-  deleteDepartment,
-} from "../../services/departmentApi";
+  getCompanies,
+  createCompany,
+  updateCompany,
+  deleteCompany,
+} from "../../services/companyService";
 
 import Swal from "sweetalert2";
 
-const DepartmentPage = () => {
+const CompanyPage = () => {
   const [open, setOpen] = useState(false);
   const [isEdit, setIsEdit] = useState(false);
   const [data, setData] = useState([]);
@@ -49,11 +49,11 @@ const DepartmentPage = () => {
     status: "active",
   });
 
-  // ================= FETCH DEPARTMENTS =================
-  const fetchDepartments = async () => {
+  // ================= FETCH COMPANIES =================
+  const fetchCompanies = async () => {
     setLoading(true);
     try {
-      const res = await getDepartments();
+      const res = await getCompanies();
       setData(res.data || []);
     } catch (error) {
       console.log(error);
@@ -64,7 +64,7 @@ const DepartmentPage = () => {
   };
 
   useEffect(() => {
-    fetchDepartments();
+    fetchCompanies();
   }, []);
 
   // ================= HANDLE CHANGE =================
@@ -82,7 +82,7 @@ const DepartmentPage = () => {
       Swal.fire({
         icon: "warning",
         title: "Validation Error",
-        text: "Department name is required!",
+        text: "Company name is required!",
       });
       return;
     }
@@ -91,7 +91,7 @@ const DepartmentPage = () => {
     
     try {
       if (isEdit) {
-        await updateDepartment(formData._id, {
+        await updateCompany(formData._id, {
           name: formData.name,
           description: formData.description,
           status: formData.status,
@@ -100,34 +100,34 @@ const DepartmentPage = () => {
         Swal.fire({
           icon: "success",
           title: "Updated!",
-          text: "Department updated successfully!",
+          text: "Company updated successfully!",
           timer: 2000,
           showConfirmButton: false,
         });
       } else {
-        await createDepartment({
+        await createCompany({
           name: formData.name,
-          description: formData.description,
+          description: formData.description || "",
         });
         
         Swal.fire({
           icon: "success",
           title: "Created!",
-          text: "Department created successfully!",
+          text: "Company created successfully!",
           timer: 2000,
           showConfirmButton: false,
         });
       }
       setOpen(false);
       resetForm();
-      fetchDepartments();
+      fetchCompanies();
     } catch (error) {
       console.log(error);
       
       Swal.fire({
         icon: "error",
         title: "Error!",
-        text: isEdit ? "Error updating department" : "Error creating department",
+        text: isEdit ? "Error updating company" : "Error creating company",
       });
     } finally {
       setLoading(false);
@@ -162,13 +162,13 @@ const DepartmentPage = () => {
     if (result.isConfirmed) {
       setLoading(true);
       try {
-        await deleteDepartment(id);
-        fetchDepartments();
+        await deleteCompany(id);
+        fetchCompanies();
         
         Swal.fire({
           icon: "success",
           title: "Deleted!",
-          text: "Department deleted successfully!",
+          text: "Company deleted successfully!",
           timer: 2000,
           showConfirmButton: false,
         });
@@ -178,7 +178,7 @@ const DepartmentPage = () => {
         Swal.fire({
           icon: "error",
           title: "Error!",
-          text: "Error deleting department",
+          text: "Error deleting company",
         });
       } finally {
         setLoading(false);
@@ -212,7 +212,7 @@ const DepartmentPage = () => {
         sx={{ mb: 2 }}
       >
         <Typography variant="h5">
-          Department
+          Company
         </Typography>
 
         <Button
@@ -223,14 +223,14 @@ const DepartmentPage = () => {
             setOpen(true);
           }}
         >
-          Add Department
+          Add Company
         </Button>
       </Grid>
 
       {/* ADD/EDIT DIALOG - Endorsement Style */}
       <Dialog open={open} onClose={handleClose}>
         <DialogTitle sx={{ m: 0, p: 2 }}>
-          {isEdit ? "Edit Department" : "Add Department"}
+          {isEdit ? "Edit Company" : "Add Company"}
           <IconButton
             aria-label="close"
             onClick={handleClose}
@@ -247,7 +247,7 @@ const DepartmentPage = () => {
         
         <DialogContent sx={{ minWidth: 400 }}>
           <TextField
-            label="Department Name"
+            label="Company Name"
             name="name"
             value={formData.name}
             onChange={handleChange}
@@ -308,7 +308,7 @@ const DepartmentPage = () => {
             <TableHead>
               <TableRow>
                 <TableCell>SN</TableCell>
-                <TableCell>Department Name</TableCell>
+                <TableCell>Company Name</TableCell>
                 <TableCell>Description</TableCell>
                 <TableCell>Status</TableCell>
                 <TableCell>Created Date</TableCell>
@@ -365,7 +365,7 @@ const DepartmentPage = () => {
                 <TableRow>
                   <TableCell colSpan={6} align="center" sx={{ py: 4 }}>
                     <Typography variant="body1" color="text.secondary">
-                      No Department found. Click "Add Department" to create one.
+                      No Company found. Click "Add Company" to create one.
                     </Typography>
                   </TableCell>
                 </TableRow>
@@ -378,4 +378,4 @@ const DepartmentPage = () => {
   );
 };
 
-export default DepartmentPage;
+export default CompanyPage;

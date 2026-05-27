@@ -1,16 +1,16 @@
 import API from "../api/axios";
 
-export const getPolicies = () =>
-  API.get("/policy");
+// ================= GET ALL POLICIES =================
+export const getPolicies = () => API.get("/policy");
 
-export const getSinglePolicy = (id) =>
-  API.get(`/policy/${id}`);
+// ================= GET SINGLE POLICY =================
+export const getSinglePolicy = (id) => API.get(`/policy/${id}`);
 
-export const createPolicy = (data) =>
-  API.post("/policy", data);
+// ================= CREATE POLICY =================
+export const createPolicy = (data) => API.post("/policy", data);
 
-export const updatePolicy = (id, data) =>
-  API.put(`/policy/${id}`, data);
+// ================= UPDATE POLICY =================
+export const updatePolicy = (id, data) => API.put(`/policy/${id}`, data);
 
-export const deletePolicy = (id) =>
-  API.delete(`/policy/${id}`);
+// ================= DELETE POLICY =================
+export const deletePolicy = (id) => API.delete(`/policy/${id}`);

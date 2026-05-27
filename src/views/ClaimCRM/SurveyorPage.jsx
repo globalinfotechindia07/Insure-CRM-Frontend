@@ -35,6 +35,8 @@ import {
   deleteSurveyor
 } from "../../services/surveyor.service";
 
+import Swal from "sweetalert2";
+
 const SurveyorPage = () => {
 
   const [open, setOpen] = useState(false);
@@ -94,6 +96,14 @@ const SurveyorPage = () => {
             .map((item) => item.trim())
       });
 
+      Swal.fire({
+        icon: "success",
+        title: "Success!",
+        text: "Surveyor created successfully!",
+        timer: 2000,
+        showConfirmButton: false,
+      });
+
       setOpen(false);
 
       setFormData({
@@ -112,23 +122,54 @@ const SurveyorPage = () => {
     } catch (error) {
 
       console.log(error);
-
+      
+      Swal.fire({
+        icon: "error",
+        title: "Error!",
+        text: "Error creating surveyor",
+      });
     }
   };
 
   // DELETE
   const handleDelete = async (id) => {
 
-    try {
+    const result = await Swal.fire({
+      title: "Are you sure?",
+      text: "You won't be able to revert this!",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#d33",
+      cancelButtonColor: "#3085d6",
+      confirmButtonText: "Yes, delete it!",
+      cancelButtonText: "Cancel",
+    });
 
-      await deleteSurveyor(id);
+    if (result.isConfirmed) {
+      try {
 
-      fetchData();
+        await deleteSurveyor(id);
 
-    } catch (error) {
+        fetchData();
+        
+        Swal.fire({
+          icon: "success",
+          title: "Deleted!",
+          text: "Surveyor deleted successfully!",
+          timer: 2000,
+          showConfirmButton: false,
+        });
 
-      console.log(error);
+      } catch (error) {
 
+        console.log(error);
+        
+        Swal.fire({
+          icon: "error",
+          title: "Error!",
+          text: "Error deleting surveyor",
+        });
+      }
     }
   };
 

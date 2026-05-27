@@ -114,6 +114,7 @@ import PolicyPage from 'views/ClaimCRM/PolicyPage';
 import InvestigatorPage from 'views/ClaimCRM/InvestigatorPage';
 import ClaimPage from 'views/ClaimCRM/ClaimPage';
 import DepartmentPage from 'views/ClaimCRM/DepartmentPage';
+import CompanyPage from 'views/ClaimCRM/CompanyPage';
 // import ClaimDetailsPage from 'views/ClaimCRM/ClaimDetailsPage';
 // const UtilsTypography = Loadable(lazy(() => import('views/Utils/Typography')));
 // const Prefix = Loadable(lazy(() => import('views/master/general-setup/prefix/Prefix')));
@@ -1658,6 +1659,17 @@ const MainRoutes = {
           allowedRoles={['admin', 'staff', 'Administrative', 'NursingAndParamedical', 'MedicalOfficer', 'Support', 'Consultant']}
         >
           <DepartmentPage />
+        </PrivateRoute>
+      )
+    },
+
+                            {
+      path: '/master/company',
+      element: (
+        <PrivateRoute
+          allowedRoles={['admin', 'staff', 'Administrative', 'NursingAndParamedical', 'MedicalOfficer', 'Support', 'Consultant']}
+        >
+          <CompanyPage />
         </PrivateRoute>
       )
     },
