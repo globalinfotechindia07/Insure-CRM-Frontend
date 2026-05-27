@@ -33,6 +33,8 @@ import {
   updateTPA,
 } from "../../services/tpa.service";
 
+import Swal from "sweetalert2";
+
 const TPAPage = () => {
 
   const [open, setOpen] = useState(false);
@@ -87,10 +89,26 @@ const TPAPage = () => {
       if (editId) {
 
         await updateTPA(editId, formData);
+        
+        Swal.fire({
+          icon: "success",
+          title: "Updated!",
+          text: "TPA updated successfully!",
+          timer: 2000,
+          showConfirmButton: false,
+        });
 
       } else {
 
         await createTPA(formData);
+        
+        Swal.fire({
+          icon: "success",
+          title: "Created!",
+          text: "TPA created successfully!",
+          timer: 2000,
+          showConfirmButton: false,
+        });
 
       }
 
@@ -110,23 +128,54 @@ const TPAPage = () => {
     } catch (error) {
 
       console.log(error);
-
+      
+      Swal.fire({
+        icon: "error",
+        title: "Error!",
+        text: editId ? "Error updating TPA" : "Error creating TPA",
+      });
     }
   };
 
   // DELETE
   const handleDelete = async (id) => {
 
-    try {
+    const result = await Swal.fire({
+      title: "Are you sure?",
+      text: "You won't be able to revert this!",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#d33",
+      cancelButtonColor: "#3085d6",
+      confirmButtonText: "Yes, delete it!",
+      cancelButtonText: "Cancel",
+    });
 
-      await deleteTPA(id);
+    if (result.isConfirmed) {
+      try {
 
-      fetchData();
+        await deleteTPA(id);
 
-    } catch (error) {
+        fetchData();
+        
+        Swal.fire({
+          icon: "success",
+          title: "Deleted!",
+          text: "TPA deleted successfully!",
+          timer: 2000,
+          showConfirmButton: false,
+        });
 
-      console.log(error);
+      } catch (error) {
 
+        console.log(error);
+        
+        Swal.fire({
+          icon: "error",
+          title: "Error!",
+          text: "Error deleting TPA",
+        });
+      }
     }
   };
 

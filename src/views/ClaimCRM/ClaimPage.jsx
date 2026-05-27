@@ -19,17 +19,24 @@ import {
   MenuItem,
   IconButton,
   Chip,
+  Tab,
+  Tabs,
+  Box,
 } from "@mui/material";
 
 import {
   Add,
   Delete,
+  Edit,
 } from "@mui/icons-material";
+
+import Swal from 'sweetalert2';
 
 import {
   createClaim,
   getClaims,
   deleteClaim,
+  updateClaim,
 } from "../../services/claim.service";
 
 import {
@@ -44,211 +51,153 @@ import {
   getTPAs,
 } from "../../services/tpa.service";
 
-
-
 import {
   getInvestigators,
 } from "../../services/investigator.service";
 
+import {
+  getActiveDepartments,
+} from "../../services/departmentApi";
+
 const ClaimPage = () => {
 
   const [open, setOpen] = useState(false);
-
+  const [isEdit, setIsEdit] = useState(false);
+  const [currentClaimId, setCurrentClaimId] = useState(null);
+  const [activeTab, setActiveTab] = useState(0);
   const [data, setData] = useState([]);
-
   const [policies, setPolicies] = useState([]);
-
   const [surveyors, setSurveyors] = useState([]);
-
   const [tpas, setTPAs] = useState([]);
-
   const [investigators, setInvestigators] = useState([]);
+  const [departments, setDepartments] = useState([]);
 
   const [formData, setFormData] = useState({
-
-    department: "",
-    policyType: "",
-
     claimNo: "",
-
+    department: "",
+    status: "Pending",
+    remarks: "",
     policyId: "",
     policyNo: "",
-
     insuredName: "",
     contactNo: "",
     email: "",
     contactPerson: "",
-    departmentName: "",
-    propertyLocation: "",
-    renewalType: "",
-    typeOfPolicy: "",
-    wording: "",
-    additionalWordings: "",
-    financialInstitutions: "",
-    propertyDescription: "",
-    sumInsured: "",
-    insurancePeriod: "",
-    insurerName: "",
     vehicleNumber: "",
-    netPremium: "",
-    gst: "",
-    totalAmount: "",
-    paymentMode: "",
-
-    dateOfLoss: "",
-    dischargeDate: "",
+    dateOfLossOrAdmission: "",
+    dateOfDischarge: "",
     estimatedLossAmount: "",
     causeOfLoss: "",
-
-    surveyorId: "",
+    machineryDetails: "",
+    preliminarySurveyorId: "",
     finalSurveyorId: "",
-
     tpaId: "",
-
     investigatorId: "",
-
     invoiceNo: "",
     billOfLadingNo: "",
     lrNo: "",
     insuranceCertificateNo: "",
-
     journeyFrom: "",
     journeyTo: "",
-
-    surveyReferenceNo: "",
-
+    surveyorReferenceNumber: "",
     settlementType: "",
-
-    approvalDate: "",
-    settlementDate: "",
-
-    approvedAmount: "",
-
-    machineryDetails: "",
-
+    claimApprovedAmount: "",
+    dateOfApprovalOfClaim: "",
+    dateOfSettlement: "",
     postHospitalizationDischargeDate: "",
-    amountClaimed: "",
-    noOfDays: "",
-
-    remarks: "",
-
-    status: "Pending",
-
+    postHospitalizationAmountClaimed: "",
+    postHospitalizationNoOfDays: "",
   });
 
   // ================= FETCH CLAIMS =================
-
   const fetchClaims = async () => {
-
     try {
-
       const res = await getClaims();
-
+      console.log("Claims fetched:", res.data);
       setData(res.data.data || []);
-
     } catch (error) {
-
       console.log(error);
-
     }
   };
 
   // ================= FETCH POLICIES =================
-
   const fetchPolicies = async () => {
-
     try {
-
       const res = await getPolicies();
-
       setPolicies(res.data.data || []);
-
     } catch (error) {
-
       console.log(error);
-
     }
   };
 
   // ================= FETCH SURVEYORS =================
-
   const fetchSurveyors = async () => {
-
     try {
-
       const res = await getSurveyors();
-
       setSurveyors(res.data.data || []);
-
     } catch (error) {
-
       console.log(error);
-
     }
   };
 
   // ================= FETCH TPA =================
-
   const fetchTPAs = async () => {
-
     try {
-
       const res = await getTPAs();
-
       setTPAs(res.data.data || []);
-
     } catch (error) {
-
       console.log(error);
-
     }
   };
 
   // ================= FETCH INVESTIGATORS =================
-
   const fetchInvestigators = async () => {
-
     try {
-
       const res = await getInvestigators();
-
       setInvestigators(res.data.data || []);
-
     } catch (error) {
-
       console.log(error);
+    }
+  };
 
+  // ================= FETCH DEPARTMENTS =================
+  const fetchDepartments = async () => {
+    try {
+      const res = await getActiveDepartments();
+      console.log("Departments fetched:", res);
+      if (res.success && Array.isArray(res.data)) {
+        setDepartments(res.data);
+      } else if (res.data && Array.isArray(res.data.data)) {
+        setDepartments(res.data.data);
+      } else if (Array.isArray(res)) {
+        setDepartments(res);
+      } else {
+        setDepartments([]);
+      }
+    } catch (error) {
+      console.log("Error fetching departments:", error);
     }
   };
 
   useEffect(() => {
-
     fetchClaims();
-
     fetchPolicies();
-
     fetchSurveyors();
-
     fetchTPAs();
-
     fetchInvestigators();
-
+    fetchDepartments();
   }, []);
 
   // ================= HANDLE CHANGE =================
-
   const handleChange = (e) => {
-
     setFormData({
       ...formData,
       [e.target.name]: e.target.value,
     });
   };
 
-  // ================= HANDLE POLICY =================
-
+  // ================= HANDLE POLICY CHANGE =================
   const handlePolicyChange = (e) => {
-
     const selectedPolicy = policies.find(
       (item) => item._id === e.target.value
     );
@@ -256,565 +205,507 @@ const ClaimPage = () => {
     if (!selectedPolicy) return;
 
     setFormData({
-
       ...formData,
-
       policyId: selectedPolicy._id,
-
       policyNo: selectedPolicy.policyNo || "",
-
       insuredName: selectedPolicy.insuredName || "",
-
       contactNo: selectedPolicy.contactNo || "",
-
       email: selectedPolicy.email || "",
-
-      contactPerson:
-        selectedPolicy.contactPerson || "",
-
-      departmentName:
-        selectedPolicy.department || "",
-
-      propertyLocation:
-        selectedPolicy.propertyLocation || "",
-
-      renewalType:
-        selectedPolicy.renewalType || "",
-
-      typeOfPolicy:
-        selectedPolicy.typeOfPolicy || "",
-
-      wording:
-        selectedPolicy.wording || "",
-
-      additionalWordings:
-        selectedPolicy.additionalWordings || "",
-
-      financialInstitutions:
-        selectedPolicy.financialInstitutions || "",
-
-      propertyDescription:
-        selectedPolicy.propertyDescription || "",
-
-      sumInsured:
-        selectedPolicy.sumInsured || "",
-
-      insurancePeriod:
-        selectedPolicy.insurancePeriod || "",
-
-      insurerName:
-        selectedPolicy.insurerName || "",
-
-      vehicleNumber:
-        selectedPolicy.vehicleNumber || "",
-
-      netPremium:
-        selectedPolicy.netPremium || "",
-
-      gst:
-        selectedPolicy.gst || "",
-
-      totalAmount:
-        selectedPolicy.totalAmount || "",
-
-      paymentMode:
-        selectedPolicy.paymentMode || "",
-
+      contactPerson: selectedPolicy.contactPerson || "",
+      vehicleNumber: selectedPolicy.vehicleNumber || "",
     });
   };
 
   // ================= HANDLE SUBMIT =================
-
   const handleSubmit = async () => {
-
     try {
+      const submitData = {
+        claimNo: formData.claimNo,
+        department: formData.department,
+        status: formData.status,
+        remarks: formData.remarks,
+        policyId: formData.policyId,
+        policyNo: formData.policyNo,
+        insuredName: formData.insuredName,
+        contactNo: formData.contactNo,
+        email: formData.email,
+        contactPerson: formData.contactPerson,
+        vehicleNumber: formData.vehicleNumber,
+        dateOfLossOrAdmission: formData.dateOfLossOrAdmission,
+        dateOfDischarge: formData.dateOfDischarge,
+        estimatedLossAmount: formData.estimatedLossAmount,
+        causeOfLoss: formData.causeOfLoss,
+        machineryDetails: formData.machineryDetails,
+        preliminarySurveyorId: formData.preliminarySurveyorId,
+        finalSurveyorId: formData.finalSurveyorId,
+        tpaId: formData.tpaId,
+        investigatorId: formData.investigatorId,
+        invoiceNo: formData.invoiceNo,
+        billOfLadingNo: formData.billOfLadingNo,
+        lrNo: formData.lrNo,
+        insuranceCertificateNo: formData.insuranceCertificateNo,
+        journeyFrom: formData.journeyFrom,
+        journeyTo: formData.journeyTo,
+        surveyorReferenceNumber: formData.surveyorReferenceNumber,
+        settlementType: formData.settlementType,
+        claimApprovedAmount: formData.claimApprovedAmount,
+        dateOfApprovalOfClaim: formData.dateOfApprovalOfClaim,
+        dateOfSettlement: formData.dateOfSettlement,
+        postHospitalization: {
+          dischargeDate: formData.postHospitalizationDischargeDate,
+          amountClaimed: formData.postHospitalizationAmountClaimed,
+          noOfDays: formData.postHospitalizationNoOfDays,
+        },
+      };
 
-      await createClaim(formData);
+      console.log("Submitting data:", submitData);
 
+      if (isEdit) {
+        await updateClaim(currentClaimId, submitData);
+        Swal.fire({
+          icon: 'success',
+          title: 'Updated!',
+          text: 'Claim has been updated successfully.',
+          confirmButtonColor: '#3085d6',
+          timer: 2000
+        });
+      } else {
+        await createClaim(submitData);
+        Swal.fire({
+          icon: 'success',
+          title: 'Created!',
+          text: 'Claim has been created successfully.',
+          confirmButtonColor: '#3085d6',
+          timer: 2000
+        });
+      }
+      
       setOpen(false);
-
+      resetForm();
       fetchClaims();
-
     } catch (error) {
-
       console.log(error);
-
+      Swal.fire({
+        icon: 'error',
+        title: 'Error!',
+        text: error.response?.data?.message || error.message || 'Something went wrong',
+        confirmButtonColor: '#d33',
+      });
     }
   };
 
-  // ================= DELETE CLAIM =================
+  // ================= HANDLE EDIT =================
+  const handleEdit = (item) => {
+    Swal.fire({
+      title: 'Edit Claim',
+      text: `Are you sure you want to edit claim ${item.claimNo}?`,
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonColor: '#3085d6',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'Yes, edit it!',
+      cancelButtonText: 'Cancel'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        setFormData({
+          claimNo: item.claimNo || "",
+          department: item.department || "",
+          status: item.status || "Pending",
+          remarks: item.remarks || "",
+          policyId: item.policyId?._id || item.policyId || "",
+          policyNo: item.policyNo || "",
+          insuredName: item.insuredName || "",
+          contactNo: item.contactNo || "",
+          email: item.email || "",
+          contactPerson: item.contactPerson || "",
+          vehicleNumber: item.vehicleNumber || "",
+          dateOfLossOrAdmission: item.dateOfLossOrAdmission?.split("T")[0] || "",
+          dateOfDischarge: item.dateOfDischarge?.split("T")[0] || "",
+          estimatedLossAmount: item.estimatedLossAmount || "",
+          causeOfLoss: item.causeOfLoss || "",
+          machineryDetails: item.machineryDetails || "",
+          preliminarySurveyorId: item.preliminarySurveyorId?._id || item.preliminarySurveyorId || "",
+          finalSurveyorId: item.finalSurveyorId?._id || item.finalSurveyorId || "",
+          tpaId: item.tpaId?._id || item.tpaId || "",
+          investigatorId: item.investigatorId?._id || item.investigatorId || "",
+          invoiceNo: item.invoiceNo || "",
+          billOfLadingNo: item.billOfLadingNo || "",
+          lrNo: item.lrNo || "",
+          insuranceCertificateNo: item.insuranceCertificateNo || "",
+          journeyFrom: item.journeyFrom || "",
+          journeyTo: item.journeyTo || "",
+          surveyorReferenceNumber: item.surveyorReferenceNumber || "",
+          settlementType: item.settlementType || "",
+          claimApprovedAmount: item.claimApprovedAmount || "",
+          dateOfApprovalOfClaim: item.dateOfApprovalOfClaim?.split("T")[0] || "",
+          dateOfSettlement: item.dateOfSettlement?.split("T")[0] || "",
+          postHospitalizationDischargeDate: item.postHospitalization?.dischargeDate?.split("T")[0] || "",
+          postHospitalizationAmountClaimed: item.postHospitalization?.amountClaimed || "",
+          postHospitalizationNoOfDays: item.postHospitalization?.noOfDays || "",
+        });
+        setCurrentClaimId(item._id);
+        setIsEdit(true);
+        setOpen(true);
+        setActiveTab(0);
+      }
+    });
+  };
 
+  // ================= HANDLE DELETE =================
   const handleDelete = async (id) => {
+    const result = await Swal.fire({
+      title: 'Are you sure?',
+      text: "You won't be able to revert this!",
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#3085d6',
+      confirmButtonText: 'Yes, delete it!',
+      cancelButtonText: 'Cancel'
+    });
 
-    try {
-
-      await deleteClaim(id);
-
-      fetchClaims();
-
-    } catch (error) {
-
-      console.log(error);
-
+    if (result.isConfirmed) {
+      try {
+        await deleteClaim(id);
+        fetchClaims();
+        Swal.fire(
+          'Deleted!',
+          'Claim has been deleted successfully.',
+          'success'
+        );
+      } catch (error) {
+        console.log(error);
+        Swal.fire(
+          'Error!',
+          'Failed to delete claim. Please try again.',
+          'error'
+        );
+      }
     }
+  };
+
+  // ================= RESET FORM =================
+  const resetForm = () => {
+    setFormData({
+      claimNo: "",
+      department: "",
+      status: "Pending",
+      remarks: "",
+      policyId: "",
+      policyNo: "",
+      insuredName: "",
+      contactNo: "",
+      email: "",
+      contactPerson: "",
+      vehicleNumber: "",
+      dateOfLossOrAdmission: "",
+      dateOfDischarge: "",
+      estimatedLossAmount: "",
+      causeOfLoss: "",
+      machineryDetails: "",
+      preliminarySurveyorId: "",
+      finalSurveyorId: "",
+      tpaId: "",
+      investigatorId: "",
+      invoiceNo: "",
+      billOfLadingNo: "",
+      lrNo: "",
+      insuranceCertificateNo: "",
+      journeyFrom: "",
+      journeyTo: "",
+      surveyorReferenceNumber: "",
+      settlementType: "",
+      claimApprovedAmount: "",
+      dateOfApprovalOfClaim: "",
+      dateOfSettlement: "",
+      postHospitalizationDischargeDate: "",
+      postHospitalizationAmountClaimed: "",
+      postHospitalizationNoOfDays: "",
+    });
+    setIsEdit(false);
+    setCurrentClaimId(null);
+    setActiveTab(0);
+  };
+
+  const handleTabChange = (event, newValue) => {
+    setActiveTab(newValue);
   };
 
   return (
     <div>
-
       {/* HEADER */}
-
-      <Grid
-        container
-        justifyContent="space-between"
-        alignItems="center"
-        sx={{ mb: 2 }}
-      >
-
-        <Typography variant="h5">
-          Claim Management
-        </Typography>
-
-        <Button
-          variant="contained"
-          startIcon={<Add />}
-          onClick={() => setOpen(true)}
-        >
+      <Grid container justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
+        <Typography variant="h5">Claim Management</Typography>
+        <Button variant="contained" startIcon={<Add />} onClick={() => { resetForm(); setOpen(true); }}>
           Add Claim
         </Button>
-
       </Grid>
 
-      {/* DIALOG */}
-
-      <Dialog
-        open={open}
-        onClose={() => setOpen(false)}
-        fullWidth
-        maxWidth="lg"
-      >
-
-        <DialogTitle>
-          Add Claim
-        </DialogTitle>
-
+      {/* ADD/EDIT DIALOG */}
+      <Dialog open={open} onClose={() => { setOpen(false); resetForm(); }} fullWidth maxWidth="lg">
+        <DialogTitle>{isEdit ? "Edit Claim" : "Add New Claim"}</DialogTitle>
         <DialogContent>
+          <Tabs value={activeTab} onChange={handleTabChange} sx={{ mb: 2 }}>
+            <Tab label="Basic Details" />
+            <Tab label="Policy Details" />
+            <Tab label="Loss Details" />
+            <Tab label="Surveyor/TPA" />
+            <Tab label="Transport Details" />
+            <Tab label="Settlement" />
+            <Tab label="Post Hospitalization" />
+          </Tabs>
 
-          {/* CLAIM NO */}
+          {/* Tab 1: Basic Details */}
+          <Box hidden={activeTab !== 0}>
+            <Grid container spacing={2} sx={{ mt: 1 }}>
+              <Grid item xs={12} md={6}>
+                <TextField fullWidth label="Claim No" name="claimNo" value={formData.claimNo} onChange={handleChange} required />
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <TextField
+                  select
+                  fullWidth
+                  label="Department"
+                  name="department"
+                  value={formData.department}
+                  onChange={handleChange}
+                >
+                  <MenuItem value="">Select Department</MenuItem>
+                  {departments.length > 0 ? (
+                    departments.map((dept) => (
+                      <MenuItem key={dept._id} value={dept.name}>
+                        {dept.name}
+                      </MenuItem>
+                    ))
+                  ) : (
+                    <MenuItem disabled>No departments found</MenuItem>
+                  )}
+                </TextField>
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <TextField select fullWidth label="Status" name="status" value={formData.status} onChange={handleChange}>
+                  <MenuItem value="Pending">Pending</MenuItem>
+                  <MenuItem value="Approved">Approved</MenuItem>
+                  <MenuItem value="Rejected">Rejected</MenuItem>
+                  <MenuItem value="Under Process">Under Process</MenuItem>
+                </TextField>
+              </Grid>
+              <Grid item xs={12}>
+                <TextField fullWidth multiline rows={2} label="Remarks" name="remarks" value={formData.remarks} onChange={handleChange} />
+              </Grid>
+            </Grid>
+          </Box>
 
-          <TextField
-            fullWidth
-            margin="dense"
-            label="Claim No"
-            name="claimNo"
-            value={formData.claimNo}
-            onChange={handleChange}
-          />
+          {/* Tab 2: Policy Details */}
+          <Box hidden={activeTab !== 1}>
+            <Grid container spacing={2} sx={{ mt: 1 }}>
+              <Grid item xs={12}>
+                <TextField select fullWidth label="Select Policy" name="policyId" value={formData.policyId} onChange={handlePolicyChange}>
+                  <MenuItem value="">Select Policy</MenuItem>
+                  {policies.map((item) => (
+                    <MenuItem key={item._id} value={item._id}>{item.policyNo} - {item.insuredName}</MenuItem>
+                  ))}
+                </TextField>
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <TextField fullWidth label="Policy No" name="policyNo" value={formData.policyNo} disabled />
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <TextField fullWidth label="Insured Name" name="insuredName" value={formData.insuredName} disabled />
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <TextField fullWidth label="Contact No" name="contactNo" value={formData.contactNo} disabled />
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <TextField fullWidth label="Email" name="email" value={formData.email} disabled />
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <TextField fullWidth label="Vehicle Number" name="vehicleNumber" value={formData.vehicleNumber} disabled />
+              </Grid>
+            </Grid>
+          </Box>
 
-          {/* DEPARTMENT */}
+          {/* Tab 3: Loss Details */}
+          <Box hidden={activeTab !== 2}>
+            <Grid container spacing={2} sx={{ mt: 1 }}>
+              <Grid item xs={12} md={6}>
+                <TextField fullWidth type="date" label="Date of Loss / Admission" name="dateOfLossOrAdmission" InputLabelProps={{ shrink: true }} value={formData.dateOfLossOrAdmission} onChange={handleChange} />
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <TextField fullWidth type="date" label="Date of Discharge" name="dateOfDischarge" InputLabelProps={{ shrink: true }} value={formData.dateOfDischarge} onChange={handleChange} />
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <TextField fullWidth type="number" label="Estimated Loss Amount" name="estimatedLossAmount" value={formData.estimatedLossAmount} onChange={handleChange} />
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <TextField fullWidth label="Cause of Loss" name="causeOfLoss" value={formData.causeOfLoss} onChange={handleChange} />
+              </Grid>
+              <Grid item xs={12}>
+                <TextField fullWidth multiline rows={3} label="Details of Machinery" name="machineryDetails" value={formData.machineryDetails} onChange={handleChange} />
+              </Grid>
+            </Grid>
+          </Box>
 
-          <TextField
-            select
-            fullWidth
-            margin="dense"
-            label="Department"
-            name="department"
-            value={formData.department}
-            onChange={handleChange}
-          >
+          {/* Tab 4: Surveyor/TPA/Investigator */}
+          <Box hidden={activeTab !== 3}>
+            <Grid container spacing={2} sx={{ mt: 1 }}>
+              <Grid item xs={12} md={6}>
+                <TextField select fullWidth label="Preliminary Surveyor" name="preliminarySurveyorId" value={formData.preliminarySurveyorId} onChange={handleChange}>
+                  <MenuItem value="">Select Preliminary Surveyor</MenuItem>
+                  {surveyors.map((item) => (
+                    <MenuItem key={item._id} value={item._id}>{item.surveyorName}</MenuItem>
+                  ))}
+                </TextField>
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <TextField select fullWidth label="Final Surveyor" name="finalSurveyorId" value={formData.finalSurveyorId} onChange={handleChange}>
+                  <MenuItem value="">Select Final Surveyor</MenuItem>
+                  {surveyors.map((item) => (
+                    <MenuItem key={item._id} value={item._id}>{item.surveyorName}</MenuItem>
+                  ))}
+                </TextField>
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <TextField select fullWidth label="TPA" name="tpaId" value={formData.tpaId} onChange={handleChange}>
+                  <MenuItem value="">Select TPA</MenuItem>
+                  {tpas.map((item) => (
+                    <MenuItem key={item._id} value={item._id}>{item.tpaName}</MenuItem>
+                  ))}
+                </TextField>
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <TextField select fullWidth label="Investigator" name="investigatorId" value={formData.investigatorId} onChange={handleChange}>
+                  <MenuItem value="">Select Investigator</MenuItem>
+                  {investigators.map((item) => (
+                    <MenuItem key={item._id} value={item._id}>{item.investigatorName}</MenuItem>
+                  ))}
+                </TextField>
+              </Grid>
+            </Grid>
+          </Box>
 
-            <MenuItem value="CORPORATE">
-              CORPORATE
-            </MenuItem>
+          {/* Tab 5: Transport Details */}
+          <Box hidden={activeTab !== 4}>
+            <Grid container spacing={2} sx={{ mt: 1 }}>
+              <Grid item xs={12} md={6}>
+                <TextField fullWidth label="Invoice No." name="invoiceNo" value={formData.invoiceNo} onChange={handleChange} />
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <TextField fullWidth label="Bill of Lading No." name="billOfLadingNo" value={formData.billOfLadingNo} onChange={handleChange} />
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <TextField fullWidth label="LR No." name="lrNo" value={formData.lrNo} onChange={handleChange} />
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <TextField fullWidth label="Insurance Certificate No." name="insuranceCertificateNo" value={formData.insuranceCertificateNo} onChange={handleChange} />
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <TextField fullWidth label="Journey From" name="journeyFrom" value={formData.journeyFrom} onChange={handleChange} />
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <TextField fullWidth label="Journey To" name="journeyTo" value={formData.journeyTo} onChange={handleChange} />
+              </Grid>
+              <Grid item xs={12}>
+                <TextField fullWidth label="Surveyor Reference Number" name="surveyorReferenceNumber" value={formData.surveyorReferenceNumber} onChange={handleChange} />
+              </Grid>
+            </Grid>
+          </Box>
 
-            <MenuItem value="RETAIL">
-              RETAIL
-            </MenuItem>
+          {/* Tab 6: Settlement */}
+          <Box hidden={activeTab !== 5}>
+            <Grid container spacing={2} sx={{ mt: 1 }}>
+              <Grid item xs={12} md={6}>
+                <TextField select fullWidth label="Type of Settlement" name="settlementType" value={formData.settlementType} onChange={handleChange}>
+                  <MenuItem value="Standard">Standard</MenuItem>
+                  <MenuItem value="Non-Standard">Non-Standard</MenuItem>
+                  <MenuItem value="Repudiate">Repudiate</MenuItem>
+                </TextField>
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <TextField fullWidth type="number" label="Claim Approved Amount" name="claimApprovedAmount" value={formData.claimApprovedAmount} onChange={handleChange} />
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <TextField fullWidth type="date" label="Date of Approval" name="dateOfApprovalOfClaim" InputLabelProps={{ shrink: true }} value={formData.dateOfApprovalOfClaim} onChange={handleChange} />
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <TextField fullWidth type="date" label="Date of Settlement" name="dateOfSettlement" InputLabelProps={{ shrink: true }} value={formData.dateOfSettlement} onChange={handleChange} />
+              </Grid>
+            </Grid>
+          </Box>
 
-          </TextField>
-
-          {/* POLICY DROPDOWN */}
-
-          <TextField
-            select
-            fullWidth
-            margin="dense"
-            label="Select Policy"
-            value={formData.policyId}
-            onChange={handlePolicyChange}
-          >
-
-            {policies.map((item) => (
-
-              <MenuItem
-                key={item._id}
-                value={item._id}
-              >
-                {item.policyNo} - {item.insuredName}
-              </MenuItem>
-
-            ))}
-
-          </TextField>
-
-          {/* POLICY DETAILS */}
-
-          <TextField
-            fullWidth
-            margin="dense"
-            label="Policy No"
-            value={formData.policyNo}
-            disabled
-          />
-
-          <TextField
-            fullWidth
-            margin="dense"
-            label="Insured Name"
-            value={formData.insuredName}
-            disabled
-          />
-
-          <TextField
-            fullWidth
-            margin="dense"
-            label="Contact No"
-            value={formData.contactNo}
-            disabled
-          />
-
-          <TextField
-            fullWidth
-            margin="dense"
-            label="Email"
-            value={formData.email}
-            disabled
-          />
-
-          <TextField
-            fullWidth
-            margin="dense"
-            label="Vehicle Number"
-            value={formData.vehicleNumber}
-            disabled
-          />
-
-          {/* CLAIM DETAILS */}
-
-          <TextField
-            fullWidth
-            margin="dense"
-            type="date"
-            label="Date Of Loss"
-            name="dateOfLoss"
-            InputLabelProps={{
-              shrink: true,
-            }}
-            value={formData.dateOfLoss}
-            onChange={handleChange}
-          />
-
-          <TextField
-            fullWidth
-            margin="dense"
-            type="date"
-            label="Date Of Discharge"
-            name="dischargeDate"
-            InputLabelProps={{
-              shrink: true,
-            }}
-            value={formData.dischargeDate}
-            onChange={handleChange}
-          />
-
-          <TextField
-            fullWidth
-            margin="dense"
-            label="Estimated Loss Amount"
-            name="estimatedLossAmount"
-            value={formData.estimatedLossAmount}
-            onChange={handleChange}
-          />
-
-          <TextField
-            fullWidth
-            margin="dense"
-            label="Cause Of Loss"
-            name="causeOfLoss"
-            value={formData.causeOfLoss}
-            onChange={handleChange}
-          />
-
-          {/* PRELIMINARY SURVEYOR */}
-
-          <TextField
-            select
-            fullWidth
-            margin="dense"
-            label="Preliminary Surveyor"
-            name="surveyorId"
-            value={formData.surveyorId}
-            onChange={handleChange}
-          >
-
-            {surveyors.map((item) => (
-
-              <MenuItem
-                key={item._id}
-                value={item._id}
-              >
-                {item.surveyorName}
-              </MenuItem>
-
-            ))}
-
-          </TextField>
-
-          {/* FINAL SURVEYOR */}
-
-          <TextField
-            select
-            fullWidth
-            margin="dense"
-            label="Final Surveyor"
-            name="finalSurveyorId"
-            value={formData.finalSurveyorId}
-            onChange={handleChange}
-          >
-
-            {surveyors.map((item) => (
-
-              <MenuItem
-                key={item._id}
-                value={item._id}
-              >
-                {item.surveyorName}
-              </MenuItem>
-
-            ))}
-
-          </TextField>
-
-          {/* TPA */}
-
-          <TextField
-            select
-            fullWidth
-            margin="dense"
-            label="TPA"
-            name="tpaId"
-            value={formData.tpaId}
-            onChange={handleChange}
-          >
-
-            {tpas.map((item) => (
-
-              <MenuItem
-                key={item._id}
-                value={item._id}
-              >
-                {item.tpaName}
-              </MenuItem>
-
-            ))}
-
-          </TextField>
-
-          {/* INVESTIGATOR */}
-
-          <TextField
-            select
-            fullWidth
-            margin="dense"
-            label="Investigator"
-            name="investigatorId"
-            value={formData.investigatorId}
-            onChange={handleChange}
-          >
-
-            {investigators.map((item) => (
-
-              <MenuItem
-                key={item._id}
-                value={item._id}
-              >
-                {item.investigatorName}
-              </MenuItem>
-
-            ))}
-
-          </TextField>
-
-          {/* STATUS */}
-
-          <TextField
-            select
-            fullWidth
-            margin="dense"
-            label="Status"
-            name="status"
-            value={formData.status}
-            onChange={handleChange}
-          >
-
-            <MenuItem value="Pending">
-              Pending
-            </MenuItem>
-
-            <MenuItem value="Approved">
-              Approved
-            </MenuItem>
-
-            <MenuItem value="Rejected">
-              Rejected
-            </MenuItem>
-
-            <MenuItem value="Under Process">
-              Under Process
-            </MenuItem>
-
-          </TextField>
-
+          {/* Tab 7: Post Hospitalization */}
+          <Box hidden={activeTab !== 6}>
+            <Grid container spacing={2} sx={{ mt: 1 }}>
+              <Grid item xs={12} md={6}>
+                <TextField fullWidth type="date" label="Discharge Date" name="postHospitalizationDischargeDate" InputLabelProps={{ shrink: true }} value={formData.postHospitalizationDischargeDate} onChange={handleChange} />
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <TextField fullWidth type="number" label="Amount Claimed" name="postHospitalizationAmountClaimed" value={formData.postHospitalizationAmountClaimed} onChange={handleChange} />
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <TextField fullWidth type="number" label="Number of Days" name="postHospitalizationNoOfDays" value={formData.postHospitalizationNoOfDays} onChange={handleChange} />
+              </Grid>
+            </Grid>
+          </Box>
         </DialogContent>
 
         <DialogActions>
-
-          <Button
-            color="error"
-            variant="outlined"
-            onClick={() => setOpen(false)}
-          >
-            Cancel
-          </Button>
-
-          <Button
-            variant="contained"
-            onClick={handleSubmit}
-          >
-            Save
-          </Button>
-
+          <Button color="error" variant="outlined" onClick={() => { setOpen(false); resetForm(); }}>Cancel</Button>
+          <Button variant="contained" onClick={handleSubmit}>{isEdit ? "Update" : "Save"}</Button>
         </DialogActions>
-
       </Dialog>
 
       {/* TABLE */}
-
       <Card>
-
         <CardContent>
-
           <Table>
-
             <TableHead>
-
               <TableRow>
-
                 <TableCell>SN</TableCell>
                 <TableCell>Claim No</TableCell>
                 <TableCell>Policy No</TableCell>
                 <TableCell>Insured Name</TableCell>
-                <TableCell>Surveyor</TableCell>
-                <TableCell>TPA</TableCell>
-                <TableCell>Investigator</TableCell>
+                <TableCell>Department</TableCell>
+                <TableCell>Preliminary Surveyor</TableCell>
                 <TableCell>Status</TableCell>
                 <TableCell>Action</TableCell>
-
               </TableRow>
-
             </TableHead>
-
             <TableBody>
-
               {data.length > 0 ? (
-
                 data.map((item, index) => (
-
                   <TableRow key={item._id}>
-
+                    <TableCell>{index + 1}</TableCell>
+                    <TableCell>{item.claimNo}</TableCell>
+                    <TableCell>{item.policyNo}</TableCell>
+                    <TableCell>{item.insuredName}</TableCell>
+                    <TableCell>{item.department || "-"}</TableCell>
+                    <TableCell>{item.preliminarySurveyorId?.surveyorName || "-"}</TableCell>
                     <TableCell>
-                      {index + 1}
-                    </TableCell>
-
-                    <TableCell>
-                      {item.claimNo}
-                    </TableCell>
-
-                    <TableCell>
-                      {item.policyNo}
-                    </TableCell>
-
-                    <TableCell>
-                      {item.insuredName}
-                    </TableCell>
-
-                    <TableCell>
-                      {item.surveyorId?.surveyorName}
-                    </TableCell>
-
-                    <TableCell>
-                      {item.tpaId?.tpaName}
-                    </TableCell>
-
-                    <TableCell>
-                      {item.investigatorId?.investigatorName}
-                    </TableCell>
-
-                    <TableCell>
-
-                      <Chip
-                        label={item.status}
+                      <Chip 
+                        label={item.status} 
                         color={
-                          item.status === "Approved"
-                            ? "success"
-                            : item.status === "Rejected"
-                            ? "error"
-                            : "warning"
-                        }
+                          item.status === "Approved" ? "success" : 
+                          item.status === "Rejected" ? "error" : 
+                          "warning"
+                        } 
                       />
-
                     </TableCell>
-
                     <TableCell>
-
-                      <IconButton
-                        color="error"
-                        onClick={() =>
-                          handleDelete(item._id)
-                        }
-                      >
-                        <Delete />
-                      </IconButton>
-
+                      <IconButton color="primary" onClick={() => handleEdit(item)}><Edit /></IconButton>
+                      <IconButton color="error" onClick={() => handleDelete(item._id)}><Delete /></IconButton>
                     </TableCell>
-
                   </TableRow>
-
                 ))
-
               ) : (
-
                 <TableRow>
-
-                  <TableCell
-                    colSpan={9}
-                    align="center"
-                  >
-                    No Claims Found
-                  </TableCell>
-
+                  <TableCell colSpan={8} align="center">No Claims Found</TableCell>
                 </TableRow>
-
               )}
-
             </TableBody>
-
           </Table>
-
         </CardContent>
-
       </Card>
-
     </div>
   );
 };
