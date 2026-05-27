@@ -21,42 +21,34 @@ import {
   Box,
   InputAdornment,
   TablePagination,
-  FormControl,
-  InputLabel,
-  Select
+  CircularProgress
 } from '@mui/material';
 import Breadcrumb from 'component/Breadcrumb';
 import { Link } from 'react-router-dom';
-import { Add, Edit, Delete, Close } from '@mui/icons-material';
+import { Add, Edit, Delete, Close, Search, Clear } from '@mui/icons-material';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import SaveIcon from '@mui/icons-material/Save';
-import CancelIcon from '@mui/icons-material/Cancel';
-import EditIcon from '@mui/icons-material/Edit';
-import theme from 'assets/scss/_themes-vars.module.scss';
-// import { SearchIcon, ClearIcon } from '@mui/icons-material';
-import SearchIcon from '@mui/icons-material/Search';
-import ClearIcon from '@mui/icons-material/Clear';
 import { gridSpacing } from 'config.js';
-import value from 'assets/scss/_themes-vars.module.scss';
 import { get, post, put, remove } from '../../../api/api.js';
+import { getActiveDepartments } from '../../../services/departmentApi';
 import { useSelector } from 'react-redux';
 import swal from 'sweetalert';
 
 const initialState = {
-  insDepartment: '',
+  department: '',
   productName: ''
 };
 
 const ProductOrServiceCategory = () => {
   const [form, setForm] = useState(initialState);
-  const [insDepartmentData, setInsDepartmentData] = useState({});
+  const [departmentData, setDepartmentData] = useState([]);
   const [errors, setErrors] = useState({});
   const [open, setOpen] = useState(false);
   const [data, setData] = useState([]);
   const [editIndex, setEditIndex] = useState(null);
   const [editId, setEditId] = useState(null);
   const [isAdmin, setAdmin] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [productCategoryPermission, setProductCategoryPermission] = useState({
     View: false,
     Add: false,
@@ -71,15 +63,71 @@ const ProductOrServiceCategory = () => {
 
   const systemRights = useSelector((state) => state.systemRights.systemRights);
 
+  // ================= VALIDATION =================
   const validate = () => {
     const newErrors = {};
-    // if (!form.department) newErrors.department = 'Department Name is required';
-    if (!form.productName) newErrors.productName = 'Product Name is required';
+    if (!form.productName || form.productName.trim() === '') {
+      newErrors.productName = 'Product Name is required';
+    }
+    if (!form.department) {
+      newErrors.department = 'Department is required';
+    }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  // use axiosInstance to fetch data from the server with useEffect
+  // ================= FETCH PRODUCT CATEGORIES =================
+  const fetchData = async () => {
+    setLoading(true);
+    try {
+      const response = await get('productOrServiceCategory');
+      console.log('Product Categories API Response:', response);
+      
+      let categories = [];
+      if (response.status === true || response.status === 'true') {
+        categories = response.data || [];
+      } else if (response.data && Array.isArray(response.data)) {
+        categories = response.data;
+      } else if (Array.isArray(response)) {
+        categories = response;
+      } else {
+        categories = [];
+      }
+      
+      setData(categories);
+    } catch (error) {
+      console.error('Error fetching category data:', error);
+      setData([]);
+      toast.error('Failed to fetch categories');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ================= FETCH DEPARTMENTS =================
+  const fetchDepartments = async () => {
+    try {
+      const res = await getActiveDepartments();
+      console.log('Department API Response:', res);
+      
+      let departments = [];
+      if (res.success && Array.isArray(res.data)) {
+        departments = res.data;
+      } else if (Array.isArray(res)) {
+        departments = res;
+      } else if (res.data && Array.isArray(res.data)) {
+        departments = res.data;
+      } else {
+        departments = [];
+      }
+      
+      setDepartmentData(departments);
+    } catch (error) {
+      console.error('Error fetching departments:', error);
+      setDepartmentData([]);
+    }
+  };
+
   useEffect(() => {
     const loginRole = localStorage.getItem('loginRole');
     if (loginRole === 'admin') {
@@ -88,199 +136,131 @@ const ProductOrServiceCategory = () => {
     if (systemRights?.actionPermissions?.['product-or-service-category']) {
       setProductCategoryPermission(systemRights.actionPermissions['product-or-service-category']);
     }
-    const fetchData = async () => {
-      try {
-        const response = await get('productOrServiceCategory');
-
-        console.log('Full API Response:', response.data); // 👀 should show { status: 'true', data: [...] }
-
-        const list = response.data; // ✅ safely access nested data
-        // console.log('Final Data Set:', list); // 👀 confirm it has productName values
-
-        setData(list); // ✅ populate table
-      } catch (error) {
-        console.error('Error fetching category data:', error);
-      }
-    };
-
+    
     fetchData();
+    fetchDepartments();
   }, [systemRights]);
 
-  useEffect(() => {
-    const fetchInsDepartment = async () => {
-      const res = await get('insDepartment');
-
-      console.log('insurance Department', res.data);
-      if (res.data) setInsDepartmentData(res.data);
-      else setInsDepartmentData([]);
-    };
-    fetchInsDepartment();
-  }, []);
-
+  // ================= HANDLE CHANGE =================
   const handleChange = (e) => {
-    console.log(e.target.name, e.target.value);
     setForm({ ...form, [e.target.name]: e.target.value });
+    if (errors[e.target.name]) {
+      setErrors({ ...errors, [e.target.name]: '' });
+    }
   };
 
   const handleOpen = () => {
     setForm(initialState);
     setErrors({});
     setEditIndex(null);
+    setEditId(null);
     setOpen(true);
   };
 
   const handleClose = () => setOpen(false);
 
-  //todo: handleSubmit
+  // ================= HANDLE SUBMIT =================
   const handleSubmit = async () => {
-    if (validate()) {
-      try {
-        // if (editIndex !== null) {
-        //   // Edit case
-        //   const id = data[editIndex]._id;
-        //   console.log('edit submit ', form);
-        //   const response = await put(`/productOrServiceCategory/${id}`, form);
-        //   console.log('res  ', response);
-        //   if (response.status) {
-        //     toast.success('Record Edited Succefully');
-        //   }
+    if (!validate()) return;
 
-        //   console.log('Respomse ', response);
-        //   const updatedCategory = response.data;
-        //   // console.log('Updated Category from API:', updatedCategory); // 🔍 debug
+    const submitData = {
+      productName: form.productName.trim(),
+      department: form.department
+    };
 
-        //   if (updatedCategory) {
-        //     const updated = [...data];
-        //     updated[editIndex] = updatedCategory;
-        //     setData(updated);
-        //   }
-        //   handleClose();
-        //   // setOpen(false);
-        // } 
-
-
-        if (editIndex !== null) {
-  const id = data[editIndex]._id;
-
-  swal({
-    title: "Update Record?",
-    text: "Do you want to update this record?",
-    icon: "warning",
-    buttons: ["Cancel", "Update"],
-  }).then(async (willUpdate) => {
-    if (willUpdate) {
-      try {
-        const response = await put(`/productOrServiceCategory/${id}`, form);
-
-        const updatedCategory = response.data;
-
-        if (updatedCategory) {
-          const updated = [...data];
-          updated[editIndex] = updatedCategory;
-          setData(updated);
-        }
-
-        handleClose();
-        swal("Updated!", "Record updated successfully.", "success");
-      } catch (error) {
-        console.error(error);
-        swal("Error!", "Something went wrong.", "error");
-      }
-    }
-  });
-
-  return; // 🔥 IMPORTANT (add case run hone se rokega)
-}
-        
-        
-        else {
-          // Add case
-          console.log('form is', form);
-          const response = await post('/productOrServiceCategory', form);
-
-          console.log('New Category from API:', response.data); // 🔍 debug
-          const newCategory = response.data;
-
-          if (newCategory) {
-            // setData([...data, newCategory]);
-            setData([...(data || []), response.data]);
-            toast.success('Record inserted Successfully');
+    if (editIndex !== null) {
+      // EDIT CASE
+      const id = editId;
+      
+      swal({
+        title: "Update Record?",
+        text: "Do you want to update this record?",
+        icon: "warning",
+        buttons: ["Cancel", "Update"],
+      }).then(async (willUpdate) => {
+        if (willUpdate) {
+          try {
+            const response = await put(`productOrServiceCategory/${id}`, {
+              productName: form.productName.trim(),
+              department: form.department
+            });
+            
+            console.log('Update Response:', response);
+            
+            if (response.status === true || response.status === 'true') {
+              await fetchData();
+              handleClose();
+              swal("Updated!", "Record updated successfully.", "success");
+            } else {
+              throw new Error(response.message || "Update failed");
+            }
+          } catch (error) {
+            console.error(error);
+            swal("Error!", error.message || "Something went wrong.", "error");
           }
-          setOpen(false);
-          handleClose();
         }
-
-        setOpen(false);
-        setEditIndex(null); // ✅ Clear state after submit
+      });
+    } else {
+      // ADD CASE
+      try {
+        const response = await post('productOrServiceCategory', submitData);
+        console.log('Create Response:', response);
+        
+        if (response.status === true || response.status === 'true') {
+          await fetchData();
+          toast.success('Record inserted successfully');
+          setOpen(false);
+          setForm(initialState);
+        } else {
+          throw new Error(response.message || "Create failed");
+        }
       } catch (error) {
         console.error('Submit error:', error);
+        toast.error(error.message || 'Error creating record');
       }
     }
   };
 
-  // Delete product/service category using axiosInstance
-  // const handleDelete = async (index) => {
-  //   try {
-  //     const id = data[index]._id;
-  //     await remove(`/productOrServiceCategory/${id}`);
-  //     toast.success('Record Deleted Successfully');
-
-  //     const updated = [...data];
-  //     updated.splice(index, 1);
-  //     setData(updated);
-  //   } catch (error) {
-  //     console.error('Delete error:', error);
-  //   }
-  // };
-
-
-
-  // added pop up #M
-
-  const handleDelete = async (index) => {
-  const id = data[index]._id;
-
-  swal({
-    title: "Are you sure?",
-    text: "Once deleted, you will not be able to recover this record!",
-    icon: "warning",
-    buttons: ["Cancel", "Delete"],
-    dangerMode: true,
-  }).then(async (willDelete) => {
-    if (willDelete) {
-      try {
-        await remove(`/productOrServiceCategory/${id}`);
-
-        const updated = [...data];
-        updated.splice(index, 1);
-        setData(updated);
-
-        swal("Deleted!", "Record deleted successfully.", "success");
-      } catch (error) {
-        console.error(error);
-        swal("Error!", "Something went wrong.", "error");
+  // ================= HANDLE DELETE =================
+  const handleDelete = async (id) => {
+    swal({
+      title: "Are you sure?",
+      text: "Once deleted, you will not be able to recover this record!",
+      icon: "warning",
+      buttons: ["Cancel", "Delete"],
+      dangerMode: true,
+    }).then(async (willDelete) => {
+      if (willDelete) {
+        try {
+          const response = await remove(`productOrServiceCategory/${id}`);
+          console.log('Delete Response:', response);
+          
+          if (response.status === true || response.status === 'true') {
+            await fetchData();
+            swal("Deleted!", "Record deleted successfully.", "success");
+          } else {
+            throw new Error(response.message || "Delete failed");
+          }
+        } catch (error) {
+          console.error(error);
+          swal("Error!", error.message || "Something went wrong.", "error");
+        }
       }
-    }
-  });
-};
+    });
+  };
 
-  //todo: handleEdit
-  const handleEdit = (index, row) => {
-    // if(productCategoryPermission.Edit){
-    const selected = data[index];
-    console.log('edit data ', selected.insDepartment);
-    setForm({ productName: selected.productName, insDepartment: selected?.insDepartment?._id });
-    setEditIndex(index);
+  // ================= HANDLE EDIT =================
+  const handleEdit = (row) => {
+    setForm({ 
+      productName: row.productName, 
+      department: row?.department?._id || row?.department || ''
+    });
+    setEditIndex(data.findIndex(item => item._id === row._id));
+    setEditId(row._id);
     setOpen(true);
-    // }
-    // else
-    // {
-    //   toast.error("You are not authorised");
-    // }
   };
-  console.log('productCategoryPermission', productCategoryPermission);
 
-  // Search handlers
+  // ================= SEARCH HANDLERS =================
   const handleSearchChange = (event) => {
     setSearchTerm(event.target.value);
     setPage(0);
@@ -291,7 +271,6 @@ const ProductOrServiceCategory = () => {
     setPage(0);
   };
 
-  // Pagination handlers
   const handleChangePage = (event, newPage) => {
     setPage(newPage);
   };
@@ -301,27 +280,28 @@ const ProductOrServiceCategory = () => {
     setPage(0);
   };
 
-  // Filter data based on search term
+  // ================= FILTER DATA =================
   const filteredData = useMemo(() => {
     if (!searchTerm.trim()) return data;
-
+    
     const lowerSearch = searchTerm.toLowerCase().trim();
-    return data.filter(
-      (entry) =>
-        entry?.productName?.toLowerCase().includes(lowerSearch) || entry?.insDepartment?.insDepartment?.toLowerCase().includes(lowerSearch)
-    );
+    return data.filter((entry) => {
+      const productName = entry?.productName?.toLowerCase() || '';
+      const department = entry?.department?.name?.toLowerCase() || 
+                         entry?.department?.toLowerCase() || '';
+      return productName.includes(lowerSearch) || department.includes(lowerSearch);
+    });
   }, [data, searchTerm]);
 
-  // Paginate filtered data
   const paginatedData = useMemo(() => {
     const startIndex = page * rowsPerPage;
     return filteredData.slice(startIndex, startIndex + rowsPerPage);
   }, [filteredData, page, rowsPerPage]);
 
-  // Truncate text
-  const truncateText = (text, maxLength = 30) => {
-    if (!text || text.length <= maxLength) return text;
-    return text.substring(0, maxLength).trim() + '...';
+  const getDepartmentName = (item) => {
+    if (item?.department?.name) return item.department.name;
+    if (item?.department && typeof item.department === 'string') return item.department;
+    return 'N/A';
   };
 
   return (
@@ -359,13 +339,13 @@ const ProductOrServiceCategory = () => {
             InputProps={{
               startAdornment: (
                 <InputAdornment position="start">
-                  <SearchIcon />
+                  <Search />
                 </InputAdornment>
               ),
               endAdornment: searchTerm && (
                 <InputAdornment position="end">
                   <IconButton size="small" onClick={handleClearSearch} edge="end">
-                    <ClearIcon />
+                    <Clear />
                   </IconButton>
                 </InputAdornment>
               )
@@ -388,29 +368,46 @@ const ProductOrServiceCategory = () => {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {paginatedData.map((row, index) => (
-                  <TableRow key={row._id || index} hover>
-                    <TableCell>{page * rowsPerPage + index + 1}</TableCell>
-                    <TableCell>{truncateText(row?.productName)}</TableCell>
-                    <TableCell>{row?.insDepartment?.insDepartment || row?.insDepartment || 'N/A'}</TableCell>
-                    <TableCell>
-                      {(productCategoryPermission.Edit === true || isAdmin) && (
-                        <IconButton size="small" onClick={() => handleEdit(data.findIndex((item) => item._id === row._id))}>
-                          <Edit fontSize="small" />
-                        </IconButton>
-                      )}
-                      {(productCategoryPermission.Delete === true || isAdmin) && (
-                        <IconButton size="small" color="error" onClick={() => handleDelete(data.findIndex((item) => item._id === row._id))}>
-                          <Delete fontSize="small" />
-                        </IconButton>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                ))}
-                {paginatedData.length === 0 && (
+                {loading ? (
                   <TableRow>
                     <TableCell colSpan={4} align="center" sx={{ py: 4 }}>
-                      <Typography variant="body1">{searchTerm ? 'No matching data found' : 'No data available'}</Typography>
+                      <CircularProgress size={30} />
+                      <Typography sx={{ mt: 1 }}>Loading...</Typography>
+                    </TableCell>
+                  </TableRow>
+                ) : paginatedData.length > 0 ? (
+                  paginatedData.map((row, index) => (
+                    <TableRow key={row._id || index} hover>
+                      <TableCell>{page * rowsPerPage + index + 1}</TableCell>
+                      <TableCell>{row?.productName}</TableCell>
+                      <TableCell>{getDepartmentName(row)}</TableCell>
+                      <TableCell>
+                        {(productCategoryPermission.Edit === true || isAdmin) && (
+                          <IconButton 
+                            size="small" 
+                            onClick={() => handleEdit(row)}
+                          >
+                            <Edit fontSize="small" />
+                          </IconButton>
+                        )}
+                        {(productCategoryPermission.Delete === true || isAdmin) && (
+                          <IconButton 
+                            size="small" 
+                            color="error" 
+                            onClick={() => handleDelete(row._id)}
+                          >
+                            <Delete fontSize="small" />
+                          </IconButton>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={4} align="center" sx={{ py: 4 }}>
+                      <Typography variant="body1" color="text.secondary">
+                        {searchTerm ? 'No matching data found' : 'No data available'}
+                      </Typography>
                     </TableCell>
                   </TableRow>
                 )}
@@ -418,23 +415,25 @@ const ProductOrServiceCategory = () => {
             </Table>
 
             {/* Pagination */}
-            <Box sx={{ p: 2, borderTop: 1, borderColor: 'divider' }}>
-              <TablePagination
-                rowsPerPageOptions={[5, 10, 25]}
-                component="div"
-                count={filteredData.length || 0}
-                rowsPerPage={rowsPerPage}
-                page={page}
-                onPageChange={handleChangePage}
-                onRowsPerPageChange={handleChangeRowsPerPage}
-                labelRowsPerPage="Rows per page:"
-              />
-            </Box>
+            {filteredData.length > rowsPerPage && (
+              <Box sx={{ p: 2, borderTop: 1, borderColor: 'divider' }}>
+                <TablePagination
+                  rowsPerPageOptions={[5, 10, 25]}
+                  component="div"
+                  count={filteredData.length || 0}
+                  rowsPerPage={rowsPerPage}
+                  page={page}
+                  onPageChange={handleChangePage}
+                  onRowsPerPageChange={handleChangeRowsPerPage}
+                  labelRowsPerPage="Rows per page:"
+                />
+              </Box>
+            )}
           </Paper>
         </CardContent>
       </Card>
 
-      {/* Modal Form - unchanged */}
+      {/* Modal Form */}
       <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
         <DialogTitle sx={{ m: 0, p: 2 }}>
           {editIndex !== null ? 'Edit Product' : 'Add Product'}
@@ -449,24 +448,30 @@ const ProductOrServiceCategory = () => {
         <DialogContent sx={{ p: 3 }}>
           <TextField
             select
-            label="Department Name"
-            name="insDepartment"
-            value={form.insDepartment}
+            label="Department Name *"
+            name="department"
+            value={form.department}
             onChange={handleChange}
-            error={!!errors.insDepartment}
-            helperText={errors.insDepartment}
+            error={!!errors.department}
+            helperText={errors.department}
             fullWidth
             margin="dense"
+            required
           >
-            {insDepartmentData.length > 1 &&
-              insDepartmentData?.map((type) => (
-                <MenuItem key={type._id} value={type._id}>
-                  {type.insDepartment}
+            <MenuItem value="">-- Select Department --</MenuItem>
+            {departmentData.length > 0 ? (
+              departmentData.map((dept) => (
+                <MenuItem key={dept._id} value={dept._id}>
+                  {dept.name}
                 </MenuItem>
-              ))}
+              ))
+            ) : (
+              <MenuItem disabled>No departments found. Please create a department first.</MenuItem>
+            )}
           </TextField>
+          
           <TextField
-            label="Product Name"
+            label="Product Name *"
             name="productName"
             value={form.productName}
             onChange={handleChange}
@@ -474,13 +479,15 @@ const ProductOrServiceCategory = () => {
             helperText={errors.productName}
             fullWidth
             margin="dense"
+            required
+            autoFocus
           />
         </DialogContent>
         <DialogActions sx={{ p: 3 }}>
           <Button onClick={handleClose} variant="outlined" color="error">
             Cancel
           </Button>
-          <Button onClick={handleSubmit} variant="contained">
+          <Button onClick={handleSubmit} variant="contained" disabled={loading}>
             {editIndex !== null ? 'Update' : 'Add'}
           </Button>
         </DialogActions>
