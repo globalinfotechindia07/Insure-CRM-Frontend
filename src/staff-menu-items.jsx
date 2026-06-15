@@ -198,6 +198,20 @@ const staffMenuIems = {
           url: '/client'
         },
         {
+          id: 'policy-management',
+          title: 'Policy Management',
+          type: 'collapse',
+          children: [
+            {
+              id: 'policy-list',
+              title: 'Policy List',
+              type: 'item',
+              icon: PeopleIcon,
+              url: '/policy'
+            }
+          ]
+        },
+        {
           id: 'contacts',
           title: 'Contacts',
           type: 'item',

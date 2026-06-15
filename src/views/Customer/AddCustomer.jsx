@@ -53,8 +53,8 @@ const AddCustomer = () => {
       gstNo: '',
       panNo: '',
       logo: null,
-      adharNo: '',
-      dlNo: '',
+      aadharNo: '',
+      drivingLicenseNo: '',
       address: '',
       pincode: '',
       city: '',
@@ -195,14 +195,22 @@ const AddCustomer = () => {
   const validateForm = () => {
     const newErrors = {};
 
-    // Only required fields
     if (!form.name) newErrors.name = 'Customer Name is required';
+    if (!form.mobile) {
+      newErrors.mobile = 'Mobile number is required';
+    } else if (!form.mobile.match(/^\d{10}$/)) {
+      newErrors.mobile = 'Enter valid 10-digit number';
+    }
 
-    if (!form.mobile?.match(/^\d{10}$/)) newErrors.mobile = 'Enter valid 10-digit number';
+    if (form.aadharNo && !form.aadharNo.match(/^\d{12}$/)) {
+      newErrors.aadharNo = 'Enter valid 12-digit number';
+    }
 
-    if (!form.adharNo?.match(/^\d{12}$/)) newErrors.adharNo = 'Enter valid 12-digit number';
-
-    if (!form.email?.match(/^[\w-.]+@([\w-]+\.)+[\w-]{2,4}$/)) newErrors.email = 'Invalid email';
+    if (!form.email) {
+      newErrors.email = 'Email is required';
+    } else if (!form.email.match(/^[\w-.]+@([\w-]+\.)+[\w-]{2,4}$/)) {
+      newErrors.email = 'Invalid email';
+    }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -361,14 +369,14 @@ const AddCustomer = () => {
               </Grid>
               <Grid container spacing={2} sx={{ mt: 2 }}>
                 {[
-                  { label: 'Email', name: 'email', required: false },
-                  { label: 'Mobile Number', name: 'mobile', required: false },
-                  { label: 'PAN Number', name: 'panNumber', required: false },
-                  { label: 'ADHAR Number', name: 'adharNumber', required: false },
-                  { label: 'DRIVING LICENCE Number', name: 'dlNumber', required: false },
-                  { label: 'GST Number', name: 'gstNumber', required: false },
+                  { label: 'Email', name: 'email', required: true },
+                  { label: 'Mobile Number', name: 'mobile', required: true },
+                  { label: 'PAN Number', name: 'panNo', required: false },
+                  { label: 'ADHAR Number', name: 'aadharNo', required: false },
+                  { label: 'DRIVING LICENCE Number', name: 'drivingLicenseNo', required: false },
+                  { label: 'GST Number', name: 'gstNo', required: false },
                   { label: 'ADDRESS', name: 'address', required: false },
-                  { label: 'PIN CODE', name: 'pin', required: false },
+                  { label: 'PIN CODE', name: 'pincode', required: false },
                   { label: 'CITY', name: 'city', required: false },
                   { label: 'STATE', name: 'state', required: false }
                 ].map((field) => (
@@ -381,7 +389,7 @@ const AddCustomer = () => {
                       onChange={handleChange}
                       error={!!errors[field.name]}
                       helperText={errors[field.name]}
-                      inputProps={field.name === 'mobile' ? { maxLength: 10 } : field.name === 'adharNumber' ? { maxLength: 12 } : {}}
+                      inputProps={field.name === 'mobile' ? { maxLength: 10 } : field.name === 'aadharNo' ? { maxLength: 12 } : {}}
                     ></TextField>
                   </Grid>
                 ))}

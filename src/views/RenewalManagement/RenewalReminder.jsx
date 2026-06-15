@@ -43,15 +43,42 @@ const RenewalReminder = () => {
   const fetchPolicyDetail = async () => {
     setLoading(true);
     try {
-      const res = await get('policy');
+      const res = await get('policyDetail');
       console.log('Policy API Response:', res);
       
-      let policies = [];
+      let rawData = [];
       if (res?.data?.success && Array.isArray(res.data.data)) {
-        policies = res.data.data;
+        rawData = res.data.data;
       } else if (res?.data && Array.isArray(res.data)) {
-        policies = res.data;
+        rawData = res.data;
+      } else if (res?.success && Array.isArray(res.data)) {
+        rawData = res.data;
+      } else if (Array.isArray(res)) {
+        rawData = res;
+      } else if (res?.data && Array.isArray(res.data.data)) {
+        rawData = res.data.data;
       }
+
+      const policies = rawData.map(item => {
+        let customerName = item.cutomerName || "";
+        if (!customerName && item.retailCustomer) {
+          customerName = item.retailCustomer.name;
+        }
+        if (!customerName && item.customerGroup) {
+          customerName = item.customerGroup.groupName || item.customerGroup.name;
+        }
+
+        return {
+          _id: item._id,
+          insuredName: customerName,
+          department: item.insDepartment?.name || item.insDepartment?.insDepartment || item.insDepartment || "",
+          policyNo: item.policyNumber || "",
+          premium: item.netPremium || 0,
+          totalAmount: item.totalAmount || 0,
+          endDate: item.endDate,
+          vehicleNumber: item.vehicleNumber || ""
+        };
+      });
       
       console.log('Total policies:', policies.length);
       setCustomerList(policies);
@@ -107,11 +134,11 @@ const RenewalReminder = () => {
       );
     }
 
-    // Filter by renewal within 30 days
+    // Filter by renewal within 60 days
     if (filterValue === 'renew') {
       filtered = filtered.filter(item => {
         const days = calculateRemainingDays(item.endDate);
-        return days <= 30 && days >= 0;
+        return days <= 60 && days >= 0;
       });
     }
 
@@ -179,7 +206,7 @@ const RenewalReminder = () => {
     Swal.fire({
       icon: "info",
       title: "Filter Applied",
-      text: "Showing policies that expire within 30 days",
+      text: "Showing policies that expire within 60 days",
       timer: 1500,
       showConfirmButton: false,
     });
@@ -223,7 +250,7 @@ const RenewalReminder = () => {
                   >
                     <MenuItem value="">All Policies</MenuItem>
                     <MenuItem value="byDateRange">By Date Range</MenuItem>
-                    <MenuItem value="renew">Renew Within 30 Days</MenuItem>
+                    <MenuItem value="renew">Renew Within 60 Days</MenuItem>
                   </TextField>
                 </Grid>
                 
@@ -260,7 +287,7 @@ const RenewalReminder = () => {
                 {filterValue === 'renew' && (
                   <Grid item xs={12} sm={6} md={2}>
                     <Button variant="contained" size="small" fullWidth onClick={handleRenewWithin30Days}>
-                      Renew within 30 days
+                      Renew within 60 days
                     </Button>
                   </Grid>
                 )}
@@ -306,6 +333,7 @@ const RenewalReminder = () => {
                         <TableCell sx={{ fontWeight: 'bold', width: 100 }}>Total Premium</TableCell>
                         <TableCell sx={{ fontWeight: 'bold' }}>End Date</TableCell>
                         <TableCell sx={{ fontWeight: 'bold', width: 100 }}>Days Left</TableCell>
+                        <TableCell sx={{ fontWeight: 'bold', width: 100 }}>Action</TableCell>
                       </TableRow>
                     </TableHead>
                     <TableBody>
@@ -343,12 +371,23 @@ const RenewalReminder = () => {
                                   <Chip label="Expired" color="error" size="small" />
                                 )}
                               </TableCell>
+                              <TableCell>
+                                <Button
+                                  variant="contained"
+                                  color="primary"
+                                  size="small"
+                                  component={Link}
+                                  to={`/renewPolicy/${entry?._id}`}
+                                >
+                                  Renew
+                                </Button>
+                              </TableCell>
                             </TableRow>
                           );
                         })
                       ) : (
                         <TableRow>
-                          <TableCell colSpan={8} align="center">
+                          <TableCell colSpan={9} align="center">
                             <Box py={5}>
                               <Typography variant="h6" color="textSecondary">
                                 No Policies Found

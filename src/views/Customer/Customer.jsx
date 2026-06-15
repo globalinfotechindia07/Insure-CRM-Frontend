@@ -104,9 +104,9 @@ const Customer = () => {
       const role = localStorage.getItem('loginRole');
       let url = role === 'super-admin' ? 'clientRegistration' : 'customerRegistration';
       const res = await get(url);
-      if (res.status) {
+      if (res && (res.success || res.status || Array.isArray(res.data))) {
         setClientList(res.data);
-        console.log('Client List set:', clientList);
+        console.log('Client List set:', res.data);
       }
     } catch (error) {
       console.error('Error fetching clients:', error);

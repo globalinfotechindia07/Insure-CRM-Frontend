@@ -10,7 +10,7 @@ import Documentation from './EditPages/Documentation'
 import HrFinance from './EditPages/HrFinance'
 import SystemRights from './EditPages/SystemRights'
 import SalaryAndWages from './EditPages/SalaryAndWages'
-import AttendanceAndLeave from './EditPages/AttendanceAndLeave'
+// import AttendanceAndLeave from './EditPages/AttendanceAndLeave'
 import { get} from 'api/api'
 import { ToastContainer} from 'react-toastify'
 import 'react-toastify/dist/ReactToastify.css'
@@ -49,7 +49,7 @@ const UpdatePage = () => {
     hrFinance: {},
     systemRights: {},
     salaryAndWages: {},
-    attendanceAndLeave: {}
+    // attendanceAndLeave: {}
   })
 
   const [isFormVisible, setIsFormVisible] = useState({
@@ -60,7 +60,7 @@ const UpdatePage = () => {
     hrFinance: true,
     systemRights: true,
     salaryAndWages: true,
-    attendanceAndLeave: true
+    // attendanceAndLeave: true
   })
 
   const [isAllFormsValidate, setIsAllFormsValidate] = useState(false)
@@ -82,7 +82,7 @@ const UpdatePage = () => {
       case 6:
         return 'salaryAndWages'
       case 7:
-        return 'attendanceAndLeave'
+        // return 'attendanceAndLeave'
       default:
         return ''
     }
@@ -105,7 +105,7 @@ const UpdatePage = () => {
       case 6:
         return <SalaryAndWages setStoredAllData={setStoredAllData} setValue={setValue} storedAllData={storedAllData} />
       case 7:
-        return <AttendanceAndLeave setStoredAllData={setStoredAllData} setValue={setValue} storedAllData={storedAllData} />
+        // return <AttendanceAndLeave setStoredAllData={setStoredAllData} setValue={setValue} storedAllData={storedAllData} />
       default:
         return null
     }

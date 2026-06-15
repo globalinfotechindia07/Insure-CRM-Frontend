@@ -481,6 +481,10 @@ const RenewPolicy = () => {
     const fetchSubProductsByProduct = async () => {
       const selectedId = form.product;
       const selectedName = productData.find((branch) => branch._id === selectedId);
+      if (!selectedName || !selectedName.productName) {
+        setSubProductData([]);
+        return;
+      }
       const productName = selectedName.productName;
       const res = await get(`subproductCategory/${productName}`);
       // console.log('Sub Products', res.data);
@@ -984,12 +988,20 @@ const RenewPolicy = () => {
                       value={form.branchBroker}
                       onChange={handleChange}
                     >
-                      {branchBrokerData.length > 0 &&
+                      {branchBrokerData?.length > 0 ? (
                         branchBrokerData.map((type) => (
                           <MenuItem key={type._id} value={type._id}>
                             {type.branchBroker}
                           </MenuItem>
-                        ))}
+                        ))
+                      ) : (
+                        branchCodeData?.length > 0 &&
+                        branchCodeData.map((type) => (
+                          <MenuItem key={type._id} value={type._id}>
+                            {type.address ? `${type.address} (${type.branchName || type.branchCode})` : (type.branchName || type.branchCode)}
+                          </MenuItem>
+                        ))
+                      )}
                     </Select>
                   </FormControl>
                 </Grid>

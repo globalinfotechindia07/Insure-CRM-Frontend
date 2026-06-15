@@ -28,7 +28,7 @@ import ManageAccountsIcon from '@mui/icons-material/ManageAccounts';
 import AccountTreeIcon from '@mui/icons-material/AccountTree';
 import ReceiptIcon from '@mui/icons-material/Receipt';
 import { id } from 'google-translate-api-extended/languages';
-import { 
+import {
   Money,
   MoneyOffRounded,
   MoneyTwoTone,
@@ -99,7 +99,7 @@ export default {
               title: 'General Master',
               type: 'collapse',
               icon: GridViewIcon,
-              children: [       
+              children: [
                 {
                   id: 'financial-year',
                   title: 'Financial Year',
@@ -114,7 +114,7 @@ export default {
                   icon: AttachMoneyIcon,
                   url: '/master/gst-percentage'
                 },
-            
+
                 {
                   id: 'product-or-service-category',
                   title: 'Product',
@@ -160,7 +160,7 @@ export default {
             //       url: '/master/financial-year'
             //     },
 
-            
+
 
             //   ]
             // },
@@ -200,7 +200,7 @@ export default {
                 }
               ]
             },
-                        {
+            {
               id: 'staff-master',
               title: 'Staff Master',
               type: 'collapse',
@@ -209,7 +209,7 @@ export default {
                 {
                   id: 'company-staff',
                   title: 'Staff',
-                  type: 'item', 
+                  type: 'item',
                   icon: PeopleIcon,
                   url: '/staff-master/company-staff'
                 },
@@ -253,7 +253,7 @@ export default {
             //     }
             //   ]
             // },
-                {
+            {
               id: 'master-group',
               title: 'Customer Master',
               type: 'collapse',
@@ -275,21 +275,21 @@ export default {
                 // },
               ]
             },
-            
+
             {
               id: 'master-group',
               title: 'Insurance Master',
               type: 'collapse',
               icon: GridViewIcon,
               children: [
-                                               {
+                {
                   id: 'department-page',
                   title: 'Insurance Department',
                   type: 'item',
                   icon: AccountTreeIcon,
                   url: '/master/department-page'
                 },
-                            {
+                {
                   id: 'company-page',
                   title: 'Insurance Company',
                   type: 'item',
@@ -355,13 +355,13 @@ export default {
                   icon: AccountTreeIcon,
                   url: '/master/otherAddon'
                 },
-                // {
-                //   id: 'type-of-vehicle',
-                //   title: 'Type of Vehicle',
-                //   type: 'item',
-                //   icon: AccountTreeIcon,
-                //   url: '/master/type-of-vehicle'
-                // },
+                {
+                  id: 'type-of-vehicle',
+                  title: 'Type of Vehicle',
+                  type: 'item',
+                  icon: AccountTreeIcon,
+                  url: '/master/type-of-vehicle'
+                },
                 {
                   id: 'risk-code',
                   title: 'Risk Code',
@@ -369,52 +369,6 @@ export default {
                   icon: AccountTreeIcon,
                   url: '/master/risk-code'
                 }
-              ]
-            },
-                        {
-              id: 'master-group',
-              title: 'Claim Master',
-              type: 'collapse',
-              icon: GridViewIcon,
-              children: [
- 
-                {
-                  id: 'surveyor',
-                  title: 'Surveyor',
-                  type: 'item',
-                  icon: AccountTreeIcon,
-                  url: '/master/surveyor'
-                },
-                                {
-                  id: 'tpa-master',
-                  title: 'TPA Master',
-                  type: 'item',
-                  icon: AccountTreeIcon,
-                  url: '/master/tpa-master'
-                },
-                {
-                  id: 'policy-master',
-                  title: 'Policy Master',
-                  type: 'item',
-                  icon: AccountTreeIcon,
-                  url: '/master/policy-master'
-                },
-                                {
-                  id: 'investigator',
-                  title: 'Investigator',
-                  type: 'item',
-                  icon: AccountTreeIcon,
-                  url: '/master/investigator'
-                },
-                                                {
-                  id: 'claim-master',
-                  title: 'Claim Master',
-                  type: 'item',
-                  icon: AccountTreeIcon,
-                  url: '/master/claim-master'
-                },
- 
-
               ]
             },
             {
@@ -584,13 +538,13 @@ export default {
             }
           ]
         },
-        // {
-        //   id: 'contacts',
-        //   title: 'Contacts',
-        //   type: 'item',
-        //   icon: ContactsIcon,
-        //   url: '/contacts'
-        // },
+        {
+          id: 'contacts',
+          title: 'Contacts',
+          type: 'item',
+          icon: ContactsIcon,
+          url: '/contacts'
+        },
 
         // {
         //     id: 'company',
@@ -614,42 +568,42 @@ export default {
         //   icon: ManageSearchIcon,
         //   url: '/task-manager'
         // },
-        // {
-        //   id: 'lead-management-group',
-        //   title: 'Lead Management',
-        //   type: 'collapse',
-        //   icon: PeopleIcon,
-        //   children: [
-        //     {
-        //       id: 'lead',
-        //       title: 'Lead',
-        //       type: 'item',
-        //       url: '/lead-management/lead', // Define the new route here
-        //       target: false
-        //     },
-        //     {
-        //       id: 'parametric-report',
-        //       title: 'Parametric Report',
-        //       type: 'item',
-        //       url: '/lead-management/parametric-report', // Define the new route here
-        //       target: false
-        //     },
-        //     {
-        //       id: 'analytical-report',
-        //       title: 'Analytical Report',
-        //       type: 'item',
-        //       url: '/lead-management/analytical-report',
-        //       target: false
-        //     },
-        //     {
-        //       id: 'pipeline',
-        //       title: 'Pipeline',
-        //       type: 'item',
-        //       url: '/pipeline',
-        //       target: false
-        //     }
-        //   ]
-        // },
+        {
+          id: 'lead-management-group',
+          title: 'Lead Management',
+          type: 'collapse',
+          icon: PeopleIcon,
+          children: [
+            {
+              id: 'lead',
+              title: 'Lead',
+              type: 'item',
+              url: '/lead-management/lead', // Define the new route here
+              target: false
+            },
+            {
+              id: 'parametric-report',
+              title: 'Parametric Report',
+              type: 'item',
+              url: '/lead-management/parametric-report', // Define the new route here
+              target: false
+            },
+            {
+              id: 'analytical-report',
+              title: 'Analytical Report',
+              type: 'item',
+              url: '/lead-management/analytical-report',
+              target: false
+            },
+            {
+              id: 'pipeline',
+              title: 'Pipeline',
+              type: 'item',
+              url: '/pipeline',
+              target: false
+            }
+          ]
+        },
         // {
         //     id: 'Inventory',
         //     title: 'Inventory',
@@ -678,36 +632,58 @@ export default {
           icon: PersonIcon,
           url: '/customer'
         },
-        // {
-        //   id: 'policy-management',
-        //   title: 'Policy Management',
-        //   type: 'collapse',
-        //   children: [
-        //     {
-        //       id: 'policy-list',
-        //       title: 'Policy List',
-        //       type: 'item',
-        //       icon: PeopleIcon,
-        //       url: '/policy'
-        //     }
+        {
+          id: 'master-group',
+          title: 'Claim Management',
+          type: 'collapse',
+          icon: GridViewIcon,
+          children: [
+            {
+              id: 'surveyor',
+              title: 'Surveyor',
+              type: 'item',
+              icon: AccountTreeIcon,
+              url: '/surveyor'
+            },
+            {
+              id: 'tpa-master',
+              title: 'TPA Master',
+              type: 'item',
+              icon: AccountTreeIcon,
+              url: '/tpa-master'
+            },
+            {
+              id: 'investigator',
+              title: 'Investigator',
+              type: 'item',
+              icon: AccountTreeIcon,
+              url: '/investigator'
+            },
+            {
+              id: 'claim-master',
+              title: 'Claim Management',
+              type: 'item',
+              icon: AccountTreeIcon,
+              url: '/claim-management'
+            }
+          ]
+        },
+        {
+          id: 'policy-management',
+          title: 'Policy Management',
+          type: 'collapse',
+          children: [
+            {
+              id: 'policy-list',
+              title: 'Policy List',
+              type: 'item',
+              icon: PeopleIcon,
+              url: '/policy'
+            },
 
-            // {
-            //   id: 'unbilled-policy',
-            //   title: 'Unbilled Policy',
-            //   type: 'item',
-            //   icon: PeopleIcon,
-            //   url: '/policy/unbilled-policy'
-            // },
 
-            // {
-            //   id: 'billed-policy',
-            //   title: 'Billed Policy',
-            //   type: 'item',
-            //   icon: PeopleIcon,
-            //   url: '/policy/billed-policy'
-            // }
-        //   ]
-        // },
+          ]
+        },
         {
           id: 'renewal-management',
           title: 'Renewal Management',
@@ -745,42 +721,7 @@ export default {
             // }
           ]
         },
-        // {
-        //   id: 'invoice-management-group',
-        //   title: 'Invoice Management',
-        //   type: 'collapse',
-        //   icon: PeopleIcon,
-        //   children: [
-        //     {
-        //       id: 'Invoice',
-        //       title: 'Invoice',
-        //       icon: ReceiptIcon,
-        //       type: 'item',
-        //       url: '/invoice-management'
-        //     },
-        //     {
-        //       id: 'Invoice-report',
-        //       title: 'Invoice Report',
-        //       icon: ReceiptIcon,
-        //       type: 'item',
-        //       url: '/invoice-report'
-        //     },
-        //     {
-        //       id: 'GST-report',
-        //       title: 'GST Report',
-        //       icon: ReceiptIcon,
-        //       type: 'item',
-        //       url: '/gst-report'
-        //     },
-        //     {
-        //       id: 'invoice-analytical-report',
-        //       title: 'Analytical Report',
-        //       icon: ReceiptIcon,
-        //       type: 'item',
-        //       url: '/invoice-analytical-report'
-        //     }
-        //   ]
-        // },
+
         // {
         //   id: 'calander',
         //   title: 'Calander',
@@ -800,14 +741,6 @@ export default {
               icon: PeopleIcon,
               url: '/report/parametric-report'
             },
-
-            // {
-            //   id: 'analytical-report',
-            //   title: 'Analytical Report',
-            //   type: 'item',
-            //   icon: PeopleIcon,
-            //   url: '/report/analytical-report'
-            // },
 
             {
               id: 'irdia-report',

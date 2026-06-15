@@ -4,6 +4,7 @@ import axios from 'axios';
 // const REACT_APP_API_URL = 'https://insure.isyncerp.com/api/';
 // const REACT_APP_API_URL = 'https://jpinsurancebroker.co.in/api/';
 const REACT_APP_API_URL = 'http://localhost:5050/api/';
+// const REACT_APP_API_URL = 'https://grampanchayattigaon/api/';
 export default REACT_APP_API_URL;
 //  REACT_APP_API_URL;
 

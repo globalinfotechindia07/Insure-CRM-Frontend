@@ -36,8 +36,8 @@ const CustomerList = () => {
         <tbody>
           {data.map((item) => (
             <tr key={item._id}>
-              <td>{item.customerName}</td>
-              <td>{item.clientType}</td>
+              <td>{item.name}</td>
+              <td>{item.customerType}</td>
               <td>{item.mobile}</td>
               <td>{item.city}</td>
               <td>

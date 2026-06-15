@@ -253,7 +253,7 @@ const ProductOrServiceCategory = () => {
   const handleEdit = (row) => {
     setForm({ 
       productName: row.productName, 
-      department: row?.department?._id || row?.department || ''
+      department: row?.department?._id || row?.department || row?.insDepartment?._id || row?.insDepartment || ''
     });
     setEditIndex(data.findIndex(item => item._id === row._id));
     setEditId(row._id);
@@ -287,8 +287,12 @@ const ProductOrServiceCategory = () => {
     const lowerSearch = searchTerm.toLowerCase().trim();
     return data.filter((entry) => {
       const productName = entry?.productName?.toLowerCase() || '';
-      const department = entry?.department?.name?.toLowerCase() || 
-                         entry?.department?.toLowerCase() || '';
+      const deptObj = entry?.department || entry?.insDepartment;
+      const department = deptObj?.insDepartment?.toLowerCase() ||
+                         deptObj?.departmentName?.toLowerCase() || 
+                         deptObj?.name?.toLowerCase() || 
+                         deptObj?.department?.toLowerCase() ||
+                         (typeof deptObj === 'string' ? deptObj.toLowerCase() : '') || '';
       return productName.includes(lowerSearch) || department.includes(lowerSearch);
     });
   }, [data, searchTerm]);
@@ -299,8 +303,12 @@ const ProductOrServiceCategory = () => {
   }, [filteredData, page, rowsPerPage]);
 
   const getDepartmentName = (item) => {
-    if (item?.department?.name) return item.department.name;
-    if (item?.department && typeof item.department === 'string') return item.department;
+    const deptObj = item?.department || item?.insDepartment;
+    if (deptObj?.insDepartment) return deptObj.insDepartment;
+    if (deptObj?.departmentName) return deptObj.departmentName;
+    if (deptObj?.name) return deptObj.name;
+    if (deptObj?.department) return deptObj.department;
+    if (deptObj && typeof deptObj === 'string') return deptObj;
     return 'N/A';
   };
 
@@ -462,7 +470,7 @@ const ProductOrServiceCategory = () => {
             {departmentData.length > 0 ? (
               departmentData.map((dept) => (
                 <MenuItem key={dept._id} value={dept._id}>
-                  {dept.name}
+                  {dept.departmentName || dept.name || dept.department || ''}
                 </MenuItem>
               ))
             ) : (

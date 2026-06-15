@@ -64,8 +64,8 @@ const AddPolicy = () => {
       product: '',
       subProduct: '',
       insCompany: '',
-      brokerName: '6964ceed36ec87f56adc1332',
-      branchBroker: '6964b3a4b2343d2e611ea796',
+      brokerName: '',
+      branchBroker: '',
       tpPolicyDuration: '',
       tpStartDate: '',
       tpEndDate: '',
@@ -158,10 +158,10 @@ const AddPolicy = () => {
   const [subCustomerGroupData, setSubCustomerGroupData] = useState([]);
   const [prefixData, setPrefixData] = useState([]);
   const [branchCodeData, setBranchCodeData] = useState([]);
-  const [insCompanyData, setInsCompanyData] = useState({});
-  const [brokerNameData, setBrokerNameData] = useState({});
-  const [branchBrokerData, setBranchBrokerData] = useState({});
-  const [insDepartmentData, setInsDepartmentData] = useState({});
+  const [insCompanyData, setInsCompanyData] = useState([]);
+  const [brokerNameData, setBrokerNameData] = useState([]);
+  const [branchBrokerData, setBranchBrokerData] = useState([]);
+  const [insDepartmentData, setInsDepartmentData] = useState([]);
   const [productData, setProductData] = useState([]);
   const [subProductData, setSubProductData] = useState([]);
   const [fuelTypeData, setFuelTypeData] = useState([]);
@@ -194,7 +194,11 @@ const AddPolicy = () => {
       const selectedId = form?.product;
       const selectedName = productData.find((branch) => branch._id === selectedId);
       console.log(selectedId, ' ', selectedName);
-      const productName = selectedName?.productName;
+      if (!selectedName || !selectedName.productName) {
+        setSubProductData([]);
+        return;
+      }
+      const productName = selectedName.productName;
       const res = await get(`subproductCategory/${productName}`);
       console.log('Sub Products', res);
       if (res.data) setSubProductData(res.data);
@@ -342,9 +346,9 @@ const AddPolicy = () => {
       const role = localStorage.getItem('loginRole');
       let url = role === 'super-admin' ? 'clientRegistration' : 'customerRegistration';
       const res = await get(url);
-      if (res.status) {
+      if (res && (res.success || res.status || Array.isArray(res.data))) {
         setClientList(res.data);
-        // console.log('Client List set:', clientList);
+        // console.log('Client List set:', res.data);
       }
     } catch (error) {
       console.error('Error fetching clients:', error);
@@ -488,11 +492,33 @@ const AddPolicy = () => {
   }, []);
 
   useEffect(() => {
-    setForm((prev) => ({
-      ...prev,
-      branchCode: '695386ca12bb6dd679ffa330'
-    }));
-  }, []);
+    if (branchCodeData.length > 0 && !form.branchCode) {
+      const defaultBranch = branchCodeData[0];
+      setForm((prev) => ({
+        ...prev,
+        branchCode: defaultBranch._id,
+        branchName: defaultBranch.branchName
+      }));
+    }
+  }, [branchCodeData]);
+
+  useEffect(() => {
+    if (brokerNameData.length > 0 && !form.brokerName) {
+      setForm((prev) => ({
+        ...prev,
+        brokerName: brokerNameData[0]._id
+      }));
+    }
+  }, [brokerNameData]);
+
+  useEffect(() => {
+    if (branchBrokerData.length > 0 && !form.branchBroker) {
+      setForm((prev) => ({
+        ...prev,
+        branchBroker: branchBrokerData[0]._id
+      }));
+    }
+  }, [branchBrokerData]);
 
   const calculateEndDate = (startDate, duration) => {
     if (!startDate || !duration) return '';
@@ -544,12 +570,8 @@ const AddPolicy = () => {
   }, [form.startDate, form.policyDuration]);
 
   const filteredProducts = useMemo(() => {
-    if (!departmentValue) {
-      return productData; // show all
-    }
-
-    return productData.filter((product) => product.insDepartment?._id === departmentValue);
-  }, [productData, departmentValue]);
+    return productData;
+  }, [productData]);
 
   useEffect(() => {
     if (!form.tpStartDate || !form.tpPolicyDuration) return;
@@ -622,6 +644,20 @@ const AddPolicy = () => {
       setDepartmentValue(e.target.value);
     }
     if (name === 'clientType') setClientTypeValue(e.target.value);
+    if (name === 'retailCustomer') {
+      const selectedId = e.target.value;
+      const selectedCustomer = clientList.find((customer) => customer._id === selectedId);
+      if (selectedCustomer) {
+        setForm((prev) => ({
+          ...prev,
+          retailCustomer: selectedId,
+          cutomerName: selectedCustomer.name || '',
+          mobile: selectedCustomer.mobile || '',
+          email: selectedCustomer.email || '',
+          gstNo: selectedCustomer.gstNo || ''
+        }));
+      }
+    }
 
     setForm((prev) => ({
       ...prev,
@@ -1171,12 +1207,20 @@ const AddPolicy = () => {
                       value={form.branchBroker}
                       onChange={handleChange}
                     >
-                      {branchBrokerData?.length > 0 &&
-                        branchBrokerData?.map((type) => (
-                          <MenuItem key={type?._id} value={type?._id}>
+                      {branchBrokerData?.length > 0 ? (
+                        branchBrokerData.map((type) => (
+                          <MenuItem key={type._id} value={type._id}>
                             {type?.branchBroker}
                           </MenuItem>
-                        ))}
+                        ))
+                      ) : (
+                        branchCodeData?.length > 0 &&
+                        branchCodeData.map((type) => (
+                          <MenuItem key={type._id} value={type._id}>
+                            {type?.address ? `${type.address} (${type.branchName || type.branchCode})` : (type?.branchName || type?.branchCode)}
+                          </MenuItem>
+                        ))
+                      )}
                     </Select>
                   </FormControl>
                 </Grid>

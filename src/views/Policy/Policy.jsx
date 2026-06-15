@@ -52,6 +52,7 @@ import value from 'assets/scss/_themes-vars.module.scss';
 import REACT_APP_API_URL, { get, post, put, remove } from '../../api/api';
 import axios from 'axios';
 import { useSelector } from 'react-redux';
+import swal from 'sweetalert';
 
 const initialState = {
   financialYear: ''
@@ -69,6 +70,9 @@ const Policy = () => {
   const [insDepartmentData, setInsDepartmentData] = useState({});
   const [financialYearData, setFinancialYearData] = useState([]);
   const [financialYear, setFinancialYear] = useState('');
+  const [selectedCompany, setSelectedCompany] = useState('');
+  const [selectedDepartment, setSelectedDepartment] = useState('');
+  const [selectedMonth, setSelectedMonth] = useState('');
 
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(100);
@@ -151,19 +155,29 @@ const Policy = () => {
     fetchPolicyDetail();
   }, [financialYear]);
 
-  const handleDelete = async (index) => {
-    setLoading(true);
-    try {
-      const id = index;
-      await remove(`policyDetail/${id}`);
-      toast.success('Record Deleted Sucessfully');
-      fetchPolicyDetail();
-    } catch (error) {
-      console.error(error);
-      toast.error('Record Deletion Failed');
-    } finally {
-      setLoading(false);
-    }
+  const handleDelete = (index) => {
+    const id = index;
+    swal({
+      title: "Are you sure?",
+      text: "Once deleted, you will not be able to recover this record!",
+      icon: "warning",
+      buttons: ["Cancel", "Delete"],
+      dangerMode: true,
+    }).then(async (willDelete) => {
+      if (willDelete) {
+        setLoading(true);
+        try {
+          await remove(`policyDetail/${id}`);
+          swal("Deleted!", "Record deleted successfully.", "success");
+          fetchPolicyDetail();
+        } catch (error) {
+          console.error(error);
+          swal("Error!", "Something went wrong.", "error");
+        } finally {
+          setLoading(false);
+        }
+      }
+    });
   };
 
   // Truncate text to max 2 lines (approx 100 chars)
@@ -193,19 +207,38 @@ const Policy = () => {
     setPage(0);
   };
 
-  // Filter data based on search term
+  // Filter data based on search term and active dropdown filters
   const filteredData = useMemo(() => {
-    if (!searchTerm.trim()) return customerList;
+    let result = customerList;
 
-    const lowerSearch = searchTerm.toLowerCase().trim();
-    return customerList.filter(
-      (entry) =>
-        entry?.cutomerName?.toLowerCase().includes(lowerSearch) ||
-        entry?.insCompany?.insCompany?.toLowerCase().includes(lowerSearch) ||
-        entry?.insDepartment?.insDepartment?.toLowerCase().includes(lowerSearch) ||
-        entry?.policyNumber?.toLowerCase().includes(lowerSearch)
-    );
-  }, [customerList, searchTerm]);
+    if (filter === 'byCompany' && selectedCompany) {
+      result = result.filter((entry) => entry?.insCompany?._id === selectedCompany);
+    } else if (filter === 'byDepartment' && selectedDepartment) {
+      result = result.filter((entry) => entry?.insDepartment?._id === selectedDepartment);
+    } else if (filter === 'byMonth' && selectedMonth) {
+      result = result.filter((entry) => {
+        const dateToCheck = entry?.startDate || entry?.createdAt;
+        if (!dateToCheck) return false;
+        const date = new Date(dateToCheck);
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        return `${year}-${month}` === selectedMonth;
+      });
+    }
+
+    if (searchTerm.trim()) {
+      const lowerSearch = searchTerm.toLowerCase().trim();
+      result = result.filter(
+        (entry) =>
+          entry?.cutomerName?.toLowerCase().includes(lowerSearch) ||
+          entry?.insCompany?.insCompany?.toLowerCase().includes(lowerSearch) ||
+          entry?.insDepartment?.insDepartment?.toLowerCase().includes(lowerSearch) ||
+          entry?.policyNumber?.toLowerCase().includes(lowerSearch)
+      );
+    }
+
+    return result;
+  }, [customerList, searchTerm, filter, selectedCompany, selectedDepartment, selectedMonth]);
 
   // Paginate filtered data
   const paginatedData = useMemo(() => {
@@ -217,6 +250,18 @@ const Policy = () => {
     setFinancialYear(e.target.value);
   };
 
+  const resetFilters = () => {
+    setFilter('');
+    setSelectedCompany('');
+    setSelectedDepartment('');
+    setSelectedMonth('');
+    setSearchTerm('');
+    const savedFY = localStorage.getItem('selectedFY');
+    if (savedFY) {
+      setFinancialYear(savedFY);
+    }
+  };
+
   const handleFileUpload = async (e) => {
     console.log('Upload Button Cliecked');
     setIsUploading(true);
@@ -226,20 +271,21 @@ const Policy = () => {
         setIsUploading(false);
         return;
       }
-      // console.log('File is presnt ', file);
 
       const formData = new FormData();
-      // formData.append('file', file);
-
-      // console.log('BAse URL', REACT_APP_API_URL);
+      formData.append('file', file);
 
       const response = await axios.post(`${REACT_APP_API_URL}policyDetail/import-csv/`, formData, {});
-      if (response.status) {
+      if (response.data && response.data.success) {
         toast.success(`Inserted ${response.data.insertedCount} Records`);
+        fetchPolicyDetail();
+      } else {
+        toast.success(`Upload processed: ${response.data.message || 'completed'}`);
+        fetchPolicyDetail();
       }
-      console.log('PSOT response', response);
+      console.log('POST response', response);
     } catch (error) {
-      toast('Error uploading file');
+      toast.error('Error uploading file');
     } finally {
       setIsUploading(false); // Stop uploading
     }
@@ -260,9 +306,9 @@ const Policy = () => {
       });
 
       console.log('exporrt Response ', response);
-      const filename = `policyData-${financialYear}.csv`;
+      const filename = `policyData-${financialYear}.xlsx`;
       // const filename = `policyData-${fromYear}-${toYear}.csv`;
-      const blob = new Blob([response.data], { type: 'text/csv' });
+      const blob = new Blob([response.data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
 
       const link = document.createElement('a');
       link.href = window.URL.createObjectURL(blob);
@@ -377,6 +423,7 @@ const Policy = () => {
                 label="FinancialYear"
                 name="financialYear"
                 type="financialYear"
+                value={financialYear}
                 onChange={(e) => handleFilter(e)}
               >
                 {financialYearData.length > 0 &&
@@ -386,7 +433,6 @@ const Policy = () => {
                       value={type._id}
                       style={{
                         textAlign: 'center'
-                        // padding: '8px 8px'
                       }}
                     >
                       {new Date(type.fromDate).getFullYear()} - {new Date(type.toDate).getFullYear()}
@@ -399,22 +445,16 @@ const Policy = () => {
         {filter === 'byMonth' ? (
           <>
             <Grid item xs={12} sm={3}>
-              <TextField fullWidth labelId="month" label="Month" name="month" type="month" />
-            </Grid>
-          </>
-        ) : null}
-        {filter === 'byStaff' ? (
-          <>
-            <Grid item xs={12} sm={3}>
-              <FormControl fullWidth>
-                <InputLabel id="staff">Staff</InputLabel>
-                <Select labelId="staff" label="staff" name="staff">
-                  <MenuItem value="byStaff">Ajay</MenuItem>
-                  <MenuItem value="byMonth">Vijay</MenuItem>
-                  <MenuItem value="byCompany">Sanjay</MenuItem>
-                  <MenuItem value="byDepartment">Ramdeen</MenuItem>
-                </Select>
-              </FormControl>
+              <TextField
+                fullWidth
+                labelId="month"
+                label="Month"
+                name="month"
+                type="month"
+                value={selectedMonth}
+                onChange={(e) => setSelectedMonth(e.target.value)}
+                InputLabelProps={{ shrink: true }}
+              />
             </Grid>
           </>
         ) : null}
@@ -423,7 +463,13 @@ const Policy = () => {
             <Grid item xs={12} sm={3}>
               <FormControl fullWidth>
                 <InputLabel id="company">Insurance Company</InputLabel>
-                <Select labelId="company" label="company" name="company">
+                <Select
+                  labelId="company"
+                  label="company"
+                  name="company"
+                  value={selectedCompany}
+                  onChange={(e) => setSelectedCompany(e.target.value)}
+                >
                   {insCompanyData.length > 0 &&
                     insCompanyData.map((type) => (
                       <MenuItem key={type._id} value={type._id}>
@@ -440,7 +486,13 @@ const Policy = () => {
             <Grid item xs={12} sm={3}>
               <FormControl fullWidth>
                 <InputLabel id="department">Department</InputLabel>
-                <Select labelId="department" label="department" name="department">
+                <Select
+                  labelId="department"
+                  label="department"
+                  name="department"
+                  value={selectedDepartment}
+                  onChange={(e) => setSelectedDepartment(e.target.value)}
+                >
                   {insDepartmentData.length > 0 &&
                     insDepartmentData.map((type) => (
                       <MenuItem key={type._id} value={type._id}>
@@ -456,10 +508,7 @@ const Policy = () => {
         {filter === 'byFinancialYear' ? null : (
           <>
             <Grid item xs={12} sm={3}>
-              <TextField fullWidth labelId="search" label="Search Here..." name="search" />
-            </Grid>
-            <Grid item xs={12} sm={3}>
-              <Button variant="contained" size="large" onClick={handleFilter}>
+              <Button variant="contained" size="large" onClick={resetFilters}>
                 Reset Filter
               </Button>
             </Grid>

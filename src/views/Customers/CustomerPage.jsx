@@ -87,8 +87,24 @@ const CustomerPage = () => {
       return;
     }
 
+    const payload = {
+      clientType: formData.clientType,
+      name: formData.customerName,
+      dob: formData.dob,
+      email: formData.email,
+      mobile: formData.mobile,
+      panNo: formData.pan,
+      aadharNo: formData.adhar,
+      drivingLicenseNo: formData.drivingLicence,
+      gstNo: formData.gst,
+      address: formData.address,
+      pincode: formData.pincode,
+      city: formData.city,
+      state: formData.state
+    };
+
     try {
-      await createCustomer(formData);
+      await createCustomer(payload);
       toast.success("Customer Added ✅");
 
       setOpen(false);
@@ -230,8 +246,8 @@ const CustomerPage = () => {
                 data.map((item, index) => (
                   <TableRow key={item._id}>
                     <TableCell>{index + 1}</TableCell>
-                    <TableCell>{item.customerName}</TableCell>
-                    <TableCell>{item.clientType}</TableCell>
+                    <TableCell>{item.name}</TableCell>
+                    <TableCell>{item.customerType}</TableCell>
                     <TableCell>{item.mobile}</TableCell>
                     <TableCell>{item.city}</TableCell>
                     <TableCell>

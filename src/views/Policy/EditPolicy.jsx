@@ -47,8 +47,8 @@ const EditPolicy = () => {
 
   const [prefixData, setPrefixData] = useState([]);
   const [branchCodeData, setBranchCodeData] = useState([]);
-  const [insCompanyData, setInsCompanyData] = useState({});
-  const [insDepartmentData, setInsDepartmentData] = useState({});
+  const [insCompanyData, setInsCompanyData] = useState([]);
+  const [insDepartmentData, setInsDepartmentData] = useState([]);
   const [productData, setProductData] = useState([]);
   const [subProductData, setSubProductData] = useState([]);
   const [riskCodeData, setRiskCodeData] = useState([]);
@@ -481,12 +481,8 @@ const EditPolicy = () => {
   }, [form.startDate, form.policyDuration]);
 
   const filteredProducts = useMemo(() => {
-    if (!departmentValue) {
-      return productData; // show all
-    }
-
-    return productData.filter((product) => product.insDepartment?._id === departmentValue);
-  }, [productData, departmentValue]);
+    return productData;
+  }, [productData]);
 
   useEffect(() => {
     if (!form.tpStartDate || !form.tpPolicyDuration) return;
@@ -631,6 +627,20 @@ const EditPolicy = () => {
     }
     if (name === 'insDepartment') setDepartmentValue(e.target.value);
     if (name === 'clientType') setClientTypeValue(e.target.value);
+    if (name === 'retailCustomer') {
+      const selectedId = e.target.value;
+      const selectedCustomer = clientList.find((customer) => customer._id === selectedId);
+      if (selectedCustomer) {
+        setForm((prev) => ({
+          ...prev,
+          retailCustomer: selectedId,
+          cutomerName: selectedCustomer.name || '',
+          mobile: selectedCustomer.mobile || '',
+          email: selectedCustomer.email || '',
+          gstNo: selectedCustomer.gstNo || ''
+        }));
+      }
+    }
     setForm((prev) => ({
       ...prev,
       [name]: value
@@ -714,7 +724,7 @@ const EditPolicy = () => {
             autoClose: 3000,
             theme: 'colored'
           });
-          // navigate('/policy');
+          navigate('/policy');
         }
       } catch (error) {
         console.error('Error updating lead:', error);
@@ -723,7 +733,6 @@ const EditPolicy = () => {
     } else {
       toast.error('Please fill the required Fields');
     }
-    // navigate('/policy');
   };
 
   useEffect(() => {
@@ -743,6 +752,10 @@ const EditPolicy = () => {
     const fetchSubProductsByProduct = async () => {
       const selectedId = form.product;
       const selectedName = productData.find((branch) => branch._id === selectedId);
+      if (!selectedName || !selectedName.productName) {
+        setSubProductData([]);
+        return;
+      }
       const productName = selectedName.productName;
       const res = await get(`subproductCategory/${productName}`);
       // console.log('Sub Products', res.data);
@@ -1223,12 +1236,20 @@ const EditPolicy = () => {
               <FormControl fullWidth>
                 <InputLabel id="branchBroker">Broker Branch</InputLabel>
                 <Select labelId="branchBroker" label="branchBroker" name="branchBroker" value={form.branchBroker} onChange={handleChange}>
-                  {branchBrokerData.length > 0 &&
+                  {branchBrokerData?.length > 0 ? (
                     branchBrokerData.map((type) => (
                       <MenuItem key={type._id} value={type._id}>
                         {type.branchBroker}
                       </MenuItem>
-                    ))}
+                    ))
+                  ) : (
+                    branchCodeData?.length > 0 &&
+                    branchCodeData.map((type) => (
+                      <MenuItem key={type._id} value={type._id}>
+                        {type.address ? `${type.address} (${type.branchName || type.branchCode})` : (type.branchName || type.branchCode)}
+                      </MenuItem>
+                    ))
+                  )}
                 </Select>
               </FormControl>
             </Grid>

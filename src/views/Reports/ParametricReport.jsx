@@ -70,6 +70,7 @@ const ParametricReport = () => {
   const [insDepartmentData, setInsDepartmentData] = useState([]);
   const [insCompanyData, setInsCompanyData] = useState([]);
   const [filteredRows, setFilteredRows] = useState([]);
+  const [reportGenerated, setReportGenerated] = useState(false);
   const [selectedDepartment, setSelectedDepartment] = useState('');
   const [selectedCompany, setSelectedCompany] = useState('');
   const [searchCustomer, setSearchCustomer] = useState('');
@@ -156,6 +157,17 @@ const ParametricReport = () => {
     fetchDropdownData();
   }, []);
 
+  useEffect(() => {
+    if (!financialYear && financialYearData.length > 0) {
+      const selectedFY = localStorage.getItem('selectedFY');
+      if (selectedFY && financialYearData.some(f => f._id === selectedFY)) {
+        setFinancialYear(selectedFY);
+      } else {
+        setFinancialYear(financialYearData[0]._id);
+      }
+    }
+  }, [financialYearData, financialYear]);
+
   // Fetch all policy Detail
 
   const fetchPolicyDetail = useCallback(async () => {
@@ -224,12 +236,12 @@ const ParametricReport = () => {
     if (name === 'month') setDateFrom(value); // month picker
   };
 
-  useEffect(() => {
-    setFilteredRows(customerList);
-  }, [customerList]);
-
   const handleFilter = () => {
-    if (!customerList.length) return;
+    setReportGenerated(true);
+    if (!customerList.length) {
+      setFilteredRows([]);
+      return;
+    }
 
     let start = null;
     let end = null;
@@ -276,17 +288,14 @@ const ParametricReport = () => {
     setFilteredRows(filtered);
   };
 
-  useEffect(() => {
-    handleFilter();
-  }, [searchCustomer]);
-
   const handleClear = () => {
     setDateFrom(null);
     setDateTo(null);
     setSelectedDepartment('');
     setSelectedCompany('');
     setSearchCustomer('');
-    setFilteredRows(customerList);
+    setFilteredRows([]);
+    setReportGenerated(false);
   };
 
   const normalizeDate = (date) => {
@@ -395,7 +404,13 @@ const ParametricReport = () => {
                     </>
                   )}
                   <Grid item xs={2}>
-                    <TextField label="Search..." name="search" fullWidth></TextField>
+                    <TextField
+                      label="Search Customer"
+                      name="search"
+                      fullWidth
+                      value={searchCustomer}
+                      onChange={(e) => setSearchCustomer(e.target.value)}
+                    />
                   </Grid>
                   <Grid item xs={2}>
                     <Button sx={{ py: 2 }} variant="contained" onClick={handleFilter}>
@@ -438,12 +453,19 @@ const ParametricReport = () => {
 
                     <Grid item xs={2}>
                       <TextField
-                        label="Search Customer"
-                        name="searchCustomer"
+                        select
+                        label="Financial Year"
+                        name="financialYear"
                         fullWidth
-                        value={searchCustomer}
-                        onChange={(e) => setSearchCustomer(e.target.value)}
-                      />
+                        value={financialYear}
+                        onChange={(e) => setFinancialYear(e.target.value)}
+                      >
+                        {financialYearData.map((type) => (
+                          <MenuItem key={type._id} value={type._id}>
+                            {new Date(type.fromDate).getFullYear()} - {new Date(type.toDate).getFullYear()}
+                          </MenuItem>
+                        ))}
+                      </TextField>
                     </Grid>
                     <Grid item xs={2}>
                       <Button size="large" sx={{ py: 1 }} variant="contained" onClick={handleClear}>
@@ -508,57 +530,77 @@ const ParametricReport = () => {
             </TableHead>
 
             <TableBody>
-              {rows.map((row, index) => (
-                <TableRow key={index}>
+              {rows.length > 0 ? (
+                rows.map((row, index) => (
+                  <TableRow key={index}>
+                    {columnMasterList
+                      .filter((col) => selectedColumns.includes(col.key))
+                      .map((col) => (
+                        <TableCell key={col.key}>{col.render ? col.render(row) : row[col.key]}</TableCell>
+                      ))}
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={columnMasterList.filter((col) => selectedColumns.includes(col.key)).length} align="center" sx={{ py: 3, fontSize: '1rem', color: 'text.secondary' }}>
+                    {reportGenerated ? "No records found matching filters." : "Please select filters and click 'Generate Report' to view the report."}
+                  </TableCell>
+                </TableRow>
+              )}
+              {reportGenerated && rows.length > 0 && (
+                <TableRow sx={{ backgroundColor: '#f5f5f5' }}>
                   {columnMasterList
                     .filter((col) => selectedColumns.includes(col.key))
-                    .map((col) => (
-                      <TableCell key={col.key}>{col.render ? col.render(row) : row[col.key]}</TableCell>
-                    ))}
+                    .map((col, idx) => {
+                      const isFirst = idx === 0;
+                      if (col.key === 'gstAmount') {
+                        return (
+                          <TableCell key={col.key} sx={{ fontWeight: 'bold', fontSize: '1.1rem' }}>
+                            GST Amount: {summary.gstAmount.toLocaleString('en-IN', {
+                              minimumFractionDigits: 2,
+                              maximumFractionDigits: 2
+                            })}
+                          </TableCell>
+                        );
+                      }
+                      if (col.key === 'totalBrokerageAmountincGst') {
+                        return (
+                          <TableCell key={col.key} sx={{ fontWeight: 'bold', fontSize: '1.1rem' }}>
+                            Brokerage Amount: {summary.brokerageIncGst.toLocaleString('en-IN', {
+                              minimumFractionDigits: 2,
+                              maximumFractionDigits: 2
+                            })}
+                          </TableCell>
+                        );
+                      }
+                      if (col.key === 'netPremium') {
+                        return (
+                          <TableCell key={col.key} sx={{ fontWeight: 'bold', fontSize: '1.1rem' }}>
+                            Net Premium: {summary.netPremium.toLocaleString('en-IN', {
+                              minimumFractionDigits: 2,
+                              maximumFractionDigits: 2
+                            })}
+                          </TableCell>
+                        );
+                      }
+                      if (col.key === 'totalAmount') {
+                        return (
+                          <TableCell key={col.key} sx={{ fontWeight: 'bold', fontSize: '1.1rem' }}>
+                            Amount: {summary.totalAmount.toLocaleString('en-IN', {
+                              minimumFractionDigits: 2,
+                              maximumFractionDigits: 2
+                            })}
+                          </TableCell>
+                        );
+                      }
+                      return (
+                        <TableCell key={col.key} sx={{ fontWeight: 'bold', fontSize: '1.1rem' }}>
+                          {isFirst ? 'Total' : ''}
+                        </TableCell>
+                      );
+                    })}
                 </TableRow>
-              ))}
-              <TableRow sx={{ backgroundColor: '#f5f5f5' }}>
-                {['gstAmount', 'totalBrokerageAmountincGst', 'netPremium', 'totalAmount'].some((col) => selectedColumns.includes(col)) && (
-                  <TableCell sx={{ fontWeight: 'bold', fontSize: '1.2rem' }}>Total</TableCell>
-                )}
-
-                {selectedColumns.includes('gstAmount') && (
-                  <TableCell sx={{ fontWeight: 'bold', fontSize: '1.2rem' }}>
-                    GST Amount :
-                    {summary.gstAmount.toLocaleString('en-IN', {
-                      minimumFractionDigits: 2,
-                      maximumFractionDigits: 2
-                    })}
-                  </TableCell>
-                )}
-                {selectedColumns.includes('totalBrokerageAmountincGst') && (
-                  <TableCell sx={{ fontWeight: 'bold', fontSize: '1.2rem' }}>
-                    Brokerage Amount:
-                    {summary.brokerageIncGst.toLocaleString('en-IN', {
-                      minimumFractionDigits: 2,
-                      maximumFractionDigits: 2
-                    })}
-                  </TableCell>
-                )}
-                {selectedColumns.includes('netPremium') && (
-                  <TableCell sx={{ fontWeight: 'bold', fontSize: '1.2rem' }}>
-                    Net Premium:
-                    {summary.netPremium.toLocaleString('en-IN', {
-                      minimumFractionDigits: 2,
-                      maximumFractionDigits: 2
-                    })}
-                  </TableCell>
-                )}
-                {selectedColumns.includes('totalAmount') && (
-                  <TableCell sx={{ fontWeight: 'bold', fontSize: '1.2rem' }}>
-                    Amount:{' '}
-                    {summary.totalAmount.toLocaleString('en-IN', {
-                      minimumFractionDigits: 2,
-                      maximumFractionDigits: 2
-                    })}
-                  </TableCell>
-                )}
-              </TableRow>
+              )}
             </TableBody>
           </Table>
         </Grid>
