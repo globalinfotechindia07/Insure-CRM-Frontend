@@ -35,7 +35,7 @@ const CompanySettings = () => {
     Edit: false,
     Delete: false
   });
-  
+
   const systemRights = useSelector((state) => state.systemRights?.systemRights || {});
   const { user } = useSelector((state) => state.auth || {});
 
@@ -54,15 +54,15 @@ const CompanySettings = () => {
     if (window.confirm(`Are you sure you want to delete "${companyName}"?`)) {
       try {
         const token = localStorage.getItem('token');
-        const response = await fetch(`http://localhost:5050/api/companySettings/${companyId}`, {
+        const response = await fetch(`https://grampanchayattigaon/api/companySettings/${companyId}`, {
           method: 'DELETE',
           headers: {
             'Authorization': `Bearer ${token}`
           }
         });
-        
+
         const data = await response.json();
-        
+
         if (data.status === 'true') {
           toast.success('Company deleted successfully!');
           fetchCompanySettings();
@@ -93,13 +93,13 @@ const CompanySettings = () => {
     try {
       const token = localStorage.getItem('token');
       console.log('🔗 Fetching company settings...');
-      
+
       const response = await fetch('http://localhost:5050/api/companySettings/', {
         headers: {
           'Authorization': `Bearer ${token}`
         }
       });
-      
+
       const data = await response.json();
       console.log('✅ API Response:', data);
 
@@ -124,12 +124,12 @@ const CompanySettings = () => {
     if (loginRole === 'admin' || user?.role === 'admin') {
       setAdmin(true);
     }
-    
+
     // Set permissions
     if (systemRights?.actionPermissions?.['company-settings']) {
       setCompanySettingPermission(systemRights.actionPermissions['company-settings']);
     }
-    
+
     // Fetch company settings
     fetchCompanySettings();
   }, []);
@@ -170,7 +170,7 @@ const CompanySettings = () => {
               </Button>
             )}
           </Grid>
-          
+
           <Card>
             <CardContent>
               <Box sx={{ overflowX: 'auto' }}>
@@ -201,7 +201,7 @@ const CompanySettings = () => {
                               {company.companyName || 'N/A'}
                             </Typography>
                           </TableCell>
-                          
+
                           {/* Contact Info */}
                           <TableCell>
                             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
@@ -231,7 +231,7 @@ const CompanySettings = () => {
                               )}
                             </Box>
                           </TableCell>
-                          
+
                           {/* Location Info */}
                           <TableCell>
                             <Box sx={{ display: 'flex', flexDirection: 'column' }}>
@@ -249,7 +249,7 @@ const CompanySettings = () => {
                               )}
                             </Box>
                           </TableCell>
-                          
+
                           {/* Registration Info */}
                           <TableCell>
                             <Box sx={{ display: 'flex', flexDirection: 'column' }}>
@@ -262,14 +262,14 @@ const CompanySettings = () => {
                               </Typography>
                             </Box>
                           </TableCell>
-                          
+
                           {/* GST No */}
                           <TableCell>
                             <Typography variant="body2">
                               {company.gstNo || 'N/A'}
                             </Typography>
                           </TableCell>
-                          
+
                           {/* Actions */}
                           <TableCell>
                             <Box sx={{ display: 'flex', gap: 1 }}>
@@ -316,7 +316,7 @@ const CompanySettings = () => {
               </Box>
             </CardContent>
           </Card>
-          
+
           <EmailIntegration
             onSave={(config) => {
               if (localStorage.getItem('expired') === 'true') {

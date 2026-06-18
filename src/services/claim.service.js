@@ -1,6 +1,8 @@
 import axios from "axios";
 
-const API = "http://localhost:5050/api/claim";
+// const API = "http://localhost:5050/api/claim";
+const API = "https://grampanchayattigaon/api/claim";
+
 
 // =========================================
 // BASIC CRUD OPERATIONS
