@@ -111,7 +111,7 @@ import SurveyorPage from 'views/ClaimCRM/SurveyorPage';
 import TPAPage from 'views/ClaimCRM/TPAPage';
 import InvestigatorPage from 'views/ClaimCRM/InvestigatorPage';
 import ClaimPage from 'views/ClaimCRM/ClaimPage';
-import DepartmentPage from 'views/ClaimCRM/DepartmentPage';
+// import DepartmentPage from 'views/ClaimCRM/DepartmentPage';
 import CompanyPage from 'views/ClaimCRM/CompanyPage';
 // import ClaimDetailsPage from 'views/ClaimCRM/ClaimDetailsPage';
 // const UtilsTypography = Loadable(lazy(() => import('views/Utils/Typography')));
@@ -1647,7 +1647,7 @@ const MainRoutes = {
         <PrivateRoute
           allowedRoles={['admin', 'staff', 'Administrative', 'NursingAndParamedical', 'MedicalOfficer', 'Support', 'Consultant']}
         >
-          <DepartmentPage />
+          <InsDepartment />
         </PrivateRoute>
       )
     },
