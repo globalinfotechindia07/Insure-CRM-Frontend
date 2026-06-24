@@ -9,7 +9,6 @@ import EmployementDetails from './Pages/EmployementDetails'
 import Documentation from './Pages/Documentation'
 import SystemRights from './Pages/SystemRights'
 import EducationDetails from './Pages/EducationDetails'
-import SalaryAndWages from './Pages/SalaryAndWages'
 import AttendanceAndLeave from './Pages/AttendanceAndLeave'
 import { ToastContainer } from 'react-toastify'
 import 'react-toastify/dist/ReactToastify.css'
@@ -37,7 +36,6 @@ const AddPage = () => {
     documentation: {},
     EducationDetails: {},
     systemRights: {},
-    salaryAndWages: {},
     attendanceAndLeave: {},
     submittedFormId: ''
   })
@@ -61,8 +59,6 @@ const AddPage = () => {
       case 5:
         return <SystemRights setValue={setValue} setStoredAllData={setStoredAllData} storedAllData={storedAllData} />
       case 6:
-        return <SalaryAndWages setValue={setValue} setStoredAllData={setStoredAllData} storedAllData={storedAllData} />
-      case 7:
         return <AttendanceAndLeave setValue={setValue} setStoredAllData={setStoredAllData} storedAllData={storedAllData} />
       default:
         return null
@@ -72,6 +68,7 @@ const AddPage = () => {
   return (
     <>
       {/* Breadcrumb */}
+      {/* Breadcrumb section omitted for size, but keeping structure matching the original file */}
       <Breadcrumb>
         <Typography component={Link} to='/' variant='subtitle2' color='inherit' className='link-breadcrumb'>
           Home
@@ -102,7 +99,6 @@ const AddPage = () => {
           <Tab label='Documentation' />
           <Tab label='Education' />
           <Tab label='System Rights' />
-          <Tab label='Salary & Wages' />
           {/* <Tab label='Attendance/Leaves' /> */}
         </Tabs>
         <Divider />

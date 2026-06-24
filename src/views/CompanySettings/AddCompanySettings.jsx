@@ -153,7 +153,7 @@ const CompanySettings = () => {
     return (
       <Box sx={{ p: 3, textAlign: 'center' }}>
         <CircularProgress />
-        <Typography sx={{ mt: 2 }}>Loading company data...</Typography>
+        <Typography sx={{ mt: 2 }}>Loading branch data...</Typography>
       </Box>
     );
   }
@@ -165,14 +165,14 @@ const CompanySettings = () => {
           Home
         </Typography>
         <Typography variant="subtitle2" color="primary" className="link-breadcrumb">
-          Company Settings
+          Branch Settings
         </Typography>
       </Breadcrumb>
 
       <Grid container spacing={gridSpacing}>
         <Grid item xs={12}>
           <Grid container justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
-            <Typography variant="h5">Company Details</Typography>
+            <Typography variant="h5">Branch Details</Typography>
             {(companySettingPermission.Add === true || isAdmin) && (
               <Button
                 variant="contained"
@@ -180,7 +180,7 @@ const CompanySettings = () => {
                 startIcon={<Add />}
                 onClick={handleAddClick}
               >
-                Add Company
+                Add Branch
               </Button>
             )}
           </Grid>
@@ -192,7 +192,7 @@ const CompanySettings = () => {
                   <TableHead>
                     <TableRow>
                       <TableCell><strong>Logo</strong></TableCell>
-                      <TableCell><strong>Company Name</strong></TableCell>
+                      <TableCell><strong>Branch Name</strong></TableCell>
                       <TableCell><strong>Contact Info</strong></TableCell>
                       <TableCell><strong>Location</strong></TableCell>
                       <TableCell><strong>GST No</strong></TableCell>
@@ -203,7 +203,7 @@ const CompanySettings = () => {
                     {companyList.length === 0 ? (
                       <TableRow>
                         <TableCell colSpan={6} align="center">
-                          <Typography>No company data found. Click "Add Company" to create one.</Typography>
+                          <Typography>No branch data found. Click "Add Branch" to create one.</Typography>
                         </TableCell>
                       </TableRow>
                     ) : (
@@ -314,7 +314,7 @@ const CompanySettings = () => {
                                   size="small"
                                   color="primary"
                                   onClick={() => handleEditClick(company._id)}
-                                  title="Edit Company"
+                                  title="Edit Branch"
                                 >
                                   <Edit fontSize="small" />
                                 </IconButton>
@@ -324,7 +324,7 @@ const CompanySettings = () => {
                                   size="small"
                                   color="error"
                                   onClick={() => handleDeleteClick(company._id, company.companyName)}
-                                  title="Delete Company"
+                                  title="Delete Branch"
                                 >
                                   <Delete fontSize="small" />
                                 </IconButton>

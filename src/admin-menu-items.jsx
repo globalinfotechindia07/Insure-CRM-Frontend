@@ -82,11 +82,11 @@ export default {
           url: '/dashboard'
         },
         {
-          id: 'company-settings',
-          title: 'Company Settings',
+          id: 'branch-settings',
+          title: 'Branch Settings',
           type: 'item',
           icon: RoomPreferencesIcon,
-          url: '/company-settings'
+          url: '/branch-settings'
         },
         {
           id: 'master-group',
@@ -386,7 +386,7 @@ export default {
                 },
                 {
                   id: 'staff-position',
-                  title: 'Staff Position',
+                  title: 'Staff Designation',
                   type: 'item',
                   icon: AccountTreeIcon,
                   url: '/master/position'
@@ -406,6 +406,27 @@ export default {
                   url: '/master/leave-type'
                 }
               ]
+            },
+            {
+              id: 'surveyor-master',
+              title: 'Surveyor Master',
+              type: 'item',
+              icon: AccountTreeIcon,
+              url: '/master/surveyor-master'
+            },
+            {
+              id: 'tpa-master',
+              title: 'TPA Master',
+              type: 'item',
+              icon: AccountTreeIcon,
+              url: '/master/tpa-master'
+            },
+            {
+              id: 'investigator-master',
+              title: 'Investigator Master',
+              type: 'item',
+              icon: AccountTreeIcon,
+              url: '/master/investigator-master'
             },
 
             {
@@ -450,13 +471,13 @@ export default {
             //   icon: BusinessCenterIcon,
             //   url: '/master/profession',
             // },
-            {
-              id: 'holiday-type',
-              title: 'Holiday Type',
-              type: 'item',
-              icon: AttachMoneyIcon,
-              url: '/master/holiday-type'
-            },
+            // {
+            //   id: 'holiday-type',
+            //   title: 'Holiday Type',
+            //   type: 'item',
+            //   icon: AttachMoneyIcon,
+            //   url: '/master/holiday-type'
+            // },
             {
               id: 'Holiday',
               title: 'Holiday',
@@ -583,25 +604,32 @@ export default {
             },
             {
               id: 'parametric-report',
-              title: 'Parametric Report',
+              title: 'Lead Report',
               type: 'item',
-              url: '/lead-management/parametric-report', // Define the new route here
+              url: '/lead-management/lead-report',
               target: false
             },
-            {
-              id: 'analytical-report',
-              title: 'Analytical Report',
-              type: 'item',
-              url: '/lead-management/analytical-report',
-              target: false
-            },
-            {
-              id: 'pipeline',
-              title: 'Pipeline',
-              type: 'item',
-              url: '/pipeline',
-              target: false
-            }
+            // {
+            //   id: 'parametric-report',
+            //   title: 'Parametric Report',
+            //   type: 'item',
+            //   url: '/lead-management/parametric-report', // Define the new route here
+            //   target: false
+            // },
+            // {
+            //   id: 'analytical-report',
+            //   title: 'Analytical Report',
+            //   type: 'item',
+            //   url: '/lead-management/analytical-report',
+            //   target: false
+            // },
+            // {
+            //   id: 'pipeline',
+            //   title: 'Pipeline',
+            //   type: 'item',
+            //   url: '/pipeline',
+            //   target: false
+            // }
           ]
         },
         // {
@@ -625,48 +653,19 @@ export default {
         //   icon: PersonIcon,
         //   url: '/client'
         // },
+        // {
+        //   id: 'customer',
+        //   title: 'Customer',
+        //   type: 'item',
+        //   icon: PersonIcon,
+        //   url: '/customer'
+        // },
         {
-          id: 'customer',
-          title: 'Customer',
-          type: 'item',
-          icon: PersonIcon,
-          url: '/customer'
-        },
-        {
-          id: 'master-group',
+          id: 'claim-management',
           title: 'Claim Management',
-          type: 'collapse',
-          icon: GridViewIcon,
-          children: [
-            {
-              id: 'surveyor',
-              title: 'Surveyor',
-              type: 'item',
-              icon: AccountTreeIcon,
-              url: '/surveyor'
-            },
-            {
-              id: 'tpa-master',
-              title: 'TPA Master',
-              type: 'item',
-              icon: AccountTreeIcon,
-              url: '/tpa-master'
-            },
-            {
-              id: 'investigator',
-              title: 'Investigator',
-              type: 'item',
-              icon: AccountTreeIcon,
-              url: '/investigator'
-            },
-            {
-              id: 'claim-master',
-              title: 'Claim Management',
-              type: 'item',
-              icon: AccountTreeIcon,
-              url: '/claim-management'
-            }
-          ]
+          type: 'item',
+          icon: AccountTreeIcon,
+          url: '/claim-management'
         },
         {
           id: 'policy-management',

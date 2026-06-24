@@ -337,6 +337,7 @@ import { toast } from 'react-toastify'
 import 'react-toastify/dist/ReactToastify.css'
 import adminMenuItems from 'admin-menu-items'
 import { put } from '../../../../../api/api.js'
+import { useNavigate } from 'react-router-dom'
 
 function renderMenuItems(
   items,
@@ -423,6 +424,7 @@ function renderMenuItems(
 }
 
 const SystemRights = ({ setValue, setStoredAllData, storedAllData }) => {
+  const navigate = useNavigate();
   const [authorizedIds, setAuthorizedIds] = useState({})
   const [actionPermissions, setActionPermissions] = useState({})
 
@@ -530,7 +532,9 @@ const SystemRights = ({ setValue, setStoredAllData, storedAllData }) => {
         if (response.success === true) {
           setStoredAllData(prev => ({ ...prev, systemRights: response?.data?.systemRights }))
           toast.success(response.message)
-          setValue(prev => prev + 1)
+          setTimeout(() => {
+            navigate('/staff-master/company-staff')
+          }, 1500)
         } else {
           toast.error(response.message)
         }

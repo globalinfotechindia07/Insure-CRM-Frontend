@@ -1,8 +1,8 @@
-// src/views/CompanySettings/EmailIntegration.jsx
+// src/views/BranchSettings/EmailIntegration.jsx
 import React, { useState, useEffect } from 'react';
-import { 
-  Grid, Card, CardContent, Typography, TextField, 
-  Button, Box, Alert, Snackbar, CircularProgress 
+import {
+  Grid, Card, CardContent, Typography, TextField,
+  Button, Box, Alert, Snackbar, CircularProgress
 } from '@mui/material';
 
 const EmailIntegration = ({ onSave }) => {
@@ -31,7 +31,7 @@ const EmailIntegration = ({ onSave }) => {
     try {
       const response = await fetch(`${API_BASE}/config`);
       const data = await response.json();
-      
+
       if (response.ok && data.success && data.data) {
         const config = data.data;
         setEmailConfig({
@@ -71,9 +71,9 @@ const EmailIntegration = ({ onSave }) => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(emailConfig)
       });
-      
+
       const data = await response.json();
-      
+
       if (response.ok && data.success) {
         setSnackbar({ open: true, message: '✅ Configuration saved successfully!', severity: 'success' });
         if (onSave) onSave(data.data);
@@ -102,9 +102,9 @@ const EmailIntegration = ({ onSave }) => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ to: emailConfig.smtpUser, config: emailConfig })
       });
-      
+
       const data = await response.json();
-      
+
       if (response.ok && data.success) {
         setSnackbar({ open: true, message: '✅ Test email sent! Check your inbox.', severity: 'success' });
       } else {

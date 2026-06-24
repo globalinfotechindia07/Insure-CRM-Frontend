@@ -33,7 +33,6 @@ import {
   Tooltip
 } from '@mui/material';
 import { Link } from 'react-router-dom';
-import { Visibility } from '@mui/icons-material';
 
 const ITEM_HEIGHT = 40;
 const ITEM_PADDING_TOP = 8;
@@ -317,11 +316,6 @@ const ParametricReport = () => {
                             <Button variant="text" size="small" component={Link} to={`/lead-management/EditLead/${lead._id}`}>
                               Update
                             </Button>
-                            <Tooltip title="hello" arrow>
-                              <IconButton color="primary">
-                                <Visibility />
-                              </IconButton>
-                            </Tooltip>
                           </div>
                         </TableCell>
 

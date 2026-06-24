@@ -301,7 +301,7 @@ const EditCompany = () => {
       <CardContent>
         <Grid container alignItems="center" justifyContent="space-between" sx={{ mb: 2 }}>
           <Grid item>
-            <Typography variant="h6">Company Details</Typography>
+            <Typography variant="h6">Branch Details</Typography>
           </Grid>
           <Grid item>
             <Button variant="contained" color="primary" onClick={() => navigate(-1)} startIcon={<ArrowBackIcon />}>

@@ -28,8 +28,9 @@ import Breadcrumb from 'component/Breadcrumb';
 import { gridSpacing } from 'config.js';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import swal from 'sweetalert';
 
-import { Edit, Delete, Info as InfoIcon, PersonAdd } from '@mui/icons-material';
+import { Edit, Delete, Info as InfoIcon } from '@mui/icons-material';
 
 import { get, post, put, remove } from '../../../api/api.js';
 import { useSelector } from 'react-redux';
@@ -55,7 +56,6 @@ const Lead = () => {
   const [isEditMode, setIsEditMode] = useState(false);
   const [done, setDone] = useState(false);
   const [editFollowUpId, setEditFollowUpId] = useState(null);
-  const [isDisableConvertClient, setDisableConvertClient] = useState(null);
 
   const [isAdmin, setAdmin] = useState(false);
   const [leadPermission, setLeadPermission] = useState({
@@ -127,16 +127,24 @@ const Lead = () => {
       toast.error('Subscription has ended. Please subscribe to continue working.');
       return;
     }
-    if (!window.confirm('Are you sure you want to delete this lead?')) return;
-    try {
-      await remove(`lead/${id}`);
-
-      setData((prevData) => prevData.filter((item) => item._id !== id));
-      toast.success('Lead deleted successfully');
-    } catch (err) {
-      console.error(err);
-      toast.error('Failed to delete lead');
-    }
+    swal({
+      title: "Are you sure?",
+      text: "Once deleted, you will not be able to recover this lead!",
+      icon: "warning",
+      buttons: true,
+      dangerMode: true,
+    }).then(async (willDelete) => {
+      if (willDelete) {
+        try {
+          await remove(`lead/${id}`);
+          setData((prevData) => prevData.filter((item) => item._id !== id));
+          swal("Deleted!", "Lead deleted successfully.", "success");
+        } catch (err) {
+          console.error(err);
+          swal("Error!", "Failed to delete lead.", "error");
+        }
+      }
+    });
   };
 
   useEffect(() => {
@@ -232,67 +240,6 @@ const Lead = () => {
     }
   };
 
-  const handleCoverToClient = async (data, index) => {
-    if (localStorage.getItem('expired') === 'true') {
-      toast.error('Subscription has ended. Please subscribe to continue working.');
-      return;
-    }
-    try {
-      // Step 1: Generate current date and +6 months
-      const today = new Date();
-      const sixMonthsLater = new Date();
-      sixMonthsLater.setMonth(today.getMonth() + 6);
-
-      const formatCustomDate = (date) =>
-        date.toLocaleDateString('en-US', {
-          year: 'numeric',
-          month: 'short',
-          day: '2-digit'
-        });
-
-      // console.log('data', data);
-
-      const formattedStartDate = formatCustomDate(today);
-      const formattedEndDate = formatCustomDate(sixMonthsLater);
-      const formData = {
-        clientName: data?.Prospect?.companyName || data.Client?.clientName || data.newCompanyName,
-        officialPhoneNo: data.phoneNo,
-        altPhoneNo: data.altPhoneNo,
-        officialMailId: data.email,
-        altMailId: data.altEmail,
-        emergencyContactPerson: '',
-        emergencyContactNo: '',
-        website: '',
-        gstNo: '',
-        panNo: '',
-        logo: null,
-        officeAddress: data.address,
-        pincode: data.pincode,
-        city: data.city,
-        state: data.state,
-        country: data.country,
-        startDate: formattedStartDate,
-        endDate: formattedEndDate,
-        createdBy: localStorage.getItem('Id') || '',
-        contactPerson: (data.contact || []).map((c) => ({
-          name: c.name || '',
-          department: c.department || '',
-          position: c.designation || c.position || '',
-          email: c.email || '',
-          phone: c.phone || ''
-        }))
-      };
-      setDisableConvertClient(index);
-      // console.log('form data is conver to client', formData);
-      const res = await post('admin-clientRegistration', formData);
-      if (res.status === true) {
-        setDisableConvertClient(null);
-        toast.success('converted to client!');
-      }
-    } catch (err) {
-      toast.error('convert to client failed!');
-    }
-  };
 
   // color helper for leadstatus
   const getLeadStatusColor = (leadstatus) => {
@@ -501,16 +448,6 @@ const Lead = () => {
                             <IconButton onClick={() => handleopenAddFollowUp(row._id)}>
                               <InfoIcon sx={{ color: 'primary.main' }} />
                             </IconButton>
-                            <Tooltip title="Convert to Client" arrow onClick={() => handleCoverToClient(row, index)}>
-                              <IconButton
-                                size="medium"
-                                variant="contained"
-                                color="success"
-                                disabled={isDisableConvertClient === index || row.Client}
-                              >
-                                <PersonAdd />
-                              </IconButton>
-                            </Tooltip>
                           </Box>
                         </TableCell>
                       </TableRow>

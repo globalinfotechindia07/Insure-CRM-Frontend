@@ -1,8 +1,4 @@
-import axios from "axios";
-
-// const API = "http://localhost:5050/api/claim";
-const API = "https://grampanchayattigaon/api/claim";
-
+import API from "../api/axios";
 
 // =========================================
 // BASIC CRUD OPERATIONS
@@ -10,23 +6,23 @@ const API = "https://grampanchayattigaon/api/claim";
 
 // GET ALL CLAIMS
 export const getClaims = () =>
-  axios.get(API);
+  API.get("/claim");
 
 // GET SINGLE CLAIM
 export const getClaimById = (id) =>
-  axios.get(`${API}/${id}`);
+  API.get(`/claim/${id}`);
 
 // CREATE CLAIM
 export const createClaim = (data) =>
-  axios.post(API, data);
+  API.post("/claim", data);
 
 // UPDATE CLAIM (Full Update)
 export const updateClaim = (id, data) =>
-  axios.put(`${API}/${id}`, data);
+  API.put(`/claim/${id}`, data);
 
 // DELETE CLAIM
 export const deleteClaim = (id) =>
-  axios.delete(`${API}/${id}`);
+  API.delete(`/claim/${id}`);
 
 // =========================================
 // SPECIAL ACTION APIs (UPDATED)
@@ -34,20 +30,20 @@ export const deleteClaim = (id) =>
 
 // ASSIGN CLAIM (Preliminary Surveyor, Final Surveyor, TPA, Investigator)
 export const assignClaim = (id, data) =>
-  axios.put(`${API}/${id}/assign`, data);
+  API.put(`/claim/${id}/assign`, data);
 
 // APPROVE CLAIM
 export const approveClaim = (id, data) =>
-  axios.put(`${API}/${id}/approve`, data);
+  API.put(`/claim/${id}/approve`, data);
 
 // UPDATE POST HOSPITALIZATION DETAILS
 export const updatePostHospitalization = (id, data) =>
-  axios.put(`${API}/${id}/post-hospitalization`, data);
+  API.put(`/claim/${id}/post-hospitalization`, data);
 
 // UPDATE LOSS DETAILS
 export const updateLossDetails = (id, data) =>
-  axios.put(`${API}/${id}/loss-details`, data);
+  API.put(`/claim/${id}/loss-details`, data);
 
 // UPDATE TRANSPORT/MARINE DETAILS
 export const updateTransportDetails = (id, data) =>
-  axios.put(`${API}/${id}/transport-details`, data);
+  API.put(`/claim/${id}/transport-details`, data);

@@ -120,6 +120,8 @@ const AddPolicy = () => {
       endorsementTerrorism: '',
       endorsementOtherTerrorism: '',
       endorsementNetPremium: '',
+      endorsementGst: '',
+      endorsementGstAmount: '',
       paymentMode: '',
       etotalAmount: '',
       paidAmount: '',
@@ -215,7 +217,7 @@ const AddPolicy = () => {
     };
 
     fetchSubProductsByProduct();
-  }, [form.product]);
+  }, [form.product, productData]);
 
   useEffect(() => {
     const fetchSubCustomerByCustomer = async () => {
@@ -650,64 +652,51 @@ const AddPolicy = () => {
   // console.log('Filtered Sub Pro,', filteredSubProducts);
   const handleChange = (e) => {
     const { name, value } = e.target;
-    console.log('handleChnage ', name, value);
-    if (name === 'branchCode') {
-      const selectedId = e.target.value;
-      const selectedName = branchCodeData.find((branch) => branch._id === selectedId);
+    console.log('handleChange ', name, value);
 
-      setForm((prev) => ({
-        ...prev,
-        branchName: selectedName.branchName
-      }));
-    }
+    setForm((prev) => {
+      let nextForm = { ...prev, [name]: value };
+
+      if (name === 'branchCode') {
+        const selectedId = value;
+        const selectedName = branchCodeData.find((branch) => branch._id === selectedId);
+        if (selectedName) {
+          nextForm.branchName = selectedName.branchName;
+        }
+      }
+      if (name === 'retailCustomer') {
+        const selectedId = value;
+        const selectedCustomer = clientList.find((customer) => customer._id === selectedId);
+        if (selectedCustomer) {
+          nextForm.retailCustomer = selectedId;
+          nextForm.cutomerName = selectedCustomer.name || '';
+          nextForm.mobile = selectedCustomer.mobile || '';
+          nextForm.email = selectedCustomer.email || '';
+          nextForm.gstNo = selectedCustomer.gstNo || '';
+        }
+      }
+      if (name === 'insurerName') {
+        const selectedCompanyObj = insCompanyData.find((c) => c.insCompany === value);
+        if (selectedCompanyObj) {
+          nextForm.insCompany = selectedCompanyObj._id;
+        }
+      }
+      if (name === 'insCompany') {
+        const selectedCompanyObj = insCompanyData.find((c) => c._id === value);
+        if (selectedCompanyObj) {
+          nextForm.insurerName = selectedCompanyObj.insCompany;
+        }
+      }
+
+      return nextForm;
+    });
+
     if (name === 'insDepartment') {
-      setDepartmentValue(e.target.value);
+      setDepartmentValue(value);
     }
-    if (name === 'clientType') setClientTypeValue(e.target.value);
-    if (name === 'retailCustomer') {
-      const selectedId = e.target.value;
-      const selectedCustomer = clientList.find((customer) => customer._id === selectedId);
-      if (selectedCustomer) {
-        setForm((prev) => ({
-          ...prev,
-          retailCustomer: selectedId,
-          cutomerName: selectedCustomer.name || '',
-          mobile: selectedCustomer.mobile || '',
-          email: selectedCustomer.email || '',
-          gstNo: selectedCustomer.gstNo || ''
-        }));
-      }
+    if (name === 'clientType') {
+      setClientTypeValue(value);
     }
-    if (name === 'insurerName') {
-      const selectedCompanyObj = insCompanyData.find((c) => c.insCompany === value);
-      if (selectedCompanyObj) {
-        setForm((prev) => ({
-          ...prev,
-          insCompany: selectedCompanyObj._id
-        }));
-      }
-    }
-    if (name === 'insCompany') {
-      const selectedCompanyObj = insCompanyData.find((c) => c._id === value);
-      if (selectedCompanyObj) {
-        setForm((prev) => ({
-          ...prev,
-          insurerName: selectedCompanyObj.insCompany
-        }));
-      }
-    }
-
-    setForm((prev) => ({
-      ...prev,
-      [name]: value
-    }));
-
-    // const error = validateForm();
-
-    // setErrors((prev) => ({
-    //   ...prev,
-    //   [name]: error
-    // }));
 
     setTaxes({
       ...taxes,
@@ -942,6 +931,19 @@ const AddPolicy = () => {
       totalBrokerageAmountincGst: incGst
     }));
   }, [form.totalBrokerageAmount, form.totalBrokerageGst]);
+
+  useEffect(() => {
+    const net = Number(form.endorsementNetPremium) || 0;
+    const gstId = form.endorsementGst;
+    const gstValue = Number(gstData?.find((g) => g._id === gstId)?.value || 0);
+    const gstAmount = round2(net * (gstValue / 100));
+    const total = round2(net + gstAmount);
+    setForm((prev) => ({
+      ...prev,
+      endorsementGstAmount: gstAmount || '',
+      etotalAmount: total || ''
+    }));
+  }, [form.endorsementNetPremium, form.endorsementGst, gstData]);
 
   return (
     <>
@@ -1556,6 +1558,38 @@ const AddPolicy = () => {
                         />
                       </Grid>
                     </Grid>
+                    <Typography variant="h5" sx={{ my: 2, color: 'primary.main' }}>
+                      TP + OD Summary
+                    </Typography>
+                    <Grid container spacing={2} sx={{ mb: 2 }}>
+                      <Grid item xs={12} sm={4}>
+                        <TextField
+                          label="TP + OD Net Premium"
+                          value={form.netPremium}
+                          disabled
+                          fullWidth
+                          InputLabelProps={{ shrink: true }}
+                        />
+                      </Grid>
+                      <Grid item xs={12} sm={4}>
+                        <TextField
+                          label="TP + OD GST Amount"
+                          value={Number(form?.gstAmount).toFixed(2) || 0}
+                          disabled
+                          fullWidth
+                          InputLabelProps={{ shrink: true }}
+                        />
+                      </Grid>
+                      <Grid item xs={12} sm={4}>
+                        <TextField
+                          label="TP + OD Total Amount"
+                          value={Number(form.totalAmount).toFixed(2)}
+                          disabled
+                          fullWidth
+                          InputLabelProps={{ shrink: true }}
+                        />
+                      </Grid>
+                    </Grid>
                   </>
                 ) : (
                   <>
@@ -2051,7 +2085,7 @@ finance = 69522c7b583c668bdda53af5
                     InputLabelProps={{ shrink: true }}
                   />
                 </Grid>
-                <Grid item xs={12} sm={4}>
+                <Grid item xs={12} sm={3}>
                   <TextField
                     label="Endorsement Net Premium"
                     value={form.endorsementNetPremium}
@@ -2061,18 +2095,41 @@ finance = 69522c7b583c668bdda53af5
                     InputLabelProps={{ shrink: true }}
                   />
                 </Grid>
-                <Grid item xs={12} sm={9}>
-                  <FormControlLabel control={<Checkbox name="ECGST" />} label="Endorsement CGST" />
-                  <FormControlLabel control={<Checkbox name="ESGST" />} label="Endorsement SGST" />
-                  <FormControlLabel control={<Checkbox name="EIGST" />} label="Endorsement IGST" />
-                  <FormControlLabel control={<Checkbox name="EUGST" />} label="Endorsement UGST" />
+                <Grid item xs={12} sm={3}>
+                  <FormControl fullWidth>
+                    <InputLabel id="endorsementGst">Endorsement GST</InputLabel>
+                    <Select
+                      labelId="endorsementGst"
+                      label="Endorsement GST"
+                      name="endorsementGst"
+                      value={form.endorsementGst}
+                      onChange={handleChange}
+                    >
+                      {gstData.length > 0 &&
+                        gstData.map((type) => (
+                          <MenuItem key={type._id} value={type._id}>
+                            {type.value}
+                          </MenuItem>
+                        ))}
+                    </Select>
+                  </FormControl>
+                </Grid>
+                <Grid item xs={12} sm={3}>
+                  <TextField
+                    label="Endorsement GST Amt"
+                    value={form.endorsementGstAmount}
+                    name="endorsementGstAmount"
+                    disabled
+                    fullWidth
+                    InputLabelProps={{ shrink: true }}
+                  />
                 </Grid>
                 <Grid item xs={12} sm={3}>
                   <TextField
                     label="Endorsement Total Amount"
                     name="etotalAmount"
                     value={form.etotalAmount}
-                    onChange={handleChange}
+                    disabled
                     fullWidth
                     InputLabelProps={{ shrink: true }}
                   />
@@ -2340,14 +2397,25 @@ finance = 69522c7b583c668bdda53af5
                 </Grid>
 
                 <Grid item xs={12} sm={3}>
-                  <TextField
-                    label={brokerageValue === 'brokerage' ? 'Total Brokerage GST%' : 'Endorsement Total Brokerage GST%'}
-                    name="totalBrokerageGst"
-                    value={form.totalBrokerageGst}
-                    onChange={handleChange}
-                    fullWidth
-                    InputLabelProps={{ shrink: true }}
-                  />
+                  <FormControl fullWidth>
+                    <InputLabel id="totalBrokerageGst">
+                      {brokerageValue === 'brokerage' ? 'Total Brokerage GST%' : 'Endorsement Total Brokerage GST%'}
+                    </InputLabel>
+                    <Select
+                      labelId="totalBrokerageGst"
+                      label={brokerageValue === 'brokerage' ? 'Total Brokerage GST%' : 'Endorsement Total Brokerage GST%'}
+                      name="totalBrokerageGst"
+                      value={form.totalBrokerageGst || ''}
+                      onChange={handleChange}
+                    >
+                      {gstData.length > 0 &&
+                        gstData.map((type) => (
+                          <MenuItem key={type._id} value={type.value}>
+                            {type.value}
+                          </MenuItem>
+                        ))}
+                    </Select>
+                  </FormControl>
                 </Grid>
                 <Grid item xs={12} sm={3}>
                   <TextField
@@ -2413,11 +2481,11 @@ finance = 69522c7b583c668bdda53af5
               <Grid container spacing={2}>
                 <Grid item xs={12} sm={3}>
                   <TextField
-                    label="Net Premium"
+                    label={selectedDeptName === 'motor' ? "TP + OD Net Premium" : "Net Premium"}
                     name="netPremium"
                     onChange={handleChange}
                     value={form.netPremium}
-                    disabled={selectedDeptName === 'motor'}
+                    disabled
                     fullWidth
                     error={!!errors.netPremium}
                     helperText={errors.netPremium}
@@ -2425,43 +2493,23 @@ finance = 69522c7b583c668bdda53af5
                   />
                 </Grid>
                 {selectedDeptName !== 'motor' && (
-                  <>
-                    <Grid item xs={12} sm={2}>
-                      <FormControl fullWidth>
-                        <InputLabel id="gst">GST</InputLabel>
-                        <Select labelId="gst" label="gst" name="gst" value={form.gst} onChange={handleChange}>
-                          {gstData.length > 0 &&
-                            gstData.map((type) => (
-                              <MenuItem key={type._id} value={type._id}>
-                                {type.value}
-                              </MenuItem>
-                            ))}
-                        </Select>
-                      </FormControl>
-                    </Grid>
-                    <Grid item xs={12} sm={7}>
-                      <FormControlLabel
-                        control={<Switch checked={taxes.CGST} onChange={handleChange} name="CGST" color="primary" />}
-                        label="CGST"
-                      />
-                      <FormControlLabel
-                        control={<Switch checked={taxes.SGST} onChange={handleChange} name="SGST" color="primary" />}
-                        label="SGST"
-                      />
-                      <FormControlLabel
-                        control={<Switch checked={taxes.IGST} onChange={handleChange} name="IGST" color="primary" />}
-                        label="IGST"
-                      />
-                      <FormControlLabel
-                        control={<Switch checked={taxes.UGST} onChange={handleChange} name="UGST" color="primary" />}
-                        label="UGST"
-                      />
-                    </Grid>
-                  </>
+                  <Grid item xs={12} sm={3}>
+                    <FormControl fullWidth>
+                      <InputLabel id="gst">GST</InputLabel>
+                      <Select labelId="gst" label="gst" name="gst" value={form.gst} onChange={handleChange}>
+                        {gstData.length > 0 &&
+                          gstData.map((type) => (
+                            <MenuItem key={type._id} value={type._id}>
+                              {type.value}
+                            </MenuItem>
+                          ))}
+                      </Select>
+                    </FormControl>
+                  </Grid>
                 )}
                 <Grid item xs={12} sm={3}>
                   <TextField
-                    label="GST Amt"
+                    label={selectedDeptName === 'motor' ? "TP + OD GST Amt" : "GST Amt"}
                     onChange={handleChange}
                     value={form.gstAmount}
                     name="gstAmount"
@@ -2472,7 +2520,7 @@ finance = 69522c7b583c668bdda53af5
                 </Grid>
                 <Grid item xs={12} sm={3}>
                   <TextField
-                    label="Total Amount"
+                    label={selectedDeptName === 'motor' ? "TP + OD Total Amount" : "Total Amount"}
                     name="totalAmount"
                     value={Number(form.totalAmount)}
                     onChange={handleChange}

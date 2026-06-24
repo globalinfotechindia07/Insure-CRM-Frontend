@@ -9,7 +9,6 @@ import EmploymentDetails from './EditPages/EmploymentDetails'
 import Documentation from './EditPages/Documentation'
 import HrFinance from './EditPages/HrFinance'
 import SystemRights from './EditPages/SystemRights'
-import SalaryAndWages from './EditPages/SalaryAndWages'
 // import AttendanceAndLeave from './EditPages/AttendanceAndLeave'
 import { get} from 'api/api'
 import { ToastContainer} from 'react-toastify'
@@ -48,7 +47,6 @@ const UpdatePage = () => {
     documentation: {},
     hrFinance: {},
     systemRights: {},
-    salaryAndWages: {},
     // attendanceAndLeave: {}
   })
 
@@ -59,7 +57,6 @@ const UpdatePage = () => {
     documentation: true,
     hrFinance: true,
     systemRights: true,
-    salaryAndWages: true,
     // attendanceAndLeave: true
   })
 
@@ -79,10 +76,6 @@ const UpdatePage = () => {
         return 'hrFinance'
       case 5:
         return 'systemRights'
-      case 6:
-        return 'salaryAndWages'
-      case 7:
-        // return 'attendanceAndLeave'
       default:
         return ''
     }
@@ -102,10 +95,6 @@ const UpdatePage = () => {
         return <EducationDetails setStoredAllData={setStoredAllData} setValue={setValue} storedAllData={storedAllData} />
       case 5:
         return <SystemRights setStoredAllData={setStoredAllData} setValue={setValue} storedAllData={storedAllData} />
-      case 6:
-        return <SalaryAndWages setStoredAllData={setStoredAllData} setValue={setValue} storedAllData={storedAllData} />
-      case 7:
-        // return <AttendanceAndLeave setStoredAllData={setStoredAllData} setValue={setValue} storedAllData={storedAllData} />
       default:
         return null
     }
@@ -142,7 +131,6 @@ const UpdatePage = () => {
           <Tab label='Documentation' />
           <Tab label='Education' />
           <Tab label='System Rights' />
-          <Tab label='Salary & Wages' />
           {/* <Tab label='Attendance/Leaves' /> */}
         </Tabs>
         <Divider />

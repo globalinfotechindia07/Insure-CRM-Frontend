@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useMemo } from "react";
+import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, LineChart, Line, PieChart, Pie, Cell } from "recharts";
 import {
   Grid,
   Button,
@@ -67,7 +68,7 @@ const ClaimPage = () => {
   const [client, setClient] = useState([]);
   
   // Analytics States
-  const [selectedPeriod, setSelectedPeriod] = useState('monthly');
+  const [selectedPeriod, setSelectedPeriod] = useState('all');
   const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7));
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [selectedTPA, setSelectedTPA] = useState('all');
@@ -245,8 +246,9 @@ const ClaimPage = () => {
     }
     
     filtered = filtered.filter(claim => {
-      if (!claim.dateOfLoss) return false;
-      const claimDate = new Date(claim.dateOfLoss);
+      const dateVal = claim.dateOfLossOrAdmission || claim.createdAt;
+      if (!dateVal) return false;
+      const claimDate = new Date(dateVal);
       
       if (selectedPeriod === 'monthly') {
         const [year, month] = selectedMonth.split('-');
@@ -316,8 +318,9 @@ const ClaimPage = () => {
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     
     getFilteredClaims.forEach(claim => {
-      if (!claim.dateOfLoss) return;
-      const date = new Date(claim.dateOfLoss);
+      const dateVal = claim.dateOfLossOrAdmission || claim.createdAt;
+      if (!dateVal) return;
+      const date = new Date(dateVal);
       const monthName = `${months[date.getMonth()]} ${date.getFullYear()}`;
       
       if (!monthMap.has(monthName)) {
@@ -345,6 +348,37 @@ const ClaimPage = () => {
   const [policy, setPolicy] = useState([]);
   const [premium, setPremium] = useState(0);
 
+  // Memoized Policy Trend Data
+  const policyTrendData = useMemo(() => {
+    if (!policy || policy.length === 0) return [];
+    const monthMap = new Map();
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    policy.forEach(p => {
+      const dateVal = p.startDate || p.createdAt;
+      if (!dateVal) return;
+      const date = new Date(dateVal);
+      const monthName = `${months[date.getMonth()]} ${date.getFullYear()}`;
+      
+      if (!monthMap.has(monthName)) {
+        monthMap.set(monthName, { month: monthName, count: 0, premium: 0 });
+      }
+      
+      const entry = monthMap.get(monthName);
+      entry.count += 1;
+      entry.premium += Number(p.totalAmount) || 0;
+    });
+    
+    return Array.from(monthMap.values()).sort((a, b) => {
+      const [aMonth, aYear] = a.month.split(' ');
+      const [bMonth, bYear] = b.month.split(' ');
+      const aIdx = months.indexOf(aMonth);
+      const bIdx = months.indexOf(bMonth);
+      const aDate = new Date(parseInt(aYear), aIdx, 1);
+      const bDate = new Date(parseInt(bYear), bIdx, 1);
+      return aDate - bDate;
+    });
+  }, [policy]);
+
   const fetchPolicyDetail = async () => {
     if (!selectedFY) return;
     try {
@@ -367,174 +401,104 @@ const ClaimPage = () => {
     }
   }, [selectedFY]);
 
-  // Simple Bar Chart Component
+  // Recharts Bar Chart Component
   const SimpleBarChart = ({ data, dataKey, fill, height = 300 }) => {
-    const maxValue = getMaxValue(data, dataKey);
-    
     return (
-      <Box sx={{ height, width: '100%', overflowX: 'auto' }}>
-        <Box sx={{ display: 'flex', alignItems: 'flex-end', gap: 2, minWidth: 400, height: '100%', pt: 2 }}>
-          {data.map((item, idx) => (
-            <Box key={idx} sx={{ flex: 1, textAlign: 'center' }}>
-              <Box
-                sx={{
-                  height: `${(item[dataKey] / maxValue) * 250}px`,
-                  backgroundColor: fill,
-                  borderRadius: '4px 4px 0 0',
-                  transition: 'height 0.3s ease',
-                  '&:hover': { opacity: 0.8 }
-                }}
-              />
-              <Typography variant="caption" sx={{ mt: 1, display: 'block' }}>
-                {item.department || item.name}
-              </Typography>
-              <Typography variant="body2" fontWeight="bold">
-                {item[dataKey]}
-              </Typography>
-            </Box>
-          ))}
-        </Box>
+      <Box sx={{ height, width: '100%' }}>
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart data={data} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
+            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e0e0e0" />
+            <XAxis dataKey="department" stroke="#888" fontSize={11} tickLine={false} />
+            <YAxis stroke="#888" fontSize={11} tickLine={false} axisLine={false} />
+            <RechartsTooltip cursor={{ fill: '#f5f5f5' }} />
+            <Bar dataKey={dataKey} fill={fill} radius={[6, 6, 0, 0]} maxBarSize={45} />
+          </BarChart>
+        </ResponsiveContainer>
       </Box>
     );
   };
 
-  // Simple Line Chart Component
-  const SimpleLineChart = ({ data }) => {
-    const maxValue = Math.max(...data.flatMap(d => [d.reported, d.settled, d.outstanding]), 10);
-    
+  // Recharts Line Chart Component
+  const SimpleLineChart = ({ data, height = 300 }) => {
     return (
-      <Box sx={{ width: '100%', overflowX: 'auto' }}>
-        <Box sx={{ minWidth: 500, position: 'relative', height: 300, mt: 4 }}>
-          {[0, 0.25, 0.5, 0.75, 1].map((ratio, i) => (
-            <Box
-              key={i}
-              sx={{
-                position: 'absolute',
-                left: 60,
-                right: 20,
-                top: `${(1 - ratio) * 250}px`,
-                borderTop: '1px dashed #ccc',
-                '&::before': {
-                  content: `"${Math.round(maxValue * ratio)}"`,
-                  position: 'absolute',
-                  left: -50,
-                  top: -10,
-                  fontSize: 12,
-                  color: '#666'
-                }
-              }}
-            />
-          ))}
-          
-          <Box sx={{ position: 'absolute', left: 60, right: 20, top: 0, bottom: 0 }}>
-            {data.map((item, idx) => {
-              const xPos = (idx / (data.length - 1 || 1)) * 100;
-              const reportedY = 250 - (item.reported / maxValue) * 250;
-              
-              return (
-                <React.Fragment key={idx}>
-                  <Box
-                    sx={{
-                      position: 'absolute',
-                      left: `${xPos}%`,
-                      top: 0,
-                      bottom: 0,
-                      width: 1,
-                      backgroundColor: '#eee'
-                    }}
-                  />
-                  {idx > 0 && (
-                    <Box
-                      sx={{
-                        position: 'absolute',
-                        left: `${((idx - 1) / (data.length - 1 || 1)) * 100}%`,
-                        top: `${250 - (data[idx - 1].reported / maxValue) * 250}px`,
-                        width: `${(1 / (data.length - 1 || 1)) * 100}%`,
-                        height: '2px',
-                        backgroundColor: '#8884d8',
-                        transformOrigin: 'left center'
-                      }}
-                    />
-                  )}
-                  <Box
-                    sx={{
-                      position: 'absolute',
-                      left: `${xPos}%`,
-                      top: `${reportedY}px`,
-                      width: 8,
-                      height: 8,
-                      borderRadius: '50%',
-                      backgroundColor: '#8884d8',
-                      transform: 'translate(-50%, -50%)'
-                    }}
-                  />
-                </React.Fragment>
-              );
-            })}
-          </Box>
-          
-          <Box sx={{ position: 'absolute', left: 60, right: 20, bottom: -30, display: 'flex' }}>
-            {data.map((item, idx) => (
-              <Typography key={idx} variant="caption" sx={{ flex: 1, textAlign: 'center' }}>
-                {item.month}
-              </Typography>
-            ))}
-          </Box>
-        </Box>
+      <Box sx={{ height, width: '100%' }}>
+        <ResponsiveContainer width="100%" height="100%">
+          <LineChart data={data} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
+            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e0e0e0" />
+            <XAxis dataKey="month" stroke="#888" fontSize={11} tickLine={false} />
+            <YAxis stroke="#888" fontSize={11} tickLine={false} axisLine={false} />
+            <RechartsTooltip />
+            <Legend verticalAlign="top" height={36} />
+            <Line type="monotone" dataKey="reported" name="Reported" stroke="#1976d2" strokeWidth={3} activeDot={{ r: 8 }} />
+            <Line type="monotone" dataKey="settled" name="Settled" stroke="#4caf50" strokeWidth={3} />
+            <Line type="monotone" dataKey="outstanding" name="Outstanding" stroke="#ff9800" strokeWidth={3} />
+          </LineChart>
+        </ResponsiveContainer>
       </Box>
     );
   };
 
-  // Simple Pie Chart Component
+  // Recharts Pie Chart Component
   const SimplePieChart = ({ data }) => {
-    const total = data.reduce((sum, item) => sum + item.value, 0);
-    let currentAngle = 0;
-    const colors = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8', '#82CA9D', '#FF6B6B', '#4ECDC4'];
+    const COLORS = ['#1976d2', '#4caf50', '#ff9800', '#9c27b0', '#00bcd4', '#e91e63', '#ffeb3b', '#607d8b'];
     
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', flexWrap: 'wrap', gap: 4 }}>
-        <Box sx={{ position: 'relative', width: 250, height: 250 }}>
-          <svg viewBox="-100 -100 200 200" style={{ width: '100%', height: '100%' }}>
-            {data.map((item, idx) => {
-              const angle = (item.value / total) * 360;
-              const startAngle = currentAngle;
-              const endAngle = currentAngle + angle;
-              currentAngle += angle;
-              
-              const startRad = (startAngle * Math.PI) / 180;
-              const endRad = (endAngle * Math.PI) / 180;
-              
-              const x1 = 80 * Math.cos(startRad);
-              const y1 = 80 * Math.sin(startRad);
-              const x2 = 80 * Math.cos(endRad);
-              const y2 = 80 * Math.sin(endRad);
-              
-              const largeArc = angle > 180 ? 1 : 0;
-              
-              return (
-                <path
-                  key={idx}
-                  d={`M 0 0 L ${x1} ${y1} A 80 80 0 ${largeArc} 1 ${x2} ${y2} Z`}
-                  fill={colors[idx % colors.length]}
-                  stroke="#fff"
-                  strokeWidth="2"
-                />
-              );
-            })}
-            <circle cx="0" cy="0" r="40" fill="#fff" />
-          </svg>
-          <Typography variant="h6" sx={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }}>
-            Total<br/>{total}
-          </Typography>
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', flexWrap: 'wrap', gap: 4, minHeight: 300 }}>
+        <Box sx={{ width: 250, height: 250 }}>
+          <ResponsiveContainer width="100%" height="100%">
+            <PieChart>
+              <RechartsTooltip />
+              <Pie
+                data={data}
+                cx="50%"
+                cy="50%"
+                innerRadius={60}
+                outerRadius={80}
+                paddingAngle={5}
+                dataKey="value"
+              >
+                {data.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                ))}
+              </Pie>
+            </PieChart>
+          </ResponsiveContainer>
         </Box>
-        <Box>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
           {data.map((item, idx) => (
-            <Box key={idx} sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-              <Box sx={{ width: 16, height: 16, backgroundColor: colors[idx % colors.length], borderRadius: '50%' }} />
-              <Typography variant="body2">{item.name}: {item.value} ({((item.value / total) * 100).toFixed(1)}%)</Typography>
+            <Box key={idx} sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+              <Box sx={{ width: 12, height: 12, backgroundColor: COLORS[idx % COLORS.length], borderRadius: '50%' }} />
+              <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                {item.name}: <span style={{ fontWeight: 700 }}>{item.value}</span>
+              </Typography>
             </Box>
           ))}
         </Box>
+      </Box>
+    );
+  };
+
+  // Recharts Policy Trend Dual-Axis Line Chart Component
+  const PolicyTrendChart = ({ data, height = 350 }) => {
+    return (
+      <Box sx={{ height, width: '100%' }}>
+        <ResponsiveContainer width="100%" height="100%">
+          <LineChart data={data} margin={{ top: 20, right: 30, left: 10, bottom: 5 }}>
+            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e0e0e0" />
+            <XAxis dataKey="month" stroke="#888" fontSize={11} tickLine={false} />
+            <YAxis yAxisId="left" stroke="#1976d2" fontSize={11} tickLine={false} axisLine={false} label={{ value: 'Policy Count', angle: -90, position: 'insideLeft', offset: -5, style: { fill: '#1976d2', fontWeight: 600 } }} />
+            <YAxis yAxisId="right" orientation="right" stroke="#4caf50" fontSize={11} tickLine={false} axisLine={false} label={{ value: 'Total Premium (₹)', angle: 90, position: 'insideRight', offset: -5, style: { fill: '#4caf50', fontWeight: 600 } }} />
+            <RechartsTooltip formatter={(value, name) => {
+              if (name === "Total Premium") {
+                return [`₹${value.toLocaleString('en-IN')}`, name];
+              }
+              return [value, name];
+            }} />
+            <Legend verticalAlign="top" height={36} />
+            <Line yAxisId="left" type="monotone" dataKey="count" name="Policy Count" stroke="#1976d2" strokeWidth={3} activeDot={{ r: 8 }} />
+            <Line yAxisId="right" type="monotone" dataKey="premium" name="Total Premium" stroke="#4caf50" strokeWidth={3} />
+          </LineChart>
+        </ResponsiveContainer>
       </Box>
     );
   };
@@ -542,7 +506,7 @@ const ClaimPage = () => {
   const resetFilters = () => {
     setSelectedTPA('all');
     setSelectedDepartment('all');
-    setSelectedPeriod('monthly');
+    setSelectedPeriod('all');
     setSelectedMonth(new Date().toISOString().slice(0, 7));
     setSelectedYear(new Date().getFullYear());
   };
@@ -824,6 +788,7 @@ const ClaimPage = () => {
               <FormControl fullWidth size="small">
                 <InputLabel>Period</InputLabel>
                 <Select value={selectedPeriod} onChange={(e) => setSelectedPeriod(e.target.value)}>
+                  <MenuItem value="all">All Time</MenuItem>
                   <MenuItem value="monthly">Monthly</MenuItem>
                   <MenuItem value="yearly">Yearly</MenuItem>
                 </Select>
@@ -869,6 +834,7 @@ const ClaimPage = () => {
           <Tab label="3. Claims Outstanding" />
           <Tab label="4. Monthly Trend" />
           <Tab label="5. TPA Distribution" />
+          <Tab label="6. Policy Trend" />
         </Tabs>
       </Paper>
 
@@ -936,6 +902,19 @@ const ClaimPage = () => {
                   <Box p={5} textAlign="center"><Typography color="textSecondary">No TPA data available</Typography></Box>
                 ) : (
                   <SimplePieChart data={tpaWiseData} />
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          {activeTab === 5 && (
+            <Card>
+              <CardContent>
+                <Typography variant="h6" gutterBottom>Monthly Policy Distribution & Premium Trend</Typography>
+                {policyTrendData.length === 0 ? (
+                  <Box p={5} textAlign="center"><Typography color="textSecondary">No policy data available for the selected financial year</Typography></Box>
+                ) : (
+                  <PolicyTrendChart data={policyTrendData} />
                 )}
               </CardContent>
             </Card>

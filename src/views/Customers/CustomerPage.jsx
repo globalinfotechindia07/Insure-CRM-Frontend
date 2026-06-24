@@ -51,7 +51,10 @@ const CustomerPage = () => {
     address: "",
     pincode: "",
     city: "",
-    state: ""
+    state: "",
+    authorisedPersonName: "",
+    authorisedPersonContact: "",
+    authorisedPersonEmail: ""
   });
 
   // Fetch Customers
@@ -82,25 +85,24 @@ const CustomerPage = () => {
 
   // Submit Form
   const handleSubmit = async () => {
-    if (!formData.customerName || !formData.mobile || !formData.email) {
-      toast.error("Name, Mobile & Email required");
-      return;
-    }
 
     const payload = {
       clientType: formData.clientType,
-      name: formData.customerName,
+      customerName: formData.customerName,
       dob: formData.dob,
       email: formData.email,
       mobile: formData.mobile,
-      panNo: formData.pan,
-      aadharNo: formData.adhar,
-      drivingLicenseNo: formData.drivingLicence,
-      gstNo: formData.gst,
+      pan: formData.pan,
+      adhar: formData.adhar,
+      drivingLicence: formData.drivingLicence,
+      gst: formData.gst,
       address: formData.address,
       pincode: formData.pincode,
       city: formData.city,
-      state: formData.state
+      state: formData.state,
+      authorisedPersonName: formData.authorisedPersonName,
+      authorisedPersonContact: formData.authorisedPersonContact,
+      authorisedPersonEmail: formData.authorisedPersonEmail
     };
 
     try {
@@ -122,7 +124,10 @@ const CustomerPage = () => {
         address: "",
         pincode: "",
         city: "",
-        state: ""
+        state: "",
+        authorisedPersonName: "",
+        authorisedPersonContact: "",
+        authorisedPersonEmail: ""
       });
 
       fetchData();
@@ -197,7 +202,12 @@ const CustomerPage = () => {
           <TextField label="Driving Licence" name="drivingLicence" value={formData.drivingLicence} onChange={handleChange} fullWidth margin="dense" />
 
           {formData.clientType === "corporate" && (
-            <TextField label="GST" name="gst" value={formData.gst} onChange={handleChange} fullWidth margin="dense" />
+            <>
+              <TextField label="GST" name="gst" value={formData.gst} onChange={handleChange} fullWidth margin="dense" />
+              <TextField label="Authorized Person Name" name="authorisedPersonName" value={formData.authorisedPersonName} onChange={handleChange} fullWidth margin="dense" />
+              <TextField label="Authorized Person Contact" name="authorisedPersonContact" value={formData.authorisedPersonContact} onChange={handleChange} fullWidth margin="dense" inputProps={{ maxLength: 10 }} />
+              <TextField label="Authorized Person Email" name="authorisedPersonEmail" value={formData.authorisedPersonEmail} onChange={handleChange} fullWidth margin="dense" />
+            </>
           )}
 
           <TextField label="Address" name="address" value={formData.address} onChange={handleChange} fullWidth margin="dense" />
@@ -246,8 +256,8 @@ const CustomerPage = () => {
                 data.map((item, index) => (
                   <TableRow key={item._id}>
                     <TableCell>{index + 1}</TableCell>
-                    <TableCell>{item.name}</TableCell>
-                    <TableCell>{item.customerType}</TableCell>
+                    <TableCell>{item.customerName}</TableCell>
+                    <TableCell>{item.clientType}</TableCell>
                     <TableCell>{item.mobile}</TableCell>
                     <TableCell>{item.city}</TableCell>
                     <TableCell>

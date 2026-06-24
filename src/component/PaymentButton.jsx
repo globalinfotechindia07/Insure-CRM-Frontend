@@ -39,8 +39,8 @@ const PaymentButton = ({
 
       // Step 2: Create order on backend
       // Change this URL to your actual backend URL
-      // const API_URL = 'http://localhost:5050/api';
-      const API_URL = 'https://grampanchayattigaon/api/';
+      const API_URL = 'http://localhost:5050/api';
+      // const API_URL = 'https://grampanchayattigaon/api/';
 
       const orderResponse = await fetch(`${API_URL}/payment/create-order`, {
         method: 'POST',

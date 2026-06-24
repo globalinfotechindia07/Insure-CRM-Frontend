@@ -157,6 +157,8 @@ const EditPolicy = () => {
       endorsementTerrorism: '',
       endorsementOtherTerrorism: '',
       endorsementNetPremium: '',
+      endorsementGst: '',
+      endorsementGstAmount: '',
       paymentMode: '',
       etotalAmount: '',
       paidAmount: '',
@@ -257,9 +259,9 @@ const EditPolicy = () => {
         const policyData = res.data;
         setPolicyData(res.data);
         console.log('Pol ', policyData);
-        setDepartmentValue(policyData.insDepartment);
-        setClientTypeValue(policyData.clientType);
-        setBranchNameId(policyData.branchCode);
+        setDepartmentValue(policyData.insDepartment?._id || policyData.insDepartment || '');
+        setClientTypeValue(policyData.clientType || 'retail');
+        setBranchNameId(policyData.branchCode?._id || policyData.branchCode || '');
         setForm((prev) => ({
           ...prev,
           policyData,
@@ -318,6 +320,7 @@ const EditPolicy = () => {
           endorsementTerrorism: policyData?.endorsementTerrorism || '',
           endorsementOtherTerrorism: policyData?.endorsementOtherTerrorism || '',
           endorsementNetPremium: policyData?.endorsementNetPremium || '',
+          endorsementGstAmount: policyData?.endorsementGstAmount || '',
           etotalAmount: policyData?.etotalAmount || '',
           endorStartDate: policyData?.endorStartDate ? policyData?.endorStartDate?.split('T')[0] : '',
           endorEndDate: policyData?.endorEndDate ? policyData?.endorEndDate?.split('T')[0] : '',
@@ -410,6 +413,11 @@ const EditPolicy = () => {
               ? String(policyData?.odBrokerageRate)
               : '',
 
+           endorsementGst: policyData?.endorsementGst?._id
+            ? String(policyData?.endorsementGst._id)
+            : policyData?.endorsementGst
+              ? String(policyData?.endorsementGst)
+              : '',
           endorsementReason: policyData?.endorsementReason?._id
             ? String(policyData?.endorsementReason._id)
             : policyData?.endorsementReason
@@ -674,54 +682,51 @@ const EditPolicy = () => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    // console.log(name);
-    if (name === 'branchCode') {
-      const selectedId = e.target.value;
-      const selectedName = branchCodeData.find((branch) => branch._id === selectedId);
 
-      setForm((prev) => ({
-        ...prev,
-        branchName: selectedName.branchName
-      }));
-    }
-    if (name === 'insDepartment') setDepartmentValue(e.target.value);
-    if (name === 'clientType') setClientTypeValue(e.target.value);
-    if (name === 'retailCustomer') {
-      const selectedId = e.target.value;
-      const selectedCustomer = clientList.find((customer) => customer._id === selectedId);
-      if (selectedCustomer) {
-        setForm((prev) => ({
-          ...prev,
-          retailCustomer: selectedId,
-          cutomerName: selectedCustomer.name || '',
-          mobile: selectedCustomer.mobile || '',
-          email: selectedCustomer.email || '',
-          gstNo: selectedCustomer.gstNo || ''
-        }));
+    setForm((prev) => {
+      let nextForm = { ...prev, [name]: value };
+
+      if (name === 'branchCode') {
+        const selectedId = value;
+        const selectedName = branchCodeData.find((branch) => branch._id === selectedId);
+        if (selectedName) {
+          nextForm.branchName = selectedName.branchName;
+        }
       }
-    }
-    if (name === 'insurerName') {
-      const selectedCompanyObj = insCompanyData.find((c) => c.insCompany === value);
-      if (selectedCompanyObj) {
-        setForm((prev) => ({
-          ...prev,
-          insCompany: selectedCompanyObj._id
-        }));
+      if (name === 'retailCustomer') {
+        const selectedId = value;
+        const selectedCustomer = clientList.find((customer) => customer._id === selectedId);
+        if (selectedCustomer) {
+          nextForm.retailCustomer = selectedId;
+          nextForm.cutomerName = selectedCustomer.name || '';
+          nextForm.mobile = selectedCustomer.mobile || '';
+          nextForm.email = selectedCustomer.email || '';
+          nextForm.gstNo = selectedCustomer.gstNo || '';
+        }
       }
-    }
-    if (name === 'insCompany') {
-      const selectedCompanyObj = insCompanyData.find((c) => c._id === value);
-      if (selectedCompanyObj) {
-        setForm((prev) => ({
-          ...prev,
-          insurerName: selectedCompanyObj.insCompany
-        }));
+      if (name === 'insurerName') {
+        const selectedCompanyObj = insCompanyData.find((c) => c.insCompany === value);
+        if (selectedCompanyObj) {
+          nextForm.insCompany = selectedCompanyObj._id;
+        }
       }
+      if (name === 'insCompany') {
+        const selectedCompanyObj = insCompanyData.find((c) => c._id === value);
+        if (selectedCompanyObj) {
+          nextForm.insurerName = selectedCompanyObj.insCompany;
+        }
+      }
+
+      return nextForm;
+    });
+
+    if (name === 'insDepartment') {
+      setDepartmentValue(value);
     }
-    setForm((prev) => ({
-      ...prev,
-      [name]: value
-    }));
+    if (name === 'clientType') {
+      setClientTypeValue(value);
+    }
+
     setTaxes({
       ...taxes,
       [e.target.name]: e.target.checked
@@ -733,8 +738,6 @@ const EditPolicy = () => {
       ...prev,
       [name]: error
     }));
-
-    // console.log('Tax value ', taxes);
   };
 
   const handleBrokerage = (e) => setBrokerageValue(e.target.value);
@@ -841,7 +844,39 @@ const EditPolicy = () => {
     };
 
     fetchSubProductsByProduct();
-  }, [form.product]);
+  }, [form.product, productData]);
+
+  useEffect(() => {
+    if (brokerNameData.length > 0) {
+      const exists = brokerNameData.some((b) => b._id === form.brokerName);
+      if (!exists || !form.brokerName) {
+        setForm((prev) => ({
+          ...prev,
+          brokerName: brokerNameData[0]._id
+        }));
+      }
+    }
+  }, [brokerNameData, form.brokerName]);
+
+  useEffect(() => {
+    if (branchBrokerData.length > 0) {
+      const exists = branchBrokerData.some((b) => b._id === form.branchBroker);
+      if (!exists || !form.branchBroker) {
+        setForm((prev) => ({
+          ...prev,
+          branchBroker: branchBrokerData[0]._id
+        }));
+      }
+    } else if (branchCodeData.length > 0) {
+      const exists = branchCodeData.some((b) => b._id === form.branchBroker);
+      if (!exists || !form.branchBroker) {
+        setForm((prev) => ({
+          ...prev,
+          branchBroker: branchCodeData[0]._id
+        }));
+      }
+    }
+  }, [branchBrokerData, branchCodeData, form.branchBroker]);
 
   const isEditMode = Boolean(policyData?._id);
 
@@ -967,6 +1002,19 @@ const EditPolicy = () => {
       totalBrokerageAmountincGst: incGst
     }));
   }, [form.totalBrokerageAmount, form.totalBrokerageGst]);
+
+  useEffect(() => {
+    const net = Number(form.endorsementNetPremium) || 0;
+    const gstId = form.endorsementGst;
+    const gstValue = Number(gstData?.find((g) => g._id === gstId)?.value || 0);
+    const gstAmount = round2(net * (gstValue / 100));
+    const total = round2(net + gstAmount);
+    setForm((prev) => ({
+      ...prev,
+      endorsementGstAmount: gstAmount || '',
+      etotalAmount: total || ''
+    }));
+  }, [form.endorsementNetPremium, form.endorsementGst, gstData]);
 
   // useEffect(() => {
   //   setForm((prev) => ({
@@ -1560,7 +1608,7 @@ const EditPolicy = () => {
                   </Grid>
                   <Grid item xs={12} sm={1}>
                     <TextField
-                      label="TP GST"
+                      label="OD GST"
                       onChange={handleChange}
                       value={Number(form.odGstAmount).toFixed(2)}
                       name="odGstAmount"
@@ -1575,6 +1623,38 @@ const EditPolicy = () => {
                       onChange={handleChange}
                       value={form.odAmount}
                       name="odAmount"
+                      disabled
+                      fullWidth
+                      InputLabelProps={{ shrink: true }}
+                    />
+                  </Grid>
+                </Grid>
+                <Typography variant="h5" sx={{ my: 2, color: 'primary.main' }}>
+                  TP + OD Summary
+                </Typography>
+                <Grid container spacing={2} sx={{ mb: 2 }}>
+                  <Grid item xs={12} sm={4}>
+                    <TextField
+                      label="TP + OD Net Premium"
+                      value={form.netPremium}
+                      disabled
+                      fullWidth
+                      InputLabelProps={{ shrink: true }}
+                    />
+                  </Grid>
+                  <Grid item xs={12} sm={4}>
+                    <TextField
+                      label="TP + OD GST Amount"
+                      value={Number(form?.gstAmount).toFixed(2) || 0}
+                      disabled
+                      fullWidth
+                      InputLabelProps={{ shrink: true }}
+                    />
+                  </Grid>
+                  <Grid item xs={12} sm={4}>
+                    <TextField
+                      label="TP + OD Total Amount"
+                      value={Number(form.totalAmount).toFixed(2)}
                       disabled
                       fullWidth
                       InputLabelProps={{ shrink: true }}
@@ -2064,7 +2144,7 @@ const EditPolicy = () => {
                 InputLabelProps={{ shrink: true }}
               />
             </Grid>
-            <Grid item xs={12} sm={4}>
+            <Grid item xs={12} sm={3}>
               <TextField
                 label="Endorsement Net Premium"
                 value={form.endorsementNetPremium}
@@ -2074,18 +2154,41 @@ const EditPolicy = () => {
                 InputLabelProps={{ shrink: true }}
               />
             </Grid>
-            <Grid item xs={12} sm={9}>
-              <FormControlLabel control={<Checkbox name="ECGST" />} label="Endorsement CGST" />
-              <FormControlLabel control={<Checkbox name="ESGST" />} label="Endorsement SGST" />
-              <FormControlLabel control={<Checkbox name="EIGST" />} label="Endorsement IGST" />
-              <FormControlLabel control={<Checkbox name="EUGST" />} label="Endorsement UGST" />
+            <Grid item xs={12} sm={3}>
+              <FormControl fullWidth>
+                <InputLabel id="endorsementGst">Endorsement GST</InputLabel>
+                <Select
+                  labelId="endorsementGst"
+                  label="Endorsement GST"
+                  name="endorsementGst"
+                  value={form.endorsementGst}
+                  onChange={handleChange}
+                >
+                  {gstData.length > 0 &&
+                    gstData.map((type) => (
+                      <MenuItem key={type._id} value={type._id}>
+                        {type.value}
+                      </MenuItem>
+                    ))}
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid item xs={12} sm={3}>
+              <TextField
+                label="Endorsement GST Amt"
+                value={form.endorsementGstAmount}
+                name="endorsementGstAmount"
+                disabled
+                fullWidth
+                InputLabelProps={{ shrink: true }}
+              />
             </Grid>
             <Grid item xs={12} sm={3}>
               <TextField
                 label="Endorsement Total Amount"
                 name="etotalAmount"
                 value={form.etotalAmount}
-                onChange={handleChange}
+                disabled
                 fullWidth
                 InputLabelProps={{ shrink: true }}
               />
@@ -2353,14 +2456,25 @@ const EditPolicy = () => {
             </Grid>
 
             <Grid item xs={12} sm={3}>
-              <TextField
-                label={brokerageValue === 'brokerage' ? 'Total Brokerage GST%' : 'Endorsement Total Brokerage GST%'}
-                name="totalBrokerageGst"
-                value={form.totalBrokerageGst}
-                onChange={handleChange}
-                fullWidth
-                InputLabelProps={{ shrink: true }}
-              />
+              <FormControl fullWidth>
+                <InputLabel id="totalBrokerageGst">
+                  {brokerageValue === 'brokerage' ? 'Total Brokerage GST%' : 'Endorsement Total Brokerage GST%'}
+                </InputLabel>
+                <Select
+                  labelId="totalBrokerageGst"
+                  label={brokerageValue === 'brokerage' ? 'Total Brokerage GST%' : 'Endorsement Total Brokerage GST%'}
+                  name="totalBrokerageGst"
+                  value={form.totalBrokerageGst || ''}
+                  onChange={handleChange}
+                >
+                  {gstData.length > 0 &&
+                    gstData.map((type) => (
+                      <MenuItem key={type._id} value={type.value}>
+                        {type.value}
+                      </MenuItem>
+                    ))}
+                </Select>
+              </FormControl>
             </Grid>
             <Grid item xs={12} sm={3}>
               <TextField
@@ -2426,11 +2540,11 @@ const EditPolicy = () => {
           <Grid container spacing={2}>
             <Grid item xs={12} sm={3}>
               <TextField
-                label="Net Premium"
+                label={selectedDeptName === 'motor' ? "TP + OD Net Premium" : "Net Premium"}
                 name="netPremium"
                 onChange={handleChange}
                 value={form.netPremium}
-                disabled={selectedDeptName === 'motor'}
+                disabled
                 fullWidth
                 error={!!errors.netPremium}
                 helperText={errors.netPremium}
@@ -2438,43 +2552,23 @@ const EditPolicy = () => {
               />
             </Grid>
             {selectedDeptName !== 'motor' && (
-              <>
-                <Grid item xs={12} sm={2}>
-                  <FormControl fullWidth>
-                    <InputLabel id="gst">GST</InputLabel>
-                    <Select labelId="gst" label="gst" name="gst" value={form.gst} onChange={handleChange}>
-                      {gstData.length > 0 &&
-                        gstData.map((type) => (
-                          <MenuItem key={type._id} value={type._id}>
-                            {type.value}
-                          </MenuItem>
-                        ))}
-                    </Select>
-                  </FormControl>
-                </Grid>
-                <Grid item xs={12} sm={7}>
-                  <FormControlLabel
-                    control={<Switch checked={taxes.CGST} value={form.CGST} onChange={handleChange} name="CGST" color="primary" />}
-                    label="CGST"
-                  />
-                  <FormControlLabel
-                    control={<Switch checked={taxes.SGST} value={form.SGST} onChange={handleChange} name="SGST" color="primary" />}
-                    label="SGST"
-                  />
-                  <FormControlLabel
-                    control={<Switch checked={taxes.IGST} value={form.IGST} onChange={handleChange} name="IGST" color="primary" />}
-                    label="IGST"
-                  />
-                  <FormControlLabel
-                    control={<Switch checked={taxes.UGST} value={form.UGST} onChange={handleChange} name="UGST" color="primary" />}
-                    label="UGST"
-                  />
-                </Grid>
-              </>
+              <Grid item xs={12} sm={3}>
+                <FormControl fullWidth>
+                  <InputLabel id="gst">GST</InputLabel>
+                  <Select labelId="gst" label="gst" name="gst" value={form.gst} onChange={handleChange}>
+                    {gstData.length > 0 &&
+                      gstData.map((type) => (
+                        <MenuItem key={type._id} value={type._id}>
+                          {type.value}
+                        </MenuItem>
+                      ))}
+                  </Select>
+                </FormControl>
+              </Grid>
             )}
             <Grid item xs={12} sm={3}>
               <TextField
-                label="GST Amt"
+                label={selectedDeptName === 'motor' ? "TP + OD GST Amt" : "GST Amt"}
                 onChange={handleChange}
                 value={Number(form?.gstAmount).toFixed(2) || 0}
                 name="gstAmount"
@@ -2485,7 +2579,7 @@ const EditPolicy = () => {
             </Grid>
             <Grid item xs={12} sm={3}>
               <TextField
-                label="Total Amount"
+                label={selectedDeptName === 'motor' ? "TP + OD Total Amount" : "Total Amount"}
                 name="totalAmount"
                 value={Number(form.totalAmount).toFixed(2)}
                 disabled

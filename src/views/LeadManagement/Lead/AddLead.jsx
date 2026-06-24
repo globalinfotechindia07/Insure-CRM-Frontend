@@ -34,6 +34,7 @@ const Lead = () => {
   const [wantContact, setWantContact] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [prospects, setProspects] = useState([]);
+  const [branchSettings, setBranchSettings] = useState([]);
   const [leadRefs, setLeadRefs] = useState([]);
   const [products, setProducts] = useState([]);
   const [statuses, setStatuses] = useState([]);
@@ -148,17 +149,19 @@ const Lead = () => {
   useEffect(() => {
     const fetchDropdownData = async () => {
       try {
-        const [prospectData, leadRefData, productData, leadStatusData, leadTypeData] = await Promise.all([
+        const [prospectData, leadRefData, productData, leadStatusData, leadTypeData, branchSettingsData] = await Promise.all([
           get('prospect'),
           get('leadReference'),
           get('productOrServiceCategory'),
           get('leadstatus'),
-          get('leadType')
+          get('leadType'),
+          get('branchSettings')
         ]);
         setProspects(prospectData.data || []);
         setLeadRefs(leadRefData.data || []);
         setStatuses(leadStatusData.data || []);
         setLeadTypes(leadTypeData.data || []);
+        setBranchSettings(branchSettingsData.data || []);
       } catch (err) {}
     };
     const fetchProductCategory = async () => {
@@ -209,18 +212,20 @@ const Lead = () => {
   // Lead Category
   useEffect(() => {
     if (leadCategory === 'prospect') {
-      const selected = prospects.find((p) => p._id === form.Prospect);
+      const selected = branchSettings.find((b) => b._id === form.Prospect);
       if (selected) {
         setForm((prev) => ({
           ...prev,
-          companyName: selected.companyName,
-          phoneNo: selected.phoneNo,
-          address: selected.address,
-          pincode: selected.pincode,
-          city: selected.city,
-          state: selected.state,
-          country: selected.country,
-          notes: selected.notes
+          companyName: selected.branchName || selected.companyName || '',
+          phoneNo: selected.mobileNumber || '',
+          altPhoneNo: selected.alternateMobileNumber || '',
+          email: selected.email || '',
+          address: selected.address || '',
+          pincode: selected.pincode || '',
+          city: selected.city || '',
+          state: selected.state || '',
+          country: selected.country || '',
+          notes: ''
         }));
       }
     } else if (leadCategory === 'client') {
@@ -240,7 +245,7 @@ const Lead = () => {
         notes: ''
       }));
     }
-  }, [leadCategory, form.Prospect, prospects]);
+  }, [leadCategory, form.Prospect, branchSettings]);
 
   // Handle all field changes
   const handleChange = (e) => {
@@ -279,23 +284,23 @@ const Lead = () => {
 
   const handleProspectChange = (e) => {
     const selectedId = e.target.value;
-    const selectedCompany = prospects.find((p) => p._id === selectedId);
+    const selectedBranch = branchSettings.find((b) => b._id === selectedId);
 
-    console.log(selectedCompany);
-
-    if (selectedCompany) {
+    if (selectedBranch) {
       setForm((prev) => ({
         ...prev,
-        Prospect: selectedCompany._id,
-        companyName: selectedCompany.companyName || '',
-        phoneNo: selectedCompany.phoneNo,
-        address: selectedCompany.address,
-        pincode: selectedCompany.pincode,
-        city: selectedCompany.city,
-        state: selectedCompany.state,
-        country: selectedCompany.country,
-        notes: selectedCompany.notes,
-        contact: selectedCompany.contacts
+        Prospect: selectedBranch._id,
+        companyName: selectedBranch.branchName || selectedBranch.companyName || '',
+        phoneNo: selectedBranch.mobileNumber || '',
+        altPhoneNo: selectedBranch.alternateMobileNumber || '',
+        email: selectedBranch.email || '',
+        address: selectedBranch.address || '',
+        pincode: selectedBranch.pincode || '',
+        city: selectedBranch.city || '',
+        state: selectedBranch.state || '',
+        country: selectedBranch.country || '',
+        notes: '',
+        contact: []
       }));
     }
   };
@@ -461,9 +466,9 @@ const Lead = () => {
                 error={!!errors.Prospect}
                 helperText={errors.Prospect}
               >
-                {prospects.map((p) => (
-                  <MenuItem key={p._id} value={p._id}>
-                    {p.companyName}
+                {branchSettings.map((b) => (
+                  <MenuItem key={b._id} value={b._id}>
+                    {b.branchName || b.companyName}
                   </MenuItem>
                 ))}
               </TextField>

@@ -141,15 +141,15 @@ const Position = () => {
           Home
         </Typography>
         <Typography variant="subtitle2" color="primary" className="link-breadcrumb">
-          Position
+          Designation
         </Typography>
       </Breadcrumb>
 
       <Grid container justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
-        <Typography variant="h5">Position</Typography>
+        <Typography variant="h5">Designation</Typography>
         {(positionPermission.Add === true || isAdmin) && (
           <Button variant="contained" startIcon={<Add />} onClick={handleOpen}>
-            Add position
+            Add Designation
           </Button>
         )}
       </Grid>
@@ -157,7 +157,7 @@ const Position = () => {
       {/* Modal Form */}
       <Dialog open={open} onClose={handleClose}>
         <DialogTitle sx={{ m: 0, p: 2 }}>
-          {editIndex !== null ? 'Edit position' : 'Add position'}
+          {editIndex !== null ? 'Edit Designation' : 'Add Designation'}
           <IconButton
             aria-label="close"
             onClick={() => setOpen(false)}
@@ -173,7 +173,7 @@ const Position = () => {
         </DialogTitle>
         <DialogContent sx={{ minWidth: 400 }}>
           <TextField
-            label="position Name"
+            label="Designation Name"
             name="position"
             value={form.position}
             onChange={handleChange}
@@ -204,7 +204,7 @@ const Position = () => {
               <TableHead>
                 <TableRow>
                   <TableCell>SN</TableCell>
-                  <TableCell>Position Name</TableCell>
+                  <TableCell>Designation Name</TableCell>
                   <TableCell>Action</TableCell>
                 </TableRow>
               </TableHead>
