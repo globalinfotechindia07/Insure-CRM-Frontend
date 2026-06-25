@@ -18,7 +18,14 @@ import {
   CircularProgress,
   MenuItem,
   Tabs,
-  Tab
+  Tab,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  FormControl,
+  InputLabel,
+  Select
 } from '@mui/material';
 import { Link } from 'react-router-dom';
 import Breadcrumb from 'component/Breadcrumb';
@@ -28,6 +35,63 @@ import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import Swal from 'sweetalert2';
 import { get, post, remove } from '../../api/api';
+
+const DLT_TEMPLATES = [
+  {
+    id: "1707171229475133470",
+    name: "Vehicle Policy Standard",
+    text: "Dear Sir / Madam\nYour Vehicle Policy No {var1} for vehicle No {var2} is due for Renewal on {var3}\nKindly renew the policy before expiry for continuous coverage\nPlease don't hesitate to contact us\n7507553335, 7757825335\nRegards\nNitin Jeswani\nJP Insurance Brokers",
+    placeholderNames: ["Policy No", "Vehicle No", "Renewal Date"]
+  },
+  {
+    id: "1707171229478113200",
+    name: "Vehicle Policy Follow-up",
+    text: "Dear Sir / Madam\nYour Vehicle Policy No {var1} for vehicle No {var2} is due for Renewal on {var3} which has not yet been renewed as per our records.\nPlease renew it immediately\nContact us\n7507553335, 7757825335\nIf policy renewed, please ignore the message.\nRegards\nNitin Jeswani\nJP Insurance Brokers",
+    placeholderNames: ["Policy No", "Vehicle No", "Renewal Date"]
+  },
+  {
+    id: "1707171229481145664",
+    name: "General Policy Standard",
+    text: "Dear Sir / Madam\nYour {var1} Policy No {var2} is due for Renewal on {var3}\nKindly renew the policy before expiry for continuous coverage\nPlease don't hesitate to contact us\n7507553335, 7757825335\nRegards\nNitin Jeswani\nJP Insurance Brokers",
+    placeholderNames: ["Department/Type (e.g. Mediclaim)", "Policy No", "Renewal Date"]
+  },
+  {
+    id: "1707171229847086671",
+    name: "General Policy Follow-up (No policy number)",
+    text: "Dear Sir / Madam\nYour {var1} is due for Renewal on {var2} which has not yet been renewed as per our records. Please renew it immediately\nContact us\n7507553335, 7757825335 \nIf policy renewed, please ignore the message.\nRegards\nNitin Jeswani\nJP Insurance Brokers",
+    placeholderNames: ["Policy Detail Description", "Renewal Date"]
+  },
+  {
+    id: "1707171705453558611",
+    name: "General Policy Follow-up (With policy number)",
+    text: "Dear Sir / Madam\nYour {var1} Policy No {var2} is due for Renewal on {var3} which has not yet been renewed as per our records. Please renew it immediately\nContact us\n7507553335, 7757825335 \nIf policy renewed, please ignore the message.\nRegards\nNitin Jeswani\nJP Insurance Brokers",
+    placeholderNames: ["Department/Type", "Policy No", "Renewal Date"]
+  },
+  {
+    id: "1707171154526920734",
+    name: "Private Car Policy Standard",
+    text: "Dear Sir / Madam\nYour Private Car Policy No {var1} for vehicle No {var2} is due for Renewal on {var3}\nKindly renew the policy before expiry for continuous coverage\nPlease don't hesitate to contact us\n7507553335, 7757825335\nRegards\nNitin Jeswani\nJP Insurance Brokers",
+    placeholderNames: ["Policy No", "Vehicle No", "Renewal Date"]
+  },
+  {
+    id: "1707171154531182881",
+    name: "Mediclaim Policy Standard",
+    text: "Dear Sir / Madam\nYour Mediclaim Policy No {var1} is due for Renewal on {var2}\nKindly renew the policy before expiry for continuous coverage\nPlease don't hesitate to contact us\n7507553335, 7757825335\nRegards\nNitin Jeswani\nJP Insurance Brokers",
+    placeholderNames: ["Policy No", "Renewal Date"]
+  },
+  {
+    id: "1707171154535303724",
+    name: "Private Car Policy Follow-up",
+    text: "Reminder\nDear Sir / Madam\nYour Private Car Policy No {var1} for vehicle No {var2} is due for Renewal on {var3} which has not yet been renewed as per our records.\nPlease renew it immediately\nContact us\n7507553335, 7757825335\nIf policy renewed, please ignore the message.\nRegards\nNitin Jeswani\nJP Insurance Brokers",
+    placeholderNames: ["Policy No", "Vehicle No", "Renewal Date"]
+  },
+  {
+    id: "1707171154539354305",
+    name: "Mediclaim Policy Follow-up",
+    text: "Reminder\nDear Sir / Madam\nYour Mediclaim Policy No {var1} due for Renewal on {var2} which has not yet been renewed as per our records.\nPlease renew it immediately\nContact us\n7507553335, 7757825335\nIf policy renewed, please ignore the message.\nRegards\nNitin Jeswani\nJP Insurance Brokers",
+    placeholderNames: ["Policy No", "Renewal Date"]
+  }
+];
 
 const RenewalReminder = () => {
   const [dateFrom, setDateFrom] = useState(null);
@@ -40,7 +104,87 @@ const RenewalReminder = () => {
   const [activeTab, setActiveTab] = useState(0);
   const [remindersHistory, setRemindersHistory] = useState([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
-  
+
+  // SMS Dialog states
+  const [smsDialogOpen, setSmsDialogOpen] = useState(false);
+  const [selectedPolicy, setSelectedPolicy] = useState(null);
+  const [selectedTemplateId, setSelectedTemplateId] = useState('');
+  const [smsMobile, setSmsMobile] = useState('');
+  const [variables, setVariables] = useState([]);
+
+  // Auto-fill helper function
+  const prefillVariables = (policy, templateId) => {
+    if (!policy) return [];
+    const formattedDate = policy.endDate ? new Date(policy.endDate).toLocaleDateString('en-GB') : "";
+    const dept = policy.department || "General";
+    const policyNo = policy.policyNo || "";
+    const vehicleNo = policy.vehicleNumber || policy.vehicleNo || "";
+
+    switch (templateId) {
+      case "1707171229475133470": // Vehicle Policy Standard
+      case "1707171229478113200": // Vehicle Policy Follow-up
+      case "1707171154526920734": // Private Car Policy Standard
+      case "1707171154535303724": // Private Car Policy Follow-up
+        return [policyNo, vehicleNo, formattedDate];
+
+      case "1707171229481145664": // General Policy Standard
+      case "1707171705453558611": // General Policy Follow-up with policy number
+        return [dept, policyNo, formattedDate];
+
+      case "1707171229847086671": // General Policy Follow-up (No policy number)
+        return [`${dept} Policy No ${policyNo}`, formattedDate];
+
+      case "1707171154531182881": // Mediclaim Standard
+      case "1707171154539354305": // Mediclaim Follow-up
+        return [policyNo, formattedDate];
+
+      default:
+        return [policyNo, formattedDate];
+    }
+  };
+
+  const handleOpenSmsDialog = (policy) => {
+    setSelectedPolicy(policy);
+    setSmsMobile(policy.mobile || '');
+
+    // Auto-detect template based on policy department or attributes
+    let defaultTemplateId = "1707171229481145664"; // General Policy Standard
+    const dept = (policy.department || "").toLowerCase();
+    const hasVehicle = !!(policy.vehicleNumber || policy.vehicleNo);
+
+    if (dept.includes("mediclaim") || dept.includes("health")) {
+      defaultTemplateId = "1707171154531182881"; // Mediclaim Standard
+    } else if (hasVehicle || dept.includes("motor") || dept.includes("car") || dept.includes("vehicle") || dept.includes("two wheeler")) {
+      defaultTemplateId = "1707171229475133470"; // Vehicle Policy Standard
+    }
+
+    setSelectedTemplateId(defaultTemplateId);
+    setVariables(prefillVariables(policy, defaultTemplateId));
+    setSmsDialogOpen(true);
+  };
+
+  const handleTemplateChange = (e) => {
+    const templateId = e.target.value;
+    setSelectedTemplateId(templateId);
+    setVariables(prefillVariables(selectedPolicy, templateId));
+  };
+
+  const handleVariableChange = (index, value) => {
+    const updated = [...variables];
+    updated[index] = value;
+    setVariables(updated);
+  };
+
+  const getMessagePreview = () => {
+    const template = DLT_TEMPLATES.find(t => t.id === selectedTemplateId);
+    if (!template) return "";
+    let text = template.text;
+    variables.forEach((val, idx) => {
+      text = text.replace(new RegExp(`\\{var${idx + 1}\\}`, 'g'), val || `[Variable ${idx + 1}]`);
+    });
+    return text;
+  };
+
   const handleFilterValue = (e) => setFilterValue(e.target.value);
   const handleSearchChange = (e) => setSearchTerm(e.target.value);
 
@@ -50,7 +194,7 @@ const RenewalReminder = () => {
     try {
       const res = await get('policyDetail');
       console.log('Policy API Response:', res);
-      
+
       let rawData = [];
       if (res?.data?.success && Array.isArray(res.data.data)) {
         rawData = res.data.data;
@@ -86,11 +230,11 @@ const RenewalReminder = () => {
           messageCount: item.messageCount || 0
         };
       });
-      
+
       console.log('Total policies:', policies.length);
       setCustomerList(policies);
       setFilteredData(policies);
-      
+
       if (policies.length === 0) {
         Swal.fire({
           icon: "info",
@@ -130,36 +274,41 @@ const RenewalReminder = () => {
     }
   };
 
-  const handleSendMessage = async (id, insuredName) => {
+  const handleSendSmsConfirm = async () => {
+    if (!smsMobile) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Validation Error',
+        text: 'Please enter a valid mobile number'
+      });
+      return;
+    }
+
+    setSmsDialogOpen(false);
+    setLoading(true);
+
     try {
-      const result = await Swal.fire({
-        title: 'Send Reminder?',
-        text: `Are you sure you want to send a renewal reminder message to ${insuredName}?`,
-        icon: 'question',
-        showCancelButton: true,
-        confirmButtonText: 'Yes, Send',
-        cancelButtonText: 'No'
+      const res = await post(`policyDetail/send-reminder/${selectedPolicy._id}`, {
+        templateId: selectedTemplateId,
+        variables,
+        mobile: smsMobile
       });
 
-      if (result.isConfirmed) {
-        setLoading(true);
-        const res = await post(`policyDetail/send-reminder/${id}`);
-        if (res?.success) {
-          await Swal.fire({
-            icon: 'success',
-            title: 'Message Sent!',
-            text: res.message || 'Reminder message sent successfully.',
-            html: `<strong>Message Content:</strong><br/><p style="font-style: italic; background: #f0f0f0; padding: 10px; border-radius: 5px; text-align: left;">${res.dummyMessage}</p>`
-          });
-          fetchPolicyDetail();
-          fetchRemindersHistory();
-        } else {
-          Swal.fire({
-            icon: 'error',
-            title: 'Failed',
-            text: res?.message || 'Failed to send reminder message'
-          });
-        }
+      if (res?.success) {
+        await Swal.fire({
+          icon: 'success',
+          title: 'SMS Sent Successfully!',
+          text: res.message || 'Reminder message sent successfully.',
+          html: `<strong>Final Sent Message:</strong><br/><p style="font-style: italic; background: #f0f0f0; padding: 10px; border-radius: 5px; text-align: left; white-space: pre-wrap;">${res.dummyMessage}</p>`
+        });
+        fetchPolicyDetail();
+        fetchRemindersHistory();
+      } else {
+        Swal.fire({
+          icon: 'error',
+          title: 'SMS Sending Failed',
+          text: res?.message || 'Failed to send reminder message'
+        });
       }
     } catch (error) {
       console.error('Error sending reminder message:', error);
@@ -239,7 +388,7 @@ const RenewalReminder = () => {
 
     // Search filter
     if (searchTerm) {
-      filtered = filtered.filter(item => 
+      filtered = filtered.filter(item =>
         item.insuredName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         item.policyNo?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         item.vehicleNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -322,7 +471,7 @@ const RenewalReminder = () => {
 
     // Search filter for history
     if (searchTerm) {
-      filtered = filtered.filter(item => 
+      filtered = filtered.filter(item =>
         item.customerName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         item.policyNo?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         item.contactNo?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -357,6 +506,65 @@ const RenewalReminder = () => {
     });
   };
 
+  const exportToCSV = (data, fileName) => {
+    if (!data || data.length === 0) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'No data to export',
+        text: 'There is no data available to export in this tab.'
+      });
+      return;
+    }
+
+    let csvContent = "";
+
+    if (activeTab === 0) {
+      const headers = ["CUSTOMER NAME", "DEPARTMENT", "POLICY NO", "NET PREMIUM", "TOTAL PREMIUM", "RENEWAL DATE", "MOBILE", "MESSAGE COUNT"];
+      csvContent += headers.join(",") + "\n";
+
+      data.forEach(item => {
+        const row = [
+          `"${(item.insuredName || "").replace(/"/g, '""')}"`,
+          `"${(item.department || "").replace(/"/g, '""')}"`,
+          `"${(item.policyNo || "").replace(/"/g, '""')}"`,
+          item.premium || 0,
+          item.totalAmount || 0,
+          `"${(item.endDate ? new Date(item.endDate).toLocaleDateString('en-GB') : "")}"`,
+          `"${(item.mobile || "").replace(/"/g, '""')}"`,
+          item.messageCount || 0
+        ];
+        csvContent += row.join(",") + "\n";
+      });
+    } else {
+      const headers = ["S.No.", "Customer Name", "Policy No.", "Contact No.", "Email", "End Date", "Reminder Date (Sent)", "Status"];
+      csvContent += headers.join(",") + "\n";
+
+      data.forEach((item, index) => {
+        const row = [
+          index + 1,
+          `"${(item.customerName || "").replace(/"/g, '""')}"`,
+          `"${(item.policyNo || "").replace(/"/g, '""')}"`,
+          `"${(item.contactNo || "").replace(/"/g, '""')}"`,
+          `"${(item.email || "").replace(/"/g, '""')}"`,
+          `"${(item.endDate ? new Date(item.endDate).toLocaleDateString('en-GB') : "")}"`,
+          `"${(item.reminderDate ? new Date(item.reminderDate).toLocaleString('en-GB') : "")}"`,
+          `"${(item.status || "Pending").replace(/"/g, '""')}"`
+        ];
+        csvContent += row.join(",") + "\n";
+      });
+    }
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", fileName);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
     <>
       <Breadcrumb title="Renewal Reminder">
@@ -369,11 +577,24 @@ const RenewalReminder = () => {
       </Breadcrumb>
 
       {/* Tabs */}
-      <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
+      <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <Tabs value={activeTab} onChange={(e, newValue) => setActiveTab(newValue)} aria-label="renewal reminder tabs">
           <Tab label="Policies & Renewals" />
           <Tab label={`Sent Reminders History (${remindersHistory.length})`} />
         </Tabs>
+        <Button
+          variant="contained"
+          color="secondary"
+          size="small"
+          onClick={() => {
+            const dataToExport = activeTab === 0 ? filteredData : filteredHistory;
+            const filename = activeTab === 0 ? 'policies_renewals.csv' : 'sent_reminders_history.csv';
+            exportToCSV(dataToExport, filename);
+          }}
+          sx={{ mb: 1 }}
+        >
+          Export
+        </Button>
       </Box>
 
       {/* Filters Card */}
@@ -393,7 +614,7 @@ const RenewalReminder = () => {
                   />
                 </Grid>
                 <Grid item xs={12} sm={6} md={3}>
-                  <TextField 
+                  <TextField
                     select
                     label="Filter By"
                     size="small"
@@ -406,7 +627,7 @@ const RenewalReminder = () => {
                     {activeTab === 0 && <MenuItem value="renew">Renew Within 60 Days</MenuItem>}
                   </TextField>
                 </Grid>
-                
+
                 {filterValue === 'byDateRange' && (
                   <>
                     <Grid item xs={12} sm={6} md={2}>
@@ -436,7 +657,7 @@ const RenewalReminder = () => {
                     </Grid>
                   </>
                 )}
-                
+
                 {filterValue === 'renew' && activeTab === 0 && (
                   <Grid item xs={12} sm={6} md={2}>
                     <Button variant="contained" size="small" fullWidth onClick={handleRenewWithin30Days}>
@@ -444,13 +665,21 @@ const RenewalReminder = () => {
                     </Button>
                   </Grid>
                 )}
-                
+
                 <Grid item xs={12} sm={6} md={filterValue === 'byDateRange' ? 1 : (filterValue === 'renew' && activeTab === 0 ? 2 : 1)}>
-                  <Button 
-                    variant="contained" 
-                    size="small" 
+                  <Button
+                    variant="contained"
+                    size="small"
                     fullWidth
-                    sx={{ backgroundColor: '#ff9800', '&:hover': { backgroundColor: '#fb8c00' } }} 
+                    sx={{
+                      backgroundColor: 'primary.dark',
+                      color: '#ffffff',
+                      fontWeight: 'bold',
+                      '&:hover': {
+                        backgroundColor: 'primary.dark',
+                        color: '#ffffff'
+                      }
+                    }}
                     onClick={handleReset}
                   >
                     Reset
@@ -479,17 +708,14 @@ const RenewalReminder = () => {
                     <Table size="small" stickyHeader>
                       <TableHead>
                         <TableRow sx={{ backgroundColor: '#f5f5f5' }}>
-                          <TableCell sx={{ fontWeight: 'bold', width: 50 }}>S.No.</TableCell>
-                          <TableCell sx={{ fontWeight: 'bold' }}>Customer Name</TableCell>
-                          <TableCell sx={{ fontWeight: 'bold' }}>Department</TableCell>
-                          <TableCell sx={{ fontWeight: 'bold' }}>Policy No.</TableCell>
-                          <TableCell sx={{ fontWeight: 'bold' }}>Mobile</TableCell>
-                          <TableCell sx={{ fontWeight: 'bold', width: 100 }}>Net Premium</TableCell>
-                          <TableCell sx={{ fontWeight: 'bold', width: 100 }}>Total Premium</TableCell>
-                          <TableCell sx={{ fontWeight: 'bold' }}>End Date</TableCell>
-                          <TableCell sx={{ fontWeight: 'bold', width: 100 }}>Days Left</TableCell>
-                          <TableCell sx={{ fontWeight: 'bold', width: 100 }}>Messages Sent</TableCell>
-                          <TableCell sx={{ fontWeight: 'bold', width: 220 }}>Action</TableCell>
+                          <TableCell sx={{ fontWeight: 'bold' }}>CUSTOMER NAME</TableCell>
+                          <TableCell sx={{ fontWeight: 'bold' }}>DEPARTMENT</TableCell>
+                          <TableCell sx={{ fontWeight: 'bold' }}>POLICY NO</TableCell>
+                          <TableCell sx={{ fontWeight: 'bold' }}>NET PREMIUM</TableCell>
+                          <TableCell sx={{ fontWeight: 'bold' }}>TOTAL PREMIUM</TableCell>
+                          <TableCell sx={{ fontWeight: 'bold' }}>RENEWAL DATE</TableCell>
+                          <TableCell sx={{ fontWeight: 'bold', align: 'center', textAlign: 'center' }}>Send Message</TableCell>
+                          <TableCell sx={{ fontWeight: 'bold', align: 'center', textAlign: 'center' }}>Action</TableCell>
                         </TableRow>
                       </TableHead>
                       <TableBody>
@@ -497,65 +723,69 @@ const RenewalReminder = () => {
                           filteredData.map((entry, index) => {
                             const daysLeft = calculateRemainingDays(entry?.endDate);
                             const isExpiringSoon = daysLeft <= 7 && daysLeft >= 0;
-                            
+
                             return (
-                              <TableRow 
+                              <TableRow
                                 key={entry?._id || index}
                                 sx={{
                                   backgroundColor: isExpiringSoon ? '#fff3e0' : 'inherit',
                                   '&:hover': { backgroundColor: '#f5f5f5' }
                                 }}
                               >
-                                <TableCell>{index + 1}</TableCell>
                                 <TableCell>{entry?.insuredName || '-'}</TableCell>
                                 <TableCell>{entry?.department || '-'}</TableCell>
                                 <TableCell>{entry?.policyNo || '-'}</TableCell>
-                                <TableCell>{entry?.mobile || '-'}</TableCell>
-                                <TableCell align="right">{entry?.premium?.toLocaleString() || '-'}</TableCell>
-                                <TableCell align="right">{entry?.totalAmount?.toLocaleString() || '-'}</TableCell>
-                                <TableCell sx={{ color: isExpiringSoon ? '#d32f2f' : 'inherit', fontWeight: isExpiringSoon ? 'bold' : 'normal' }}>
-                                  {entry?.endDate ? new Date(entry.endDate).toLocaleDateString('en-GB') : '-'}
-                                </TableCell>
+                                <TableCell>{entry?.premium?.toLocaleString() || '-'}</TableCell>
+                                <TableCell>{entry?.totalAmount?.toLocaleString() || '-'}</TableCell>
                                 <TableCell>
-                                  {daysLeft >= 0 ? (
-                                    <Chip
-                                      label={`${daysLeft} days`}
-                                      color={daysLeft <= 7 ? 'error' : daysLeft <= 30 ? 'warning' : 'success'}
-                                      size="small"
-                                      variant="outlined"
-                                    />
-                                  ) : (
-                                    <Chip label="Expired" color="error" size="small" />
-                                  )}
+                                  {daysLeft >= 0 ? `(${daysLeft} days)` : '(Expired)'}
+                                </TableCell>
+                                <TableCell align="center" style={{ display: 'table-cell', verticalAlign: 'middle', textAlign: 'center' }}>
+                                  <Button
+                                    variant="contained"
+                                    disabled={daysLeft > 30}
+                                    sx={{
+                                      backgroundColor: '#007920',
+                                      color: 'white',
+                                      fontWeight: 'bold',
+                                      padding: '6px 16px',
+                                      borderRadius: '6px',
+                                      textTransform: 'none',
+                                      width: '140px',
+                                      display: 'inline-flex',
+                                      flexDirection: 'column',
+                                      lineHeight: '1.2',
+                                      '&:hover': {
+                                        backgroundColor: '#007920'
+                                      }
+                                    }}
+                                    onClick={() => handleOpenSmsDialog(entry)}
+                                  >
+                                    <span style={{ fontSize: '0.9rem' }}>{entry?.mobile || '-'}</span>
+                                    <span style={{ fontSize: '0.8rem', fontWeight: 'normal' }}>({entry?.messageCount || 0})</span>
+                                  </Button>
                                 </TableCell>
                                 <TableCell align="center">
-                                  <Chip
-                                    label={entry?.messageCount || 0}
-                                    color={(entry?.messageCount || 0) > 0 ? 'secondary' : 'default'}
-                                    size="small"
-                                    variant="outlined"
-                                  />
-                                </TableCell>
-                                <TableCell>
-                                  <Box display="flex" gap={1}>
-                                    <Button
-                                      variant="outlined"
-                                      color="success"
-                                      size="small"
-                                      onClick={() => handleSendMessage(entry?._id, entry?.insuredName)}
-                                    >
-                                      Send Message
-                                    </Button>
-                                    <Button
-                                      variant="contained"
-                                      color="primary"
-                                      size="small"
-                                      component={Link}
-                                      to={`/renewPolicy/${entry?._id}`}
-                                    >
-                                      Renew
-                                    </Button>
-                                  </Box>
+                                  <Button
+                                    variant="contained"
+                                    sx={{
+                                      backgroundColor: 'primary.dark',
+                                      color: '#ffffff',
+                                      fontWeight: 'bold',
+                                      borderRadius: '6px',
+                                      textTransform: 'uppercase',
+                                      boxShadow: 'none',
+                                      '&:hover': {
+                                        backgroundColor: 'primary.dark',
+                                        color: '#ffffff',
+                                        boxShadow: 'none'
+                                      }
+                                    }}
+                                    component={Link}
+                                    to={`/renewPolicy/${entry?._id}`}
+                                  >
+                                    Renew
+                                  </Button>
                                 </TableCell>
                               </TableRow>
                             );
@@ -602,7 +832,7 @@ const RenewalReminder = () => {
                       <TableBody>
                         {filteredHistory.length > 0 ? (
                           filteredHistory.map((historyEntry, index) => (
-                            <TableRow 
+                            <TableRow
                               key={historyEntry?._id || index}
                               sx={{ '&:hover': { backgroundColor: '#f5f5f5' } }}
                             >
@@ -618,10 +848,10 @@ const RenewalReminder = () => {
                                 {historyEntry?.reminderDate ? new Date(historyEntry.reminderDate).toLocaleString('en-GB') : '-'}
                               </TableCell>
                               <TableCell>
-                                <Chip 
-                                  label={historyEntry?.status || 'Pending'} 
-                                  color={historyEntry?.status === 'active' ? 'success' : 'warning'} 
-                                  size="small" 
+                                <Chip
+                                  label={historyEntry?.status || 'Pending'}
+                                  color={historyEntry?.status === 'active' ? 'success' : 'warning'}
+                                  size="small"
                                 />
                               </TableCell>
                               <TableCell>
@@ -659,6 +889,143 @@ const RenewalReminder = () => {
           </Card>
         </Grid>
       </Grid>
+      {/* CommNest DLT Template SMS Dialog */}
+      <Dialog
+        open={smsDialogOpen}
+        onClose={() => setSmsDialogOpen(false)}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle sx={{ pb: 1, fontWeight: 'bold' }}>
+          Send Renewal Reminder
+        </DialogTitle>
+        <DialogContent dividers>
+          <Grid container spacing={2.5}>
+            {selectedPolicy && (
+              <Grid item xs={12}>
+                <Typography variant="subtitle1" gutterBottom sx={{ fontWeight: '600' }}>
+                  Policy Details
+                </Typography>
+                <Grid container spacing={2}>
+                  <Grid item xs={6} md={3}>
+                    <Typography variant="caption" color="textSecondary">Customer Name</Typography>
+                    <Typography variant="body2" sx={{ fontWeight: '500' }}>{selectedPolicy.insuredName || '-'}</Typography>
+                  </Grid>
+                  <Grid item xs={6} md={3}>
+                    <Typography variant="caption" color="textSecondary">Department</Typography>
+                    <Typography variant="body2" sx={{ fontWeight: '500' }}>{selectedPolicy.department || '-'}</Typography>
+                  </Grid>
+                  <Grid item xs={6} md={3}>
+                    <Typography variant="caption" color="textSecondary">Policy Number</Typography>
+                    <Typography variant="body2" sx={{ fontWeight: '500' }}>{selectedPolicy.policyNo || '-'}</Typography>
+                  </Grid>
+                  <Grid item xs={6} md={3}>
+                    <Typography variant="caption" color="textSecondary">End Date</Typography>
+                    <Typography variant="body2" sx={{ fontWeight: '500' }}>
+                      {selectedPolicy.endDate ? new Date(selectedPolicy.endDate).toLocaleDateString('en-GB') : '-'}
+                    </Typography>
+                  </Grid>
+                </Grid>
+                <Divider sx={{ my: 2 }} />
+              </Grid>
+            )}
+
+            {/* Mobile number */}
+            <Grid item xs={12} md={6}>
+              <TextField
+                label="Recipient Mobile"
+                fullWidth
+                size="small"
+                value={smsMobile}
+                onChange={(e) => setSmsMobile(e.target.value)}
+                placeholder="Mobile number with country code"
+              />
+            </Grid>
+
+            {/* Template Selection */}
+            <Grid item xs={12} md={6}>
+              <FormControl fullWidth size="small">
+                <InputLabel id="template-select-label">Select SMS Template</InputLabel>
+                <Select
+                  labelId="template-select-label"
+                  value={selectedTemplateId}
+                  label="Select SMS Template"
+                  onChange={handleTemplateChange}
+                >
+                  {DLT_TEMPLATES.map((tpl) => (
+                    <MenuItem key={tpl.id} value={tpl.id}>
+                      {tpl.name}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Grid>
+
+            {/* Variable Fields */}
+            {selectedTemplateId && (
+              <Grid item xs={12}>
+                <Typography variant="subtitle2" gutterBottom sx={{ fontWeight: '600', mt: 1 }}>
+                  Template Variables
+                </Typography>
+                <Grid container spacing={2}>
+                  {DLT_TEMPLATES.find(t => t.id === selectedTemplateId)?.placeholderNames.map((name, index) => (
+                    <Grid item xs={12} sm={4} key={index}>
+                      <TextField
+                        label={name}
+                        fullWidth
+                        size="small"
+                        value={variables[index] || ""}
+                        onChange={(e) => handleVariableChange(index, e.target.value)}
+                      />
+                    </Grid>
+                  ))}
+                </Grid>
+              </Grid>
+            )}
+
+            {/* Message Preview */}
+            <Grid item xs={12}>
+              <Box
+                sx={{
+                  bgcolor: '#f5f5f5',
+                  p: 2,
+                  borderRadius: 2,
+                  border: '1px solid #e0e0e0',
+                  mt: 1
+                }}
+              >
+                <Typography variant="subtitle2" gutterBottom color="primary" sx={{ fontWeight: 'bold' }}>
+                  Live SMS Preview (DLT Header: JPINBR)
+                </Typography>
+                <Typography
+                  variant="body2"
+                  sx={{
+                    whiteSpace: 'pre-wrap',
+                    fontFamily: 'monospace',
+                    fontSize: '0.9rem',
+                    color: '#333'
+                  }}
+                >
+                  {getMessagePreview()}
+                </Typography>
+              </Box>
+            </Grid>
+          </Grid>
+        </DialogContent>
+        <DialogActions sx={{ p: 2 }}>
+          <Button onClick={() => setSmsDialogOpen(false)} color="inherit">
+            Cancel
+          </Button>
+          <Button
+            onClick={handleSendSmsConfirm}
+            color="success"
+            variant="contained"
+            disabled={!smsMobile}
+          >
+            Send
+          </Button>
+        </DialogActions>
+      </Dialog>
     </>
   );
 };

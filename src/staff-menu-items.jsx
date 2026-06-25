@@ -48,13 +48,13 @@ const staffMenuIems = {
           type: 'collapse',
           icon: GridViewIcon,
           children: [
-            {
-              id: 'bank-details',
-              title: 'Bank Details',
-              type: 'item',
-              icon: AccountBalanceIcon,
-              url: '/master/bank-details'
-            },
+            // {
+            //   id: 'bank-details',
+            //   title: 'Bank Details',
+            //   type: 'item',
+            //   icon: AccountBalanceIcon,
+            //   url: '/master/bank-details'
+            // },
             {
               id: 'product-or-service-category',
               title: 'Product Category',

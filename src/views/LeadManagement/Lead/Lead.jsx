@@ -241,6 +241,96 @@ const Lead = () => {
   };
 
 
+  const exportCSV = () => {
+    if (!data || data.length === 0) return;
+    const headers = ["Organization", "Number", "City", "Category", "Lead Status", "Product"];
+    let csvContent = headers.join(",") + "\n";
+    data.forEach(item => {
+      const org = item.Prospect?.companyName || item.Client?.clientName || item.newCompanyName || 'N/A';
+      const num = item.phoneNo || '';
+      const city = item.city || '';
+      const cat = item.Client ? 'Client' : item.Prospect ? 'Prospect' : 'New Lead';
+      const status = item.status === 'LS' ? 'Lead Lost' : item.status === 'LW' ? 'Lead Won' : (item.leadstatus?.LeadStatus || 'N/A');
+      const prod = item.productService?.subProductName || '';
+      csvContent += `"${org.replace(/"/g, '""')}","${num.replace(/"/g, '""')}","${city.replace(/"/g, '""')}","${cat.replace(/"/g, '""')}","${status.replace(/"/g, '""')}","${prod.replace(/"/g, '""')}"\n`;
+    });
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", "leads.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handleImportCSV = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (evt) => {
+      const text = evt.target.result;
+      const lines = text.split("\n").map(line => line.trim()).filter(line => line !== "");
+      if (lines.length <= 1) {
+        toast.error("CSV file is empty or invalid");
+        return;
+      }
+
+      const header = lines[0].toLowerCase();
+      if (!header.includes("organization") || !header.includes("number")) {
+        toast.error("Invalid CSV format. Header must contain 'Organization' and 'Number'");
+        return;
+      }
+
+      const importedLeads = [];
+      for (let i = 1; i < lines.length; i++) {
+        const row = lines[i].split(",").map(cell => cell.trim().replace(/^"|"$/g, '').replace(/""/g, '"'));
+        const org = row[0];
+        const num = row[1];
+        const city = row[2] || '';
+        if (org && num) {
+          importedLeads.push({
+            newCompanyName: org,
+            companyName: org,
+            phoneNo: num,
+            city,
+            leadCategory: 'newLead'
+          });
+        }
+      }
+
+      const existingNumbers = new Set(data.map(item => (item.phoneNo || '').trim()));
+      const uniqueNewLeads = importedLeads.filter(lead => !existingNumbers.has(lead.phoneNo.trim()));
+
+      if (uniqueNewLeads.length === 0) {
+        toast.info("No new unique leads found to import.");
+        return;
+      }
+
+      let successCount = 0;
+      for (const lead of uniqueNewLeads) {
+        try {
+          const res = await post("lead", lead);
+          if (res && (res.status === true || res.status === "true" || res.data)) {
+            successCount++;
+          }
+        } catch (err) {
+          console.error(`Failed to import lead: ${lead.newCompanyName}`, err);
+        }
+      }
+
+      if (successCount === 0) {
+        toast.info("No new unique leads found to import.");
+      } else {
+        toast.success(`Imported ${successCount} new unique leads successfully!`);
+      }
+      getLeadData();
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+  };
+
   // color helper for leadstatus
   const getLeadStatusColor = (leadstatus) => {
     if (!leadstatus) return '#9e9e9e';
@@ -340,7 +430,7 @@ const Lead = () => {
                 <Typography variant="h6" gutterBottom>
                   Lead List
                 </Typography>
-                <Box display="flex" gap={1}>
+                <Box display="flex" alignItems="center" gap={1}>
                   <TextField
                     size="small"
                     placeholder="Search by organization"
@@ -352,6 +442,13 @@ const Lead = () => {
                       <AddIcon /> Add Lead
                     </Button>
                   )}
+                  <Button variant="contained" color="secondary" onClick={exportCSV}>
+                    Export
+                  </Button>
+                  <Button variant="contained" component="label" sx={{ backgroundColor: '#4caf50', color: 'white', '&:hover': { backgroundColor: '#388e3c' } }}>
+                    Import
+                    <input type="file" accept=".csv" hidden onChange={handleImportCSV} />
+                  </Button>
                 </Box>
               </Box>
 

@@ -221,6 +221,85 @@ const GstPercentage = () => {
   });
 };
 
+  const exportCSV = () => {
+    if (!data || data.length === 0) return;
+    const headers = ["Value"];
+    let csvContent = headers.join(",") + "\n";
+    data.forEach(item => {
+      csvContent += `"${item.value || 0}"\n`;
+    });
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", "gst_percentages.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handleImportCSV = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (evt) => {
+      const text = evt.target.result;
+      const lines = text.split("\n").map(line => line.trim()).filter(line => line !== "");
+      if (lines.length <= 1) {
+        toast.error("CSV file is empty or invalid");
+        return;
+      }
+
+      const header = lines[0].toLowerCase();
+      if (!header.includes("value")) {
+        toast.error("Invalid CSV format. Header must contain 'Value'");
+        return;
+      }
+
+      const importedValues = [];
+      for (let i = 1; i < lines.length; i++) {
+        let val = lines[i].trim().replace(/^"|"$/g, '');
+        if (val && !isNaN(val)) {
+          importedValues.push(val);
+        }
+      }
+
+      const existingSet = new Set(data.map(item => String(item.value).trim()));
+      const uniqueNewValues = [...new Set(importedValues)].filter(v => !existingSet.has(v));
+
+      if (uniqueNewValues.length === 0) {
+        toast.info("No new unique GST percentages found to import.");
+        return;
+      }
+
+      let successCount = 0;
+      const todayStr = new Date().toISOString().split('T')[0];
+      for (const val of uniqueNewValues) {
+        try {
+          const res = await post("gst-percentage", { 
+            value: val,
+            effectiveFrom: todayStr
+          });
+          if (res && res.data) {
+            successCount++;
+          }
+        } catch (err) {
+          console.error(`Failed to import GST: ${val}`, err);
+        }
+      }
+
+      if (successCount === 0) {
+        toast.info("No new unique GST percentages found to import.");
+      } else {
+        toast.success(`Imported ${successCount} new unique GST percentages successfully!`);
+      }
+      fetchData();
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+  };
+
   return (
     <div>
       <Breadcrumb>
@@ -234,11 +313,20 @@ const GstPercentage = () => {
 
       <Grid container justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
         <Typography variant="h5">Gst Percentage</Typography>
-        {(gstPercentagePermission.Add === true || isAdmin) && (
-          <Button variant="contained" startIcon={<Add />} onClick={handleOpen}>
-            Add Gst Percentage
+        <div style={{ display: 'flex', gap: '10px' }}>
+          {(gstPercentagePermission.Add === true || isAdmin) && (
+            <Button variant="contained" startIcon={<Add />} onClick={handleOpen}>
+              Add Gst Percentage
+            </Button>
+          )}
+          <Button variant="contained" color="secondary" onClick={exportCSV}>
+            Export
           </Button>
-        )}
+          <Button variant="contained" component="label" sx={{ backgroundColor: '#4caf50', color: 'white', '&:hover': { backgroundColor: '#388e3c' } }}>
+            Import
+            <input type="file" accept=".csv" hidden onChange={handleImportCSV} />
+          </Button>
+        </div>
       </Grid>
 
       <Dialog open={open} onClose={handleClose}>
@@ -315,7 +403,7 @@ const GstPercentage = () => {
               </TableRow>
             </TableHead>
             <TableBody>
-              {data.map((row, index) => (
+              {data && Array.isArray(data) && data.map((row, index) => (
                 <TableRow key={row._id}>
                   <TableCell>{index + 1}</TableCell>
                   <TableCell>{row.value}</TableCell>

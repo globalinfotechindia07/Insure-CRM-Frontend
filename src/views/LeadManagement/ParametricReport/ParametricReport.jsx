@@ -198,6 +198,33 @@ const ParametricReport = () => {
       return 0;
     });
 
+  const exportCSV = () => {
+    if (!filtered || filtered.length === 0) return;
+    const headers = ["Name", "Company", "Phone", "Email", "Reference", "Assign To", "Product", "Status", "Lead Type", "Created Date"];
+    let csvContent = headers.join(",") + "\n";
+    filtered.forEach(item => {
+      const name = `${item.firstName || ''} ${item.lastName || ''}`.trim();
+      const comp = item.Prospect?.companyName || item.Client?.clientName || item.newCompanyName || '';
+      const ref = item.reference?.LeadReference || '';
+      const assign = item.assignTo ? `${item.assignTo.basicDetails?.firstName || ''} ${item.assignTo.basicDetails?.lastName || ''}`.trim() : '';
+      const prod = item.productService?.subProductName || '';
+      const status = item.leadstatus?.LeadStatus || '';
+      const type = item.leadType?.LeadType || '';
+      const date = item.createdAt ? new Date(item.createdAt).toLocaleDateString() : '';
+      csvContent += `"${name.replace(/"/g, '""')}","${comp.replace(/"/g, '""')}","${(item.phoneNo || '').replace(/"/g, '""')}","${(item.email || '').replace(/"/g, '""')}","${ref.replace(/"/g, '""')}","${assign.replace(/"/g, '""')}","${prod.replace(/"/g, '""')}","${status.replace(/"/g, '""')}","${type.replace(/"/g, '""')}","${date}"\n`;
+    });
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", "parametric_report.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+
+
   const paginated = filtered.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
 
   return (
@@ -211,8 +238,17 @@ const ParametricReport = () => {
                 <Typography variant="h6">Parametric Lead Report</Typography>
               </Grid>
 
+              {/* Actions */}
+              <Grid item xs={12} sm={3} display="flex" justifyContent="flex-end">
+                <div style={{ display: 'flex', gap: '10px' }}>
+                  <Button variant="contained" color="secondary" onClick={exportCSV}>
+                    Export
+                  </Button>
+                </div>
+              </Grid>
+
               {/* Filters row (Search + Dropdowns together) */}
-              <Grid item xs={12} sm={9}>
+              <Grid item xs={12} sm={6}>
                 <Grid container spacing={2}>
                   {/* Search field styled like dropdown */}
                   <Grid item xs={12} sm={6} md={4}>

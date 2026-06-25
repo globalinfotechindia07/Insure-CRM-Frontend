@@ -14,6 +14,8 @@ import theme from 'assets/scss/_themes-vars.module.scss';
 import value from 'assets/scss/_themes-vars.module.scss'; 
 import { get, post, put } from 'api/api'; // <-- import your API helpers
 import { useSelector } from 'react-redux';
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 const Prefix = () => {
     const [form, setForm] = useState({ prefix: '' });
@@ -49,7 +51,7 @@ const Prefix = () => {
 
         console.log("Prefix data:", res.allPrefix)
 
-        if (res && res.allPrefix) setData(res.allPrefix);
+        if (res && res.allPrefix) setData(res.allPrefix || []);
         else setData([]);
     };
 
@@ -107,6 +109,81 @@ const Prefix = () => {
         fetchData();
     };
 
+    const exportCSV = () => {
+        if (!data || data.length === 0) return;
+        const headers = ["Prefix"];
+        let csvContent = headers.join(",") + "\n";
+        data.forEach(item => {
+            csvContent += `"${(item.prefix || '').replace(/"/g, '""')}"\n`;
+        });
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.setAttribute("href", url);
+        link.setAttribute("download", "prefixes.csv");
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+
+    const handleImportCSV = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = async (evt) => {
+            const text = evt.target.result;
+            const lines = text.split("\n").map(line => line.trim()).filter(line => line !== "");
+            if (lines.length <= 1) {
+                toast.error("CSV file is empty or invalid");
+                return;
+            }
+
+            const header = lines[0].toLowerCase();
+            if (!header.includes("prefix")) {
+                toast.error("Invalid CSV format. Header must contain 'Prefix'");
+                return;
+            }
+
+            const imported = [];
+            for (let i = 1; i < lines.length; i++) {
+                const val = lines[i].trim().replace(/^"|"$/g, '').replace(/""/g, '"');
+                if (val) {
+                    imported.push(val);
+                }
+            }
+
+            const existingSet = new Set(data.map(item => (item.prefix || '').toLowerCase().trim()));
+            const uniqueNew = [...new Set(imported)].filter(v => !existingSet.has(v.toLowerCase().trim()));
+
+            if (uniqueNew.length === 0) {
+                toast.info("No new unique prefixes found to import.");
+                return;
+            }
+
+            let successCount = 0;
+            for (const val of uniqueNew) {
+                try {
+                    const res = await post("prefix", { prefix: val });
+                    if (res && res.prefix) {
+                        successCount++;
+                    }
+                } catch (err) {
+                    console.error(`Failed to import prefix: ${val}`, err);
+                }
+            }
+
+            if (successCount === 0) {
+                toast.info("No new unique prefixes found to import.");
+            } else {
+                toast.success(`Imported ${successCount} new unique prefixes successfully!`);
+            }
+            fetchData();
+        };
+        reader.readAsText(file);
+        e.target.value = '';
+    };
+
     return (
         <div>
             <Breadcrumb>
@@ -120,9 +197,18 @@ const Prefix = () => {
 
             <Grid container justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
                 <Typography variant="h5">Prefix</Typography>
-                {(prefixPermission.Add===true || isAdmin) && <Button variant="contained" startIcon={<Add />} onClick={handleOpen}>
-                    Add Prefix
-                </Button>}
+                <div style={{ display: 'flex', gap: '10px' }}>
+                    {(prefixPermission.Add===true || isAdmin) && <Button variant="contained" startIcon={<Add />} onClick={handleOpen}>
+                        Add Prefix
+                    </Button>}
+                    <Button variant="contained" color="secondary" onClick={exportCSV}>
+                        Export
+                    </Button>
+                    <Button variant="contained" component="label" sx={{ backgroundColor: '#4caf50', color: 'white', '&:hover': { backgroundColor: '#388e3c' } }}>
+                        Import
+                        <input type="file" accept=".csv" hidden onChange={handleImportCSV} />
+                    </Button>
+                </div>
             </Grid>
 
             {/* Modal Form */}
@@ -219,6 +305,7 @@ const Prefix = () => {
                     </CardContent>
                 </Card>
             )}
+            <ToastContainer />
         </div>
     );
 }

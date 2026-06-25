@@ -52,16 +52,16 @@ const BrokerageRate = () => {
     setOpen(true);
   };
 
-  // Fetch all Brokerage Rates from backend
   const fetchBrokerageRate = async () => {
     setLoading(true);
     try {
       const response = await get('brokerageRate');
-      console.log('BrokerageRate data:', response.data);
-      setData(response.data || []);  // ✅ CHANGE 1: || [] ADD KIYA
+      console.log('BrokerageRate data:', response?.data);
+      if (response && response.status !== "false" && Array.isArray(response.data)) setData(response.data);
+      else setData([]);
     } catch (error) {
       console.error(error);
-      setData([]);  // ✅ CHANGE 2: setData([]) ADD KIYA
+      setData([]);
     } finally {
       setLoading(false);
     }
@@ -70,6 +70,81 @@ const BrokerageRate = () => {
   useEffect(() => {
     fetchBrokerageRate();
   }, []);
+
+  const exportCSV = () => {
+    if (!data || data.length === 0) return;
+    const headers = ["Brokerage Rate"];
+    let csvContent = headers.join(",") + "\n";
+    data.forEach(item => {
+      csvContent += `"${item.brokerageRate || 0}"\n`;
+    });
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", "brokerage_rates.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handleImportCSV = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (evt) => {
+      const text = evt.target.result;
+      const lines = text.split("\n").map(line => line.trim()).filter(line => line !== "");
+      if (lines.length <= 1) {
+        toast.error("CSV file is empty or invalid");
+        return;
+      }
+
+      const header = lines[0].toLowerCase();
+      if (!header.includes("brokerage rate")) {
+        toast.error("Invalid CSV format. Header must contain 'Brokerage Rate'");
+        return;
+      }
+
+      const importedRates = [];
+      for (let i = 1; i < lines.length; i++) {
+        let val = lines[i].trim().replace(/^"|"$/g, '').replace(/""/g, '"');
+        if (val && !isNaN(val)) {
+          importedRates.push(Number(val));
+        }
+      }
+
+      const existingSet = new Set(data.map(item => String(item.brokerageRate).trim()));
+      const uniqueNewRates = [...new Set(importedRates)].filter(rate => !existingSet.has(String(rate).trim()));
+
+      if (uniqueNewRates.length === 0) {
+        toast.info("No new unique brokerage rates found to import.");
+        return;
+      }
+
+      let successCount = 0;
+      for (const rate of uniqueNewRates) {
+        try {
+          const res = await post("brokerageRate", { brokerageRate: rate });
+          if (res && (res.status === true || res.status === "true" || res.data)) {
+            successCount++;
+          }
+        } catch (err) {
+          console.error(`Failed to import brokerage rate: ${rate}`, err);
+        }
+      }
+
+      if (successCount === 0) {
+        toast.info("No new unique brokerage rates found to import.");
+      } else {
+        toast.success(`Imported ${successCount} new unique brokerage rates successfully!`);
+      }
+      fetchBrokerageRate();
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -186,9 +261,18 @@ const BrokerageRate = () => {
       
       <Grid container justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
         <Typography variant="h5">Brokerage Rate</Typography>
-        <Button variant="contained" startIcon={<Add />} onClick={handleOpen}>
-          Add Rate
-        </Button>
+        <div style={{ display: 'flex', gap: '10px' }}>
+          <Button variant="contained" startIcon={<Add />} onClick={handleOpen}>
+            Add Rate
+          </Button>
+          <Button variant="contained" color="secondary" onClick={exportCSV}>
+            Export
+          </Button>
+          <Button variant="contained" component="label" sx={{ backgroundColor: '#4caf50', color: 'white', '&:hover': { backgroundColor: '#388e3c' } }}>
+            Import
+            <input type="file" accept=".csv" hidden onChange={handleImportCSV} />
+          </Button>
+        </div>
       </Grid>
 
       <Card>

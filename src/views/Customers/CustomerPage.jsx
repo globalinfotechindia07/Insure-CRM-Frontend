@@ -149,15 +149,150 @@ const CustomerPage = () => {
     }
   };
 
+  const exportCSV = () => {
+    if (!data || data.length === 0) return;
+    const headers = [
+      "Client Type",
+      "Customer Name",
+      "DOB",
+      "Email",
+      "Mobile",
+      "PAN",
+      "Aadhar",
+      "Driving Licence",
+      "GST",
+      "Address",
+      "Pincode",
+      "City",
+      "State",
+      "Authorised Person Name",
+      "Authorised Person Contact",
+      "Authorised Person Email"
+    ];
+    let csvContent = headers.join(",") + "\n";
+    data.forEach((item) => {
+      csvContent += `"${item.clientType || ''}","${item.customerName || ''}","${item.dob || ''}","${item.email || ''}","${item.mobile || ''}","${item.pan || ''}","${item.adhar || ''}","${item.drivingLicence || ''}","${item.gst || ''}","${(item.address || '').replace(/"/g, '""')}","${item.pincode || ''}","${item.city || ''}","${item.state || ''}","${item.authorisedPersonName || ''}","${item.authorisedPersonContact || ''}","${item.authorisedPersonEmail || ''}"\n`;
+    });
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", "customers.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handleImportCSV = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (evt) => {
+      const text = evt.target.result;
+      const lines = text.split("\n").map((line) => line.trim()).filter((line) => line !== "");
+      if (lines.length <= 1) {
+        toast.error("CSV file is empty or invalid");
+        return;
+      }
+
+      const header = lines[0].toLowerCase();
+      if (!header.includes("customer name") || !header.includes("mobile")) {
+        toast.error("Invalid CSV format. Header must contain 'Customer Name' and 'Mobile'");
+        return;
+      }
+
+      const imported = [];
+      for (let i = 1; i < lines.length; i++) {
+        const row = lines[i].split(",").map((cell) => cell.trim().replace(/^"|"$/g, '').replace(/""/g, '"'));
+        const clientType = row[0] || 'retail';
+        const customerName = row[1] || '';
+        const dob = row[2] || '';
+        const email = row[3] || '';
+        const mobile = row[4] || '';
+        const pan = row[5] || '';
+        const adhar = row[6] || '';
+        const drivingLicence = row[7] || '';
+        const gst = row[8] || '';
+        const address = row[9] || '';
+        const pincode = row[10] || '';
+        const city = row[11] || '';
+        const state = row[12] || '';
+        const authorisedPersonName = row[13] || '';
+        const authorisedPersonContact = row[14] || '';
+        const authorisedPersonEmail = row[15] || '';
+
+        if (customerName && mobile) {
+          imported.push({
+            clientType,
+            customerName,
+            dob,
+            email,
+            mobile,
+            pan,
+            adhar,
+            drivingLicence,
+            gst,
+            address,
+            pincode,
+            city,
+            state,
+            authorisedPersonName,
+            authorisedPersonContact,
+            authorisedPersonEmail
+          });
+        }
+      }
+
+      const existingMobiles = new Set(data.map((item) => String(item.mobile).trim()));
+      const uniqueNew = imported.filter((item) => !existingMobiles.has(String(item.mobile).trim()));
+
+      if (uniqueNew.length === 0) {
+        toast.info("No new unique customers found to import.");
+        return;
+      }
+
+      let successCount = 0;
+      for (const item of uniqueNew) {
+        try {
+          const res = await createCustomer(item);
+          if (res) {
+            successCount++;
+          }
+        } catch (err) {
+          console.error("Failed to import customer", err);
+        }
+      }
+
+      if (successCount === 0) {
+        toast.info("No new unique customers found to import.");
+      } else {
+        toast.success(`Imported ${successCount} new unique customers successfully!`);
+      }
+      fetchData();
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+  };
+
   return (
     <div>
       {/* Header */}
       <Grid container justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
         <Typography variant="h5">Customer Management</Typography>
 
-        <Button variant="contained" startIcon={<Add />} onClick={() => setOpen(true)}>
-          Add Customer
-        </Button>
+        <div style={{ display: 'flex', gap: '10px' }}>
+          <Button variant="contained" startIcon={<Add />} onClick={() => setOpen(true)}>
+            Add Customer
+          </Button>
+          <Button variant="contained" color="secondary" onClick={exportCSV}>
+            Export
+          </Button>
+          <Button variant="contained" component="label" sx={{ backgroundColor: '#4caf50', color: 'white', '&:hover': { backgroundColor: '#388e3c' } }}>
+            Import
+            <input type="file" accept=".csv" hidden onChange={handleImportCSV} />
+          </Button>
+        </div>
       </Grid>
 
       {/* Add Customer Dialog */}

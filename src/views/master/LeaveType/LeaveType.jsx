@@ -26,6 +26,8 @@ import CancelIcon from '@mui/icons-material/Cancel';
 import EditIcon from '@mui/icons-material/Edit';
 import theme from 'assets/scss/_themes-vars.module.scss';
 import value from 'assets/scss/_themes-vars.module.scss';
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 // axiosInstance
 // import { axiosInstance } from '../../../api/api.js';
@@ -76,9 +78,10 @@ const LeaveType = () => {
       try {
         const response = await get('leaveType');
         console.log(response.data);
-        setData(response.data);
+        setData(response.data || []);
       } catch (error) {
         console.error(error);
+        setData([]);
       }
     };
     fetchData();
@@ -144,7 +147,91 @@ const LeaveType = () => {
     setOpen(true);
   };
 
-  console.log('data----', data);
+  const exportCSV = () => {
+    if (!data || data.length === 0) return;
+    const headers = ["Leave Type", "Short Form", "Total Leaves", "Leaves Per Month"];
+    let csvContent = headers.join(",") + "\n";
+    data.forEach(item => {
+      csvContent += `"${(item.leaveType || '').replace(/"/g, '""')}","${(item.shortForm || '').replace(/"/g, '""')}",${item.totalLeaves || 0},${item.leavesPerMonth || 0}\n`;
+    });
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", "leave_types.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handleImportCSV = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (evt) => {
+      const text = evt.target.result;
+      const lines = text.split("\n").map(line => line.trim()).filter(line => line !== "");
+      if (lines.length <= 1) {
+        toast.error("CSV file is empty or invalid");
+        return;
+      }
+
+      const header = lines[0].toLowerCase();
+      if (!header.includes("leave type") || !header.includes("short form")) {
+        toast.error("Invalid CSV format. Header must contain 'Leave Type' and 'Short Form'");
+        return;
+      }
+
+      const imported = [];
+      for (let i = 1; i < lines.length; i++) {
+        const row = lines[i].split(",").map(cell => cell.trim().replace(/^"|"$/g, '').replace(/""/g, '"'));
+        const leaveType = row[0] || '';
+        const shortForm = row[1] || '';
+        const totalLeaves = Number(row[2]) || 0;
+        const leavesPerMonth = Number(row[3]) || 0;
+        if (leaveType && shortForm) {
+          imported.push({ leaveType, shortForm, totalLeaves, leavesPerMonth });
+        }
+      }
+
+      const existingSet = new Set(data.map(item => (item.leaveType || '').toLowerCase().trim()));
+      const uniqueNew = imported.filter(item => !existingSet.has(item.leaveType.toLowerCase().trim()));
+
+      if (uniqueNew.length === 0) {
+        toast.info("No new unique leave types found to import.");
+        return;
+      }
+
+      let successCount = 0;
+      for (const item of uniqueNew) {
+        try {
+          const res = await post("leaveType", item);
+          if (res && res.data) {
+            successCount++;
+          }
+        } catch (err) {
+          console.error(`Failed to import leave type: ${item.leaveType}`, err);
+        }
+      }
+
+      if (successCount === 0) {
+        toast.info("No new unique leave types found to import.");
+      } else {
+        toast.success(`Imported ${successCount} new unique leave types successfully!`);
+      }
+      // Re-fetch
+      try {
+        const response = await get('leaveType');
+        setData(response.data || []);
+      } catch (error) {
+        console.error(error);
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+  };
+
   return (
     <div>
       <Breadcrumb>
@@ -158,11 +245,20 @@ const LeaveType = () => {
 
       <Grid container justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
         <Typography variant="h5">Leave Type</Typography>
-        {(leaveTypePermission.Add === true || isAdmin) && (
-          <Button variant="contained" startIcon={<Add />} onClick={handleOpen}>
-            Add Leave Type
+        <div style={{ display: 'flex', gap: '10px' }}>
+          {(leaveTypePermission.Add === true || isAdmin) && (
+            <Button variant="contained" startIcon={<Add />} onClick={handleOpen}>
+              Add Leave Type
+            </Button>
+          )}
+          <Button variant="contained" color="secondary" onClick={exportCSV}>
+            Export
           </Button>
-        )}
+          <Button variant="contained" component="label" sx={{ backgroundColor: '#4caf50', color: 'white', '&:hover': { backgroundColor: '#388e3c' } }}>
+            Import
+            <input type="file" accept=".csv" hidden onChange={handleImportCSV} />
+          </Button>
+        </div>
       </Grid>
 
       {/* Modal Form */}
@@ -327,6 +423,7 @@ const LeaveType = () => {
           </CardContent>
         </Card>
       )}
+      <ToastContainer />
     </div>
   );
 };

@@ -42,8 +42,9 @@ import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import ArrowBack from '@mui/icons-material/ArrowBack';
-import { get, post } from '../../api/api';
+import REACT_APP_API_URL, { get, post } from '../../api/api';
 import { set } from 'lodash';
+import axios from 'axios';
 
 const ParametricReport = () => {
   const [filterDate, setFilterDate] = useState('byDate');
@@ -240,6 +241,44 @@ const ParametricReport = () => {
     }
   }, [financialYear]);
 
+
+
+  const exportCSV = () => {
+    if (!filteredRows || filteredRows.length === 0) {
+      toast.error("No report data available to export");
+      return;
+    }
+    const activeColumns = columnMasterList.filter(col => selectedColumns.includes(col.key));
+    const headers = activeColumns.map(col => col.label);
+    let csvContent = headers.join(",") + "\n";
+
+    filteredRows.forEach(row => {
+      const rowData = activeColumns.map(col => {
+        let val = '';
+        if (col.render) {
+          val = col.render(row);
+        } else {
+          val = row[col.key];
+        }
+        if (val === undefined || val === null) val = '';
+        return `"${String(val).replace(/"/g, '""')}"`;
+      });
+      csvContent += rowData.join(",") + "\n";
+    });
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `parametric_report_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast.success("CSV report exported successfully");
+  };
+
+
+
   useEffect(() => {
     if (financialYear) {
       localStorage.setItem('selectedFY', financialYear);
@@ -399,6 +438,16 @@ const ParametricReport = () => {
         </Typography>
       </Breadcrumb>
       <Grid container spacing={gridSpacing}>
+        <Grid item xs={12}>
+          <Grid container justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
+            <Typography variant="h5">Parametric Report</Typography>
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <Button variant="contained" color="secondary" onClick={exportCSV}>
+                Export
+              </Button>
+            </div>
+          </Grid>
+        </Grid>
         <Grid item xs={12}>
           <Card>
             <CardContent>

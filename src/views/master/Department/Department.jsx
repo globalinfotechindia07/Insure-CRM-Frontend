@@ -25,6 +25,8 @@ import CancelIcon from '@mui/icons-material/Cancel';
 import EditIcon from '@mui/icons-material/Edit';
 import theme from 'assets/scss/_themes-vars.module.scss';
 import value from 'assets/scss/_themes-vars.module.scss';
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 // import { axiosInstance } from '../../../api/api.js';
 import { get, post, put, remove } from '../../../api/api.js';
@@ -57,9 +59,10 @@ const Department = () => {
     try {
       const response = await get('department');
       console.log('Department data:', response.data);
-      setData(response.data);
+      setData(response.data || []);
     } catch (error) {
       console.error(error);
+      setData([]);
     }
   };
   useEffect(() => {
@@ -100,13 +103,17 @@ const Department = () => {
   const handleSubmit = async () => {
     if (!validate()) return;
     try {
+      const payload = {
+        name: form.department,
+        description: form.description || ''
+      };
       if (editIndex !== null) {
         // Update existing
         const id = data[editIndex]._id;
-        await put(`department/${id}`, form);
+        await put(`department/${id}`, payload);
       } else {
         // Create new
-        await post('department', form);
+        await post('department', payload);
       }
       setOpen(false);
       setEditIndex(null);
@@ -118,7 +125,10 @@ const Department = () => {
   };
 
   const handleEdit = (index) => {
-    setForm(data[index]);
+    setForm({
+      ...data[index],
+      department: data[index].name
+    });
     setEditIndex(index);
     setOpen(true);
   };
@@ -131,6 +141,85 @@ const Department = () => {
     } catch (error) {
       console.error(error);
     }
+  };
+
+  const exportCSV = () => {
+    if (!data || data.length === 0) return;
+    const headers = ["Department Name", "Description"];
+    let csvContent = headers.join(",") + "\n";
+    data.forEach(item => {
+      const dName = item.name || item.department || '';
+      const desc = item.description || '';
+      csvContent += `"${dName.replace(/"/g, '""')}","${desc.replace(/"/g, '""')}"\n`;
+    });
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", "staff_departments.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handleImportCSV = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (evt) => {
+      const text = evt.target.result;
+      const lines = text.split("\n").map(line => line.trim()).filter(line => line !== "");
+      if (lines.length <= 1) {
+        toast.error("CSV file is empty or invalid");
+        return;
+      }
+
+      const header = lines[0].toLowerCase();
+      if (!header.includes("department name")) {
+        toast.error("Invalid CSV format. Header must contain 'Department Name'");
+        return;
+      }
+
+      const imported = [];
+      for (let i = 1; i < lines.length; i++) {
+        const row = lines[i].split(",").map(cell => cell.trim().replace(/^"|"$/g, '').replace(/""/g, '"'));
+        const name = row[0];
+        const description = row[1] || '';
+        if (name) {
+          imported.push({ name, description });
+        }
+      }
+
+      const existingSet = new Set(data.map(item => (item.name || item.department || '').toLowerCase().trim()));
+      const uniqueNew = imported.filter(item => !existingSet.has(item.name.toLowerCase().trim()));
+
+      if (uniqueNew.length === 0) {
+        toast.info("No new unique departments found to import.");
+        return;
+      }
+
+      let successCount = 0;
+      for (const item of uniqueNew) {
+        try {
+          const res = await post("department", item);
+          if (res) {
+            successCount++;
+          }
+        } catch (err) {
+          console.error(`Failed to import department: ${item.name}`, err);
+        }
+      }
+
+      if (successCount === 0) {
+        toast.info("No new unique departments found to import.");
+      } else {
+        toast.success(`Imported ${successCount} new unique departments successfully!`);
+      }
+      fetchDepartments();
+    };
+    reader.readAsText(file);
+    e.target.value = '';
   };
 
   return (
@@ -146,11 +235,20 @@ const Department = () => {
 
       <Grid container justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
         <Typography variant="h5">Department</Typography>
-        {(departmentPermission.Add === true || isAdmin) && (
-          <Button variant="contained" startIcon={<Add />} onClick={handleOpen}>
-            Add department
+        <div style={{ display: 'flex', gap: '10px' }}>
+          {(departmentPermission.Add === true || isAdmin) && (
+            <Button variant="contained" startIcon={<Add />} onClick={handleOpen}>
+              Add department
+            </Button>
+          )}
+          <Button variant="contained" color="secondary" onClick={exportCSV}>
+            Export
           </Button>
-        )}
+          <Button variant="contained" component="label" sx={{ backgroundColor: '#4caf50', color: 'white', '&:hover': { backgroundColor: '#388e3c' } }}>
+            Import
+            <input type="file" accept=".csv" hidden onChange={handleImportCSV} />
+          </Button>
+        </div>
       </Grid>
 
       {/* Modal Form */}
@@ -211,7 +309,7 @@ const Department = () => {
                 {data.map((row, index) => (
                   <TableRow key={index}>
                     <TableCell>{index + 1}</TableCell>
-                    <TableCell>{row.department}</TableCell>
+                    <TableCell>{row.name || row.department}</TableCell>
                     <TableCell>
                       {(departmentPermission.Edit === true || isAdmin) && (
                         <Button
@@ -239,6 +337,7 @@ const Department = () => {
           </CardContent>
         </Card>
       )}
+      <ToastContainer />
     </div>
   );
 };

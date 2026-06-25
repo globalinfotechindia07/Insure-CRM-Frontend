@@ -137,13 +137,13 @@ export default {
                   url: '/master/payment-mode'
                 },
 
-                {
-                  id: 'bank-details',
-                  title: 'Bank Details',
-                  type: 'item',
-                  icon: AccountBalanceIcon,
-                  url: '/master/bank-details'
-                }
+                // {
+                //   id: 'bank-details',
+                //   title: 'Bank Details',
+                //   type: 'item',
+                //   icon: AccountBalanceIcon,
+                //   url: '/master/bank-details'
+                // }
               ]
             },
             // {

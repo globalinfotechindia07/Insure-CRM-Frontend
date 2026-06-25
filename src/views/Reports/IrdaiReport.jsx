@@ -39,8 +39,9 @@ import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import ArrowBack from '@mui/icons-material/ArrowBack';
-import { get, post } from '../../api/api';
+import REACT_APP_API_URL, { get, post } from '../../api/api';
 import { set } from 'lodash';
+import axios from 'axios';
 
 const IrdaiReport = () => {
   const [filterValue, setFilterValue] = useState('');
@@ -58,6 +59,9 @@ const IrdaiReport = () => {
   });
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(25);
+
+
+
 
   useEffect(() => {
     setPage(0);
@@ -113,7 +117,7 @@ const IrdaiReport = () => {
   const handleFilterDateChange = (e) => setFilterDate(e.target.value);
   const handleFilterChange = (e) => setFilterValue(e.target.value);
 
-  useEffect(() => {}, [filterDate, filterValue]);
+  useEffect(() => { }, [filterDate, filterValue]);
 
   // Fetch all policy Detail
 
@@ -189,7 +193,7 @@ const IrdaiReport = () => {
   const handleExportExcel = () => {
     let tableId = '';
     let reportName = 'IRDAI_Report';
-    
+
     if (filterValue === 'byCustomer' || filterValue === 'byCompany') {
       tableId = 'irdai-matrix-table';
       reportName = `IRDAI_Matrix_Report_${filterValue === 'byCustomer' ? 'Customer' : 'Company'}`;
@@ -437,21 +441,29 @@ const IrdaiReport = () => {
           IRDIA
         </Typography>
       </Breadcrumb>
+      <Grid container spacing={gridSpacing} sx={{ mb: 2 }}>
+        <Grid item xs={12}>
+          <Grid container justifyContent="space-between" alignItems="center">
+            <Typography variant="h5">IRDIA Report</Typography>
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <Button
+                variant="contained"
+                color="secondary"
+                onClick={handleExportExcel}
+                disabled={policy.length === 0}
+              >
+                Export
+              </Button>
+            </div>
+          </Grid>
+        </Grid>
+      </Grid>
       <Grid container spacing={gridSpacing}>
         <Grid item xs={12}>
           <Card>
             <CardContent>
               <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
                 <Typography variant="h5" color="textPrimary" fontWeight="bold">Report Filters</Typography>
-                <Button 
-                  variant="contained" 
-                  color="success" 
-                  onClick={handleExportExcel} 
-                  disabled={policy.length === 0}
-                  sx={{ textTransform: 'none', fontWeight: 'bold' }}
-                >
-                  Export to Excel
-                </Button>
               </Box>
               <Divider sx={{ mb: 2 }} />
               <Box>
@@ -506,28 +518,28 @@ const IrdaiReport = () => {
                           </Grid>
                         </>
                       ) : ( */}
-                        <>
-                          <Grid item xs={2}>
-                            <LocalizationProvider dateAdapter={AdapterDateFns}>
-                              <DatePicker
-                                label="From Date"
-                                value={dateFrom}
-                                onChange={(value) => handleDateChange('dateFrom', value)}
-                                slotProps={{ textField: { fullWidth: true } }}
-                              />
-                            </LocalizationProvider>
-                          </Grid>
-                          <Grid item xs={2}>
-                            <LocalizationProvider dateAdapter={AdapterDateFns}>
-                              <DatePicker
-                                label="To Date"
-                                value={dateTo}
-                                onChange={(value) => handleDateChange('dateTo', value)}
-                                slotProps={{ textField: { fullWidth: true } }}
-                              />
-                            </LocalizationProvider>
-                          </Grid>
-                        </>
+                      <>
+                        <Grid item xs={2}>
+                          <LocalizationProvider dateAdapter={AdapterDateFns}>
+                            <DatePicker
+                              label="From Date"
+                              value={dateFrom}
+                              onChange={(value) => handleDateChange('dateFrom', value)}
+                              slotProps={{ textField: { fullWidth: true } }}
+                            />
+                          </LocalizationProvider>
+                        </Grid>
+                        <Grid item xs={2}>
+                          <LocalizationProvider dateAdapter={AdapterDateFns}>
+                            <DatePicker
+                              label="To Date"
+                              value={dateTo}
+                              onChange={(value) => handleDateChange('dateTo', value)}
+                              slotProps={{ textField: { fullWidth: true } }}
+                            />
+                          </LocalizationProvider>
+                        </Grid>
+                      </>
                       {/* )} */}
                       <Grid item xs={2}>
                         <Button size="large" variant="contained" sx={{ my: 1 }} onClick={handleFilter}>
@@ -624,7 +636,7 @@ const IrdaiReport = () => {
                           </TableCell>
 
                           <TableCell sx={{ px: 1.5, py: 0.8, fontWeight: 'bold', color: 'text.secondary' }}>
-                            {departmentPageSubtotal.totalAmount > 0 
+                            {departmentPageSubtotal.totalAmount > 0
                               ? Number(departmentPageSubtotal.totalBrokerageAmountincGst / departmentPageSubtotal.totalAmount).toFixed(2) + ' %'
                               : '0.00 %'}
                           </TableCell>

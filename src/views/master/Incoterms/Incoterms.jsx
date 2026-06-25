@@ -124,6 +124,81 @@ const Incoterms = () => {
     }
   };
 
+  const exportCSV = () => {
+    if (!data || data.length === 0) return;
+    const headers = ["Incoterms"];
+    let csvContent = headers.join(",") + "\n";
+    data.forEach(item => {
+      csvContent += `"${(item.incoterms || '').replace(/"/g, '""')}"\n`;
+    });
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", "incoterms.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handleImportCSV = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (evt) => {
+      const text = evt.target.result;
+      const lines = text.split("\n").map(line => line.trim()).filter(line => line !== "");
+      if (lines.length <= 1) {
+        toast.error("CSV file is empty or invalid");
+        return;
+      }
+
+      const header = lines[0].toLowerCase();
+      if (!header.includes("incoterms")) {
+        toast.error("Invalid CSV format. Header must contain 'Incoterms'");
+        return;
+      }
+
+      const imported = [];
+      for (let i = 1; i < lines.length; i++) {
+        const val = lines[i].trim().replace(/^"|"$/g, '').replace(/""/g, '"');
+        if (val) {
+          imported.push(val);
+        }
+      }
+
+      const existingSet = new Set(data.map(item => (item.incoterms || '').toLowerCase().trim()));
+      const uniqueNew = [...new Set(imported)].filter(v => !existingSet.has(v.toLowerCase().trim()));
+
+      if (uniqueNew.length === 0) {
+        toast.info("No new unique incoterms found to import.");
+        return;
+      }
+
+      let successCount = 0;
+      for (const val of uniqueNew) {
+        try {
+          const res = await post("incoterms", { incoterms: val });
+          if (res) {
+            successCount++;
+          }
+        } catch (err) {
+          console.error(`Failed to import incoterms: ${val}`, err);
+        }
+      }
+
+      if (successCount === 0) {
+        toast.info("No new unique incoterms found to import.");
+      } else {
+        toast.success(`Imported ${successCount} new unique incoterms successfully!`);
+      }
+      fetchIncoterms();
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+  };
+
   return (
     <div>
       <Breadcrumb>
@@ -137,9 +212,18 @@ const Incoterms = () => {
       
       <Grid container justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
         <Typography variant="h5">Incoterms</Typography>
-        <Button variant="contained" startIcon={<Add />} onClick={handleOpen}>
-          Add Incoterms
-        </Button>
+        <div style={{ display: 'flex', gap: '10px' }}>
+          <Button variant="contained" startIcon={<Add />} onClick={handleOpen}>
+            Add Incoterms
+          </Button>
+          <Button variant="contained" color="secondary" onClick={exportCSV}>
+            Export
+          </Button>
+          <Button variant="contained" component="label" sx={{ backgroundColor: '#4caf50', color: 'white', '&:hover': { backgroundColor: '#388e3c' } }}>
+            Import
+            <input type="file" accept=".csv" hidden onChange={handleImportCSV} />
+          </Button>
+        </div>
       </Grid>
 
       {/* Modal Form */}

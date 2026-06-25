@@ -262,16 +262,12 @@ const Policy = () => {
     }
   };
 
-  const handleFileUpload = async (e) => {
-    console.log('Upload Button Cliecked');
+  const handleImportCSV = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
     setIsUploading(true);
     try {
-      if (!file) {
-        toast.error('No file selected');
-        setIsUploading(false);
-        return;
-      }
-
       const formData = new FormData();
       formData.append('file', file);
 
@@ -283,17 +279,13 @@ const Policy = () => {
         toast.success(`Upload processed: ${response.data.message || 'completed'}`);
         fetchPolicyDetail();
       }
-      console.log('POST response', response);
     } catch (error) {
+      console.error(error);
       toast.error('Error uploading file');
     } finally {
-      setIsUploading(false); // Stop uploading
+      setIsUploading(false);
+      e.target.value = '';
     }
-  };
-
-  const handleFileChange = (event) => {
-    // console.log('file changed ', event.target.files[0]);
-    setFile(event.target.files[0]);
   };
 
   const handleExportCSV = async () => {
@@ -366,40 +358,25 @@ const Policy = () => {
         <Grid item xs={12}>
           <Grid container justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
             <Typography variant="h5">Policy Management</Typography>
-            <div
-              style={{
-                display: 'flex',
-                gap: '2rem',
-                background: 'white',
-                padding: '.4rem',
-                borderRadius: '6px'
-              }}
-            >
-              <input
-                style={{ border: 'none', outline: 'none' }}
-                type="file"
-                accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel"
-                onChange={handleFileChange}
-              />
-
-              <Button variant="contained" onClick={() => handleFileUpload()} disabled={isUploading === true}>
-                {isUploading === true ? 'Please Wait...' : 'Upload'}
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <Button
+                variant="contained"
+                className="global_btn"
+                startIcon={<Add />}
+                onClick={() => {
+                  navigate('/policy/AddPolicy');
+                }}
+              >
+                Add Policy
               </Button>
-
-              <Button variant="contained" onClick={() => handleExportCSV()} disabled={isExporting === true}>
+              <Button variant="contained" color="secondary" onClick={() => handleExportCSV()} disabled={isExporting === true}>
                 {isExporting === true ? 'Exporting...' : 'Export'}
               </Button>
+              <Button variant="contained" component="label" sx={{ backgroundColor: '#4caf50', color: 'white', '&:hover': { backgroundColor: '#388e3c' } }}>
+                Import
+                <input type="file" accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel" hidden onChange={handleImportCSV} />
+              </Button>
             </div>
-
-            <Button
-              variant="contained"
-              startIcon={<Add />}
-              onClick={() => {
-                navigate('/policy/AddPolicy');
-              }}
-            >
-              Add Policy
-            </Button>
           </Grid>
         </Grid>
         <Grid item xs={12} sm={3}>

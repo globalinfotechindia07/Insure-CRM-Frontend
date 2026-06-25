@@ -32,6 +32,8 @@ import {
 } from "@mui/icons-material";
 
 import Swal from 'sweetalert2';
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 import {
   createClaim,
@@ -547,6 +549,122 @@ const ClaimPage = () => {
     setActiveTab(0);
   };
 
+  const exportCSV = () => {
+    if (!data || data.length === 0) return;
+    const headers = ["Claim No", "Policy No", "Insured Name", "Department", "Preliminary Surveyor", "Status"];
+    let csvContent = headers.join(",") + "\n";
+    data.forEach(item => {
+      const surveyor = item.preliminarySurveyorId?.surveyorName || '';
+      csvContent += `"${(item.claimNo || '').replace(/"/g, '""')}","${(item.policyNo || '').replace(/"/g, '""')}","${(item.insuredName || '').replace(/"/g, '""')}","${(item.department || '').replace(/"/g, '""')}","${surveyor.replace(/"/g, '""')}","${(item.status || '').replace(/"/g, '""')}"\n`;
+    });
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", "claims.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handleImportCSV = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (evt) => {
+      const text = evt.target.result;
+      const lines = text.split("\n").map(line => line.trim()).filter(line => line !== "");
+      if (lines.length <= 1) {
+        toast.error("CSV file is empty or invalid");
+        return;
+      }
+
+      const header = lines[0].toLowerCase();
+      if (!header.includes("claim no") || !header.includes("policy no")) {
+        toast.error("Invalid CSV format. Header must contain 'Claim No' and 'Policy No'");
+        return;
+      }
+
+      const policyMap = {};
+      policies.forEach(p => {
+        if (p.policyNumber) policyMap[p.policyNumber.toLowerCase().trim()] = p;
+      });
+      const surveyorMap = {};
+      surveyors.forEach(s => {
+        if (s.surveyorName) surveyorMap[s.surveyorName.toLowerCase().trim()] = s._id;
+      });
+
+      const importedClaims = [];
+      for (let i = 1; i < lines.length; i++) {
+        const row = lines[i].split(",").map(cell => cell.trim().replace(/^"|"$/g, '').replace(/""/g, '"'));
+        const claimNo = row[0];
+        const policyNo = row[1];
+        const insuredName = row[2] || '';
+        const department = row[3] || '';
+        const surveyorName = row[4] || '';
+        const status = row[5] || 'Pending';
+
+        if (claimNo && policyNo) {
+          importedClaims.push({
+            claimNo,
+            policyNo,
+            insuredName,
+            department,
+            surveyorName,
+            status
+          });
+        }
+      }
+
+      const existingClaims = new Set(data.map(item => (item.claimNo || '').toLowerCase().trim()));
+      const uniqueNewClaims = importedClaims.filter(c => !existingClaims.has(c.claimNo.toLowerCase().trim()));
+
+      if (uniqueNewClaims.length === 0) {
+        toast.info("No new unique claims found to import.");
+        return;
+      }
+
+      let successCount = 0;
+      for (const item of uniqueNewClaims) {
+        const matchedPolicy = policyMap[item.policyNo.toLowerCase().trim()];
+        const surveyorId = surveyorMap[item.surveyorName.toLowerCase().trim()] || "";
+
+        let payload = {
+          claimNo: item.claimNo,
+          status: item.status,
+          policyNo: item.policyNo,
+          insuredName: item.insuredName,
+          department: item.department,
+          preliminarySurveyorId: surveyorId,
+          policyId: matchedPolicy ? matchedPolicy._id : "",
+          contactNo: matchedPolicy ? matchedPolicy.mobile : "",
+          email: matchedPolicy ? matchedPolicy.email : "",
+          insurerName: matchedPolicy ? matchedPolicy.insurerName : "",
+          sumInsured: matchedPolicy ? matchedPolicy.sumInsured : 0,
+        };
+
+        try {
+          const res = await createClaim(payload);
+          if (res && (res.status === true || res.status === "true" || res.data)) {
+            successCount++;
+          }
+        } catch (err) {
+          console.error(`Failed to import claim: ${item.claimNo}`, err);
+        }
+      }
+
+      if (successCount === 0) {
+        toast.info("No new unique claims found to import.");
+      } else {
+        toast.success(`Imported ${successCount} new unique claims successfully!`);
+      }
+      fetchClaims();
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+  };
+
   const handleTabChange = (event, newValue) => {
     setActiveTab(newValue);
   };
@@ -556,9 +674,18 @@ const ClaimPage = () => {
       {/* HEADER */}
       <Grid container justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
         <Typography variant="h5">Claim Management</Typography>
-        <Button variant="contained" startIcon={<Add />} onClick={() => { resetForm(); setOpen(true); }}>
-          Add Claim
-        </Button>
+        <div style={{ display: 'flex', gap: '10px' }}>
+          <Button variant="contained" startIcon={<Add />} onClick={() => { resetForm(); setOpen(true); }}>
+            Add Claim
+          </Button>
+          <Button variant="contained" color="secondary" onClick={exportCSV}>
+            Export
+          </Button>
+          <Button variant="contained" component="label" sx={{ backgroundColor: '#4caf50', color: 'white', '&:hover': { backgroundColor: '#388e3c' } }}>
+            Import
+            <input type="file" accept=".csv" hidden onChange={handleImportCSV} />
+          </Button>
+        </div>
       </Grid>
 
       {/* ADD/EDIT DIALOG */}
@@ -869,6 +996,7 @@ const ClaimPage = () => {
           </Table>
         </CardContent>
       </Card>
+      <ToastContainer />
     </div>
   );
 };

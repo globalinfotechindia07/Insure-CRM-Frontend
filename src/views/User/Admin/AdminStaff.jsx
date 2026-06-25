@@ -21,18 +21,17 @@ import {
   DialogContent,
   DialogContentText,
   DialogTitle,
-  Box
+  Box,
+  IconButton
 } from '@mui/material';
 
 import Breadcrumb from 'component/Breadcrumb';
 import { Link, useNavigate } from 'react-router-dom';
 import { gridSpacing } from 'config.js';
-import { get, put } from '../../../api/api.js';
+import { get, put, post } from '../../../api/api.js';
 import REACT_APP_API_URL from '../../../api/api.js';
 import Loader from 'component/Loader/Loader';
-import EditBtn from 'component/buttons/EditBtn';
-import DeleteBtn from 'component/buttons/DeleteBtn';
-import ViewBtn from 'component/buttons/ViewBtn';
+import { Edit, Delete, Visibility } from '@mui/icons-material';
 import { toast, ToastContainer } from 'react-toastify';
 import SuspendUser from 'views/HR/User/SuspendUser';
 import { useSelector } from 'react-redux';
@@ -64,15 +63,120 @@ const AdminStaff = () => {
     setLoading(true);
     try {
       const response = await get('administrative');
-      console.log('staff adminstrative details: ', response.data);
-      setAdministrativeData(response.data || []);
-      setFilteredData(response.data || []);
+      console.log('staff adminstrative details: ', response?.data);
+      setAdministrativeData(response?.data || []);
+      setFilteredData(response?.data || []);
     } catch (error) {
       console.error('Error fetching data:', error);
     } finally {
       setLoading(false);
       setIsDataFetched(true);
     }
+  };
+
+  const exportCSV = () => {
+    if (!filteredData || filteredData.length === 0) return;
+    const headers = ["Employee Code", "First Name", "Last Name", "Email", "Contact Number", "Gender", "Adhar Number", "Department", "Position"];
+    let csvContent = headers.join(",") + "\n";
+    filteredData.forEach(item => {
+      const empCode = item.basicDetails?.empCode || '';
+      const fName = item.basicDetails?.firstName || '';
+      const lName = item.basicDetails?.lastName || '';
+      const email = item.basicDetails?.email || '';
+      const contact = item.basicDetails?.contactNumber || '';
+      const gender = item.basicDetails?.gender || '';
+      const adhar = item.basicDetails?.adharNumber || '';
+      const dept = item.employmentDetails?.department?.department || 'N/A';
+      const pos = item.employmentDetails?.position?.position || 'N/A';
+      csvContent += `"${empCode}","${fName}","${lName}","${email}","${contact}","${gender}","${adhar}","${dept}","${pos}"\n`;
+    });
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", "company_staff.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handleImportCSV = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (evt) => {
+      const text = evt.target.result;
+      const lines = text.split("\n").map(line => line.trim()).filter(line => line !== "");
+      if (lines.length <= 1) {
+        toast.error("CSV file is empty or invalid");
+        return;
+      }
+
+      const header = lines[0].toLowerCase();
+      if (!header.includes("contact number") || !header.includes("email")) {
+        toast.error("Invalid CSV format. Header must contain 'Contact Number' and 'Email'");
+        return;
+      }
+
+      const importedStaff = [];
+      for (let i = 1; i < lines.length; i++) {
+        const row = lines[i].split(",").map(cell => cell.trim().replace(/^"|"$/g, '').replace(/""/g, '"'));
+        const empCode = row[0] || '';
+        const firstName = row[1] || '';
+        const lastName = row[2] || '';
+        const email = row[3] || '';
+        const contactNumber = row[4] || '';
+        const gender = row[5] || '';
+        const adharNumber = row[6] || '';
+
+        if (firstName && email && contactNumber) {
+          importedStaff.push({
+            empCode,
+            firstName,
+            lastName,
+            email,
+            contactNumber,
+            gender: ["Male", "Female", "Other"].includes(gender) ? gender : "Male",
+            adharNumber
+          });
+        }
+      }
+
+      const existingEmails = new Set(administrativeData.map(item => (item.basicDetails?.email || '').toLowerCase().trim()));
+      const existingContacts = new Set(administrativeData.map(item => (item.basicDetails?.contactNumber || '').trim()));
+      
+      const uniqueNewStaff = importedStaff.filter(s => 
+        !existingEmails.has(s.email.toLowerCase().trim()) && 
+        !existingContacts.has(s.contactNumber.trim())
+      );
+
+      if (uniqueNewStaff.length === 0) {
+        toast.info("No new unique staff found to import.");
+        return;
+      }
+
+      let successCount = 0;
+      for (const staff of uniqueNewStaff) {
+        try {
+          const res = await post("administrative/basicDetails", staff);
+          if (res && (res.success === true || res.status === "true" || res.status === true || res.data)) {
+            successCount++;
+          }
+        } catch (err) {
+          console.error(`Failed to import staff: ${staff.email}`, err);
+        }
+      }
+
+      if (successCount === 0) {
+        toast.info("No new unique staff found to import.");
+      } else {
+        toast.success(`Imported ${successCount} new unique staff members successfully!`);
+      }
+      fetchAdministrativeData();
+    };
+    reader.readAsText(file);
+    e.target.value = '';
   };
 
   const handleSearch = (event) => {
@@ -163,25 +267,34 @@ const AdminStaff = () => {
           <Card>
             <CardHeader
               title={
-                <Grid container alignItems="center" justifyContent="space-between">
-                  <Grid item>
-                    {(staffPermission.Add === true || isAdmin) && (
-                      <Button variant="contained" color="primary" onClick={goToAddPage}>
-                        Add
-                      </Button>
-                    )}
+                                  <Grid container alignItems="center" justifyContent="space-between">
+                    <Grid item>
+                      <TextField
+                        label="Search"
+                        variant="outlined"
+                        value={searchQuery}
+                        onChange={handleSearch}
+                        size="small"
+                        style={{ width: '300px' }}
+                      />
+                    </Grid>
+                    <Grid item>
+                      <div style={{ display: 'flex', gap: '10px' }}>
+                        {(staffPermission.Add === true || isAdmin) && (
+                          <Button variant="contained" color="primary" onClick={goToAddPage}>
+                            Add
+                          </Button>
+                        )}
+                        <Button variant="contained" color="secondary" onClick={exportCSV}>
+                          Export
+                        </Button>
+                        <Button variant="contained" component="label" sx={{ backgroundColor: '#4caf50', color: 'white', '&:hover': { backgroundColor: '#388e3c' } }}>
+                          Import
+                          <input type="file" accept=".csv" hidden onChange={handleImportCSV} />
+                        </Button>
+                      </div>
+                    </Grid>
                   </Grid>
-                  <Grid item>
-                    <TextField
-                      label="Search"
-                      variant="outlined"
-                      value={searchQuery}
-                      onChange={handleSearch}
-                      size="small"
-                      style={{ width: '300px' }}
-                    />
-                  </Grid>
-                </Grid>
               }
             />
             <Divider />
@@ -244,10 +357,18 @@ const AdminStaff = () => {
                                 <TableCell>
                                   <Box sx={{ display: 'flex', flexWrap: 'nowrap', alignItems: 'center', gap: 1 }}>
                                     {(staffPermission.Edit === true || isAdmin) && (
-                                      <EditBtn onClick={() => navigate(`/users/administrativeUpdatePage/${item._id}`)} />
+                                      <IconButton size="small" onClick={() => navigate(`/users/administrativeUpdatePage/${item._id}`)}>
+                                        <Edit fontSize="small" />
+                                      </IconButton>
                                     )}
-                                    {(staffPermission.Delete === true || isAdmin) && <DeleteBtn onClick={() => handleDeleteClick(item)} />}
-                                    <ViewBtn onClick={() => navigate(`/users/viewUserDetails/administrative/${item._id}`)} />
+                                    {(staffPermission.Delete === true || isAdmin) && (
+                                      <IconButton size="small" color="error" onClick={() => handleDeleteClick(item)}>
+                                        <Delete fontSize="small" />
+                                      </IconButton>
+                                    )}
+                                    <IconButton size="small" onClick={() => navigate(`/users/viewUserDetails/administrative/${item._id}`)}>
+                                      <Visibility fontSize="small" />
+                                    </IconButton>
                                   </Box>
                                 </TableCell>
                               </TableRow>
