@@ -5,7 +5,7 @@ import MainLayout from 'layout/MainLayout';
 import Loadable from 'component/Loadable';
 import PrivateRoute from 'component/PrivateRoute/PrivateRoute';
 import NavigateToDashboard from 'component/PrivateRoute/NavigateToDashboard';
-import CompanySettings from '../views/CompanySettings/CompanySettings';
+import BranchSettings from '../views/BranchSettings/BranchSettings';
 import LeadReference from '../views/master/Lead-reference/LeadReference';
 import LeadStatus from '../views/master/Lead-status/LeadStatus';
 import LeadType from '../views/master/Lead-type/LeadType';
@@ -24,6 +24,7 @@ import AddLead from 'views/LeadManagement/Lead/AddLead';
 import EditLead from 'views/LeadManagement/Lead/EditLead';
 import ParametricReport from 'views/LeadManagement/ParametricReport/ParametricReport';
 import AnalyticalReport from 'views/LeadManagement/AnalyticalReport/AnalyticalReport';
+import LeadReport from 'views/LeadManagement/LeadReport/LeadReport';
 import Client from '../views/Client/Client';
 import Customer from '../views/Customer/Customer';
 import AddCustomer from '../views/Customer/AddCustomer';
@@ -64,7 +65,7 @@ import GstEditPage from 'views/Invoice/Edit Pages/GstEditPage';
 import NonGstEditPage from 'views/Invoice/Edit Pages/NonGstEditPage';
 import AddClient from 'views/Client/AddClient';
 import UpdateClient from 'views/Client/UpdateClient';
-import UpdateCompanySettings from 'views/CompanySettings/UpdateCompanySettings';
+import UpdateBranchSettings from 'views/BranchSettings/UpdateBranchSettings';
 import GstPercentage from 'views/master/GstPercentage/GstPercentage';
 import InvoiceDetails from 'views/Invoice/InvoiceDetails';
 import TaskDetailView from 'views/TaskManager/TaskDetailView';
@@ -75,7 +76,7 @@ import LeadStage from '../views/master/Lead-stage/LeadStage';
 import TicketStatus from 'views/master/ticketStatus/TicketStatus';
 import TaskStatus from 'views/master/taskStatus/TaskStatus';
 import CompanyStaffReport from 'views/HR/Staff/company-staff-report';
-import HolidayType from 'views/master/HolidayType/HolidayType';
+// import HolidayType from 'views/master/HolidayType/HolidayType';
 import Holiday from 'views/master/Holiday/Holiday';
 import Calander from 'views/Calander';
 import Profile from 'views/Profile/Profile';
@@ -107,13 +108,11 @@ import EditCustomerGroup from 'views/master/CustomerGroup/EditCustomerGroup';
 import CustomerForm from 'views/Customers/CustomerForm';
 import CustomerList from 'views/Customers/CustomerList';
 import CustomerPage from 'views/Customers/CustomerPage';
-// import SurveyorMaster from 'views/ClaimCRM/SurveyorMaster';
 import SurveyorPage from 'views/ClaimCRM/SurveyorPage';
 import TPAPage from 'views/ClaimCRM/TPAPage';
-import PolicyPage from 'views/ClaimCRM/PolicyPage';
 import InvestigatorPage from 'views/ClaimCRM/InvestigatorPage';
 import ClaimPage from 'views/ClaimCRM/ClaimPage';
-import DepartmentPage from 'views/ClaimCRM/DepartmentPage';
+// import DepartmentPage from 'views/ClaimCRM/DepartmentPage';
 import CompanyPage from 'views/ClaimCRM/CompanyPage';
 // import ClaimDetailsPage from 'views/ClaimCRM/ClaimDetailsPage';
 // const UtilsTypography = Loadable(lazy(() => import('views/Utils/Typography')));
@@ -191,22 +190,22 @@ const MainRoutes = {
     },
 
     {
-      path: '/company-settings/',
+      path: '/branch-settings/',
       element: (
         <PrivateRoute
           allowedRoles={['admin', 'staff', 'Administrative', 'NursingAndParamedical', 'MedicalOfficer', 'Support', 'Consultant']}
         >
-          <CompanySettings />
+          <BranchSettings />
         </PrivateRoute>
       )
     },
     {
-      path: '/company-settings/:id',
+      path: '/branch-settings/:id',
       element: (
         <PrivateRoute
           allowedRoles={['admin', 'staff', 'Administrative', 'NursingAndParamedical', 'MedicalOfficer', 'Support', 'Consultant']}
         >
-          <UpdateCompanySettings />
+          <UpdateBranchSettings />
         </PrivateRoute>
       )
     },
@@ -219,7 +218,7 @@ const MainRoutes = {
         >
           <BankDetails />
         </PrivateRoute>
-      ) 
+      )
     },
     {
       path: '/master/product-or-service-category',
@@ -368,25 +367,25 @@ const MainRoutes = {
         </PrivateRoute>
       )
     },
-    {
-      path: '/master/holiday-type',
-      element: (
-        <PrivateRoute
-          allowedRoles={[
-            'super-admin',
-            'admin',
-            'staff',
-            'Administrative',
-            'NursingAndParamedical',
-            'MedicalOfficer',
-            'Support',
-            'Consultant'
-          ]}
-        >
-          <HolidayType />
-        </PrivateRoute>
-      )
-    },
+    // {
+    //   path: '/master/holiday-type',
+    //   element: (
+    //     <PrivateRoute
+    //       allowedRoles={[
+    //         'super-admin',
+    //         'admin',
+    //         'staff',
+    //         'Administrative',
+    //         'NursingAndParamedical',
+    //         'MedicalOfficer',
+    //         'Support',
+    //         'Consultant'
+    //       ]}
+    //     >
+    //       <HolidayType />
+    //     </PrivateRoute>
+    //   )
+    // },
 
     {
       path: '/master/insurance-company',
@@ -1015,6 +1014,16 @@ const MainRoutes = {
       )
     },
     {
+      path: '/lead-management/lead-report',
+      element: (
+        <PrivateRoute
+          allowedRoles={['admin', 'staff', 'Administrative', 'NursingAndParamedical', 'MedicalOfficer', 'Support', 'Consultant']}
+        >
+          <LeadReport />
+        </PrivateRoute>
+      )
+    },
+    {
       path: '/lead-management/analytical-report',
       element: (
         <PrivateRoute
@@ -1294,25 +1303,25 @@ const MainRoutes = {
         </PrivateRoute>
       )
     },
-    {
-      path: '/report/analytical-report',
-      element: (
-        <PrivateRoute
-          allowedRoles={[
-            'admin',
-            'staff',
-            'super-admin',
-            'Administrative',
-            'NursingAndParamedical',
-            'MedicalOfficer',
-            'Support',
-            'Consultant'
-          ]}
-        >
-          <ReportsAnalyticalReport />
-        </PrivateRoute>
-      )
-    },
+    // {
+    //   path: '/report/analytical-report',
+    //   element: (
+    //     <PrivateRoute
+    //       allowedRoles={[
+    //         'admin',
+    //         'staff',
+    //         'super-admin',
+    //         'Administrative',
+    //         'NursingAndParamedical',
+    //         'MedicalOfficer',
+    //         'Support',
+    //         'Consultant'
+    // //       ]}
+    //     >
+    //       <ReportsAnalyticalReport />
+    //     </PrivateRoute>
+    //   )
+    // },
     {
       path: '/renewal/renewal-reminder',
       element: (
@@ -1589,7 +1598,7 @@ const MainRoutes = {
         </PrivateRoute>
       )
     },
-        {
+    {
       path: '/master/customer',
       element: (
         <PrivateRoute
@@ -1600,8 +1609,8 @@ const MainRoutes = {
       )
     },
 
-            {
-      path: '/master/surveyor',
+    {
+      path: '/master/surveyor-master',
       element: (
         <PrivateRoute
           allowedRoles={['admin', 'staff', 'Administrative', 'NursingAndParamedical', 'MedicalOfficer', 'Support', 'Consultant']}
@@ -1610,7 +1619,7 @@ const MainRoutes = {
         </PrivateRoute>
       )
     },
-                {
+    {
       path: '/master/tpa-master',
       element: (
         <PrivateRoute
@@ -1621,18 +1630,9 @@ const MainRoutes = {
       )
     },
 
-                {
-      path: '/master/policy-master',
-      element: (
-        <PrivateRoute
-          allowedRoles={['admin', 'staff', 'Administrative', 'NursingAndParamedical', 'MedicalOfficer', 'Support', 'Consultant']}
-        >
-          <PolicyPage />
-        </PrivateRoute>
-      )
-    },
-                {
-      path: '/master/investigator',
+
+    {
+      path: '/master/investigator-master',
       element: (
         <PrivateRoute
           allowedRoles={['admin', 'staff', 'Administrative', 'NursingAndParamedical', 'MedicalOfficer', 'Support', 'Consultant']}
@@ -1641,8 +1641,8 @@ const MainRoutes = {
         </PrivateRoute>
       )
     },
-                    {
-      path: '/master/claim-master',
+    {
+      path: '/claim-management',
       element: (
         <PrivateRoute
           allowedRoles={['admin', 'staff', 'Administrative', 'NursingAndParamedical', 'MedicalOfficer', 'Support', 'Consultant']}
@@ -1652,18 +1652,18 @@ const MainRoutes = {
       )
     },
 
-                        {
+    {
       path: '/master/department-page',
       element: (
         <PrivateRoute
           allowedRoles={['admin', 'staff', 'Administrative', 'NursingAndParamedical', 'MedicalOfficer', 'Support', 'Consultant']}
         >
-          <DepartmentPage />
+          <InsDepartment />
         </PrivateRoute>
       )
     },
 
-                            {
+    {
       path: '/master/company',
       element: (
         <PrivateRoute
@@ -1673,42 +1673,42 @@ const MainRoutes = {
         </PrivateRoute>
       )
     },
-  
 
 
 
 
 
 
-// {
-//       path: '/master/customers-form',
-//       element: (
-//         <PrivateRoute
-//           allowedRoles={['admin', 'staff', 'Administrative', 'NursingAndParamedical', 'MedicalOfficer', 'Support', 'Consultant']}
-//         >
-//           <CustomerForm />
-//         </PrivateRoute>
-//       )
-// },
-//       {
-//       path: '/master/customers-list',
-//       element: (
-//         <PrivateRoute
-//           allowedRoles={[
-//             'super-admin',
-//             'admin',
-//             'staff',
-//             'Administrative',
-//             'NursingAndParamedical',
-//             'MedicalOfficer',
-//             'Support',
-//             'Consultant'
-//           ]}
-//         >
-//           <CustomerList />
-//         </PrivateRoute>
-//       )
-//     },
+
+    // {
+    //       path: '/master/customers-form',
+    //       element: (
+    //         <PrivateRoute
+    //           allowedRoles={['admin', 'staff', 'Administrative', 'NursingAndParamedical', 'MedicalOfficer', 'Support', 'Consultant']}
+    //         >
+    //           <CustomerForm />
+    //         </PrivateRoute>
+    //       )
+    // },
+    //       {
+    //       path: '/master/customers-list',
+    //       element: (
+    //         <PrivateRoute
+    //           allowedRoles={[
+    //             'super-admin',
+    //             'admin',
+    //             'staff',
+    //             'Administrative',
+    //             'NursingAndParamedical',
+    //             'MedicalOfficer',
+    //             'Support',
+    //             'Consultant'
+    //           ]}
+    //         >
+    //           <CustomerList />
+    //         </PrivateRoute>
+    //       )
+    //     },
 
   ]
 };

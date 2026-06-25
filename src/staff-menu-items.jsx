@@ -48,13 +48,13 @@ const staffMenuIems = {
           type: 'collapse',
           icon: GridViewIcon,
           children: [
-            {
-              id: 'bank-details',
-              title: 'Bank Details',
-              type: 'item',
-              icon: AccountBalanceIcon,
-              url: '/master/bank-details'
-            },
+            // {
+            //   id: 'bank-details',
+            //   title: 'Bank Details',
+            //   type: 'item',
+            //   icon: AccountBalanceIcon,
+            //   url: '/master/bank-details'
+            // },
             {
               id: 'product-or-service-category',
               title: 'Product Category',
@@ -118,13 +118,13 @@ const staffMenuIems = {
               icon: AttachMoneyIcon,
               url: '/master/holiday'
             },
-            {
-              id: 'holiday-type',
-              title: 'Holiday Type',
-              type: 'item',
-              icon: AttachMoneyIcon,
-              url: '/master/holiday-type'
-            },
+            // {
+            //   id: 'holiday-type',
+            //   title: 'Holiday Type',
+            //   type: 'item',
+            //   icon: AttachMoneyIcon,
+            //   url: '/master/holiday-type'
+            // },
             {
               id: 'position',
               title: 'Position',
@@ -184,11 +184,11 @@ const staffMenuIems = {
           ]
         },
         {
-          id: 'company-settings',
-          title: 'Company Settings',
+          id: 'branch-settings',
+          title: 'Branch Settings',
           type: 'item',
           icon: RoomPreferencesIcon,
-          url: '/company-settings'
+          url: '/branch-settings'
         },
         {
           id: 'client',
@@ -196,6 +196,20 @@ const staffMenuIems = {
           type: 'item',
           icon: PersonIcon,
           url: '/client'
+        },
+        {
+          id: 'policy-management',
+          title: 'Policy Management',
+          type: 'collapse',
+          children: [
+            {
+              id: 'policy-list',
+              title: 'Policy List',
+              type: 'item',
+              icon: PeopleIcon,
+              url: '/policy'
+            }
+          ]
         },
         {
           id: 'contacts',
@@ -225,16 +239,22 @@ const staffMenuIems = {
             },
             {
               id: 'parametric-report',
-              title: 'Parametric Report',
+              title: 'Lead Report',
               type: 'item',
-              url: '/lead-management/parametric-report'
+              url: '/lead-management/lead-report'
             },
-            {
-              id: 'analytical-report',
-              title: 'Analytical Report',
-              type: 'item',
-              url: '/lead-management/analytical-report'
-            }
+            // {
+            //   id: 'parametric-report',
+            //   title: 'Parametric Report',
+            //   type: 'item',
+            //   url: '/lead-management/parametric-report'
+            // },
+            // {
+            //   id: 'analytical-report',
+            //   title: 'Analytical Report',
+            //   type: 'item',
+            //   url: '/lead-management/analytical-report'
+            // }
           ]
         },
         {

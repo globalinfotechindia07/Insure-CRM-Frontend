@@ -636,7 +636,7 @@ const EditConfirmAppointment = ({ patientDetail, close, getData }) => {
         });
       }
     }
-    
+
   };
 
   const handleEmergencyChange = (event, index) => {
@@ -1039,7 +1039,7 @@ const EditConfirmAppointment = ({ patientDetail, close, getData }) => {
       });
   };
 
-  console.log('input opd',inputOpdData)
+  console.log('input opd', inputOpdData)
 
   return (
     <div className="wideModal" style={{ height: `${basicInfoFilled ? '100vh' : '80vh'}`, margin: '3rem' }}>
@@ -1067,7 +1067,7 @@ const EditConfirmAppointment = ({ patientDetail, close, getData }) => {
                   value={inputData.patientType}
                   onChange={handleChange}
                   required
-                  //   error={!!errors.patientType}
+                //   error={!!errors.patientType}
                 >
                   <MenuItem value="New">New</MenuItem>
                   <MenuItem value="Follow-Up">Follow-Up</MenuItem>
@@ -2720,7 +2720,7 @@ const EditConfirmAppointment = ({ patientDetail, close, getData }) => {
                       }}
                       label="Prefix"
                       name="relativePrifix"
-                      value={inputData.relativePrifixId||''}
+                      value={inputData.relativePrifixId || ''}
                       onChange={handleRelativeRefrence}
                       variant="outlined"
                     >

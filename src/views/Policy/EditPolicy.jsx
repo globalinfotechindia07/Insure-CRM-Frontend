@@ -39,16 +39,18 @@ const EditPolicy = () => {
   const [gstData, setGstData] = useState([]);
   const [clientTypeValue, setClientTypeValue] = useState('retail');
   const [departmentValue, setDepartmentValue] = useState('');
+  const [insCompanyData, setInsCompanyData] = useState([]);
+  const [insDepartmentData, setInsDepartmentData] = useState([]);
+  const selectedDeptName = React.useMemo(() => {
+    const selectedDept = insDepartmentData.find((d) => d._id === departmentValue);
+    return selectedDept?.insDepartment?.toLowerCase().trim() || '';
+  }, [insDepartmentData, departmentValue]);
   const [siteLocation, setSiteLocation] = useState('');
   const [brokerageValue, setBrokerageValue] = useState('brokerage');
-
   const [clientList, setClientList] = useState([]);
   const [filterByDocumentValue, setFilterByDocumentValue] = useState('');
-
   const [prefixData, setPrefixData] = useState([]);
   const [branchCodeData, setBranchCodeData] = useState([]);
-  const [insCompanyData, setInsCompanyData] = useState({});
-  const [insDepartmentData, setInsDepartmentData] = useState({});
   const [productData, setProductData] = useState([]);
   const [subProductData, setSubProductData] = useState([]);
   const [riskCodeData, setRiskCodeData] = useState([]);
@@ -56,6 +58,7 @@ const EditPolicy = () => {
   const [brokerageRateData, setBrokerageRateData] = useState([]);
   const [endorsementData, setEndorsementData] = useState([]);
   const [showNominee, setShowNominee] = useState(false);
+  const [showCoBrokerage, setShowCoBrokerage] = useState(false);
   const [customerGroupData, setCustomerGroupData] = useState([]);
   const [subCustomerGroupData, setSubCustomerGroupData] = useState([]);
   const [brokerNameData, setBrokerNameData] = useState([]);
@@ -64,6 +67,7 @@ const EditPolicy = () => {
   const [fuelTypeData, setFuelTypeData] = useState([]);
   const [branchNameId, setBranchNameId] = useState('');
   const [policyData, setPolicyData] = useState([]);
+  const [paymentModeData, setPaymentModeData] = useState([]);
 
   const [taxes, setTaxes] = useState({
     CGST: setForm.CGST,
@@ -93,6 +97,7 @@ const EditPolicy = () => {
       showNominee: false,
       nomineeName: '',
       nomineeRelation: '',
+      nomineeContact: '',
       insDepartment: '',
       product: '',
       subProduct: '',
@@ -152,6 +157,8 @@ const EditPolicy = () => {
       endorsementTerrorism: '',
       endorsementOtherTerrorism: '',
       endorsementNetPremium: '',
+      endorsementGst: '',
+      endorsementGstAmount: '',
       paymentMode: '',
       etotalAmount: '',
       paidAmount: '',
@@ -168,7 +175,9 @@ const EditPolicy = () => {
       tpBrokerageAmount: '',
       totalBrokerageAmount: '',
       totalBrokerageGst: '',
-      totalBrokerageAmountincGst: ''
+      totalBrokerageAmountincGst: '',
+      sharePercentage: '',
+      coBrokerageAmount: ''
     };
   }
 
@@ -194,7 +203,8 @@ const EditPolicy = () => {
         brokerNameData,
         branchBrokerData,
         incotermsData,
-        fuelTypeData
+        fuelTypeData,
+        paymentModeRes
       ] = await Promise.all([
         get('financialYear'),
         get('gst-percentage'),
@@ -214,7 +224,8 @@ const EditPolicy = () => {
         get('brokerName'),
         get('branchBroker'),
         get('incoterms'),
-        get('fuelType')
+        get('fuelType'),
+        get('payment-mode')
       ]);
       setFinancialYearData(financialYearData.data || []);
       setGstData(gstData.data || []);
@@ -235,7 +246,7 @@ const EditPolicy = () => {
       setBranchBrokerData(branchBrokerData.data || []);
       setIncotermsData(incotermsData.data || []);
       setFuelTypeData(fuelTypeData.data || []);
-      // console.log('Prefix List data', incotermsData);
+      setPaymentModeData(paymentModeRes?.paymentMode || []);
     } catch (err) {
       console.error('Dropdown load error:', err);
     }
@@ -248,9 +259,9 @@ const EditPolicy = () => {
         const policyData = res.data;
         setPolicyData(res.data);
         console.log('Pol ', policyData);
-        setDepartmentValue(policyData.insDepartment);
-        setClientTypeValue(policyData.clientType);
-        setBranchNameId(policyData.branchCode);
+        setDepartmentValue(policyData.insDepartment?._id || policyData.insDepartment || '');
+        setClientTypeValue(policyData.clientType || 'retail');
+        setBranchNameId(policyData.branchCode?._id || policyData.branchCode || '');
         setForm((prev) => ({
           ...prev,
           policyData,
@@ -262,6 +273,7 @@ const EditPolicy = () => {
           showNominee: policyData?.showNominee || false,
           nomineeName: policyData?.nomineeName || '',
           nomineeRelation: policyData?.nomineeRelation || '',
+          nomineeContact: policyData?.nomineeContact || '',
           livesCover: policyData?.livesCover || '',
           numberOfInstallments: policyData?.numberOfInstallments || '',
           nextInstallmentDate: policyData?.nextInstallmentDate ? policyData?.nextInstallmentDate?.split('T')[0] : '',
@@ -308,6 +320,7 @@ const EditPolicy = () => {
           endorsementTerrorism: policyData?.endorsementTerrorism || '',
           endorsementOtherTerrorism: policyData?.endorsementOtherTerrorism || '',
           endorsementNetPremium: policyData?.endorsementNetPremium || '',
+          endorsementGstAmount: policyData?.endorsementGstAmount || '',
           etotalAmount: policyData?.etotalAmount || '',
           endorStartDate: policyData?.endorStartDate ? policyData?.endorStartDate?.split('T')[0] : '',
           endorEndDate: policyData?.endorEndDate ? policyData?.endorEndDate?.split('T')[0] : '',
@@ -326,6 +339,8 @@ const EditPolicy = () => {
           totalBrokerageGst: policyData?.totalBrokerageGst || '',
           totalBrokerageAmountincGst: policyData?.totalBrokerageAmountincGst || '',
           totalAmount: Number(policyData?.totalAmount ?? 0) || '',
+          sharePercentage: policyData?.sharePercentage || '',
+          coBrokerageAmount: policyData?.coBrokerageAmount || '',
           financialYear: policyData?.financialYear?._id
             ? String(policyData?.financialYear._id)
             : policyData?.financialYear
@@ -398,6 +413,11 @@ const EditPolicy = () => {
               ? String(policyData?.odBrokerageRate)
               : '',
 
+           endorsementGst: policyData?.endorsementGst?._id
+            ? String(policyData?.endorsementGst._id)
+            : policyData?.endorsementGst
+              ? String(policyData?.endorsementGst)
+              : '',
           endorsementReason: policyData?.endorsementReason?._id
             ? String(policyData?.endorsementReason._id)
             : policyData?.endorsementReason
@@ -421,9 +441,56 @@ const EditPolicy = () => {
               ? String(policyData?.otherAddon)
               : ''
         }));
+        if (policyData?.sharePercentage || policyData?.coBrokerageAmount) {
+          setShowCoBrokerage(true);
+        }
       }
     } catch (err) {
       console.error('Failed to fetch lead details:', err);
+    }
+  };
+
+  const handleFetchEndorsementPolicy = async (policyNo) => {
+    if (!policyNo) return;
+    try {
+      const res = await get(`policyDetail?policyNumber=${encodeURIComponent(policyNo)}`);
+      if (res && res.data && res.data.length > 0) {
+        const policyData = res.data[0];
+        toast.success('Original Policy details fetched successfully');
+        setForm((prev) => ({
+          ...prev,
+          clientType: policyData.clientType || '',
+          retailCustomer: policyData.retailCustomer?._id || policyData.retailCustomer || '',
+          customerGroup: policyData.customerGroup?._id || policyData.customerGroup || '',
+          subCustomerGroup: policyData.subCustomerGroup?._id || policyData.subCustomerGroup || '',
+          checkSubGroup: policyData.checkSubGroup || '',
+          branchCode: policyData.branchCode?._id || policyData.branchCode || '',
+          branchName: policyData.branchName || '',
+          prefix: policyData.prefix?._id || policyData.prefix || '',
+          cutomerName: policyData.cutomerName || '',
+          mobile: policyData.mobile || '',
+          email: policyData.email || '',
+          insurerName: policyData.insurerName || '',
+          gstNo: policyData.gstNo || '',
+          insDepartment: policyData.insDepartment?._id || policyData.insDepartment || '',
+          product: policyData.product?._id || policyData.product || '',
+          subProduct: policyData.subProduct?._id || policyData.subProduct || '',
+          insCompany: policyData.insCompany?._id || policyData.insCompany || '',
+          brokerName: policyData.brokerName?._id || policyData.brokerName || '',
+          branchBroker: policyData.branchBroker?._id || policyData.branchBroker || '',
+        }));
+        if (policyData.insDepartment) {
+          setDepartmentValue(policyData.insDepartment?._id || policyData.insDepartment);
+        }
+        if (policyData.clientType) {
+          setClientTypeValue(policyData.clientType);
+        }
+      } else {
+        toast.warning('No policy found with this Policy Number');
+      }
+    } catch (e) {
+      console.error('Error fetching endorsement policy:', e);
+      toast.error('Failed to fetch policy details');
     }
   };
 
@@ -481,12 +548,8 @@ const EditPolicy = () => {
   }, [form.startDate, form.policyDuration]);
 
   const filteredProducts = useMemo(() => {
-    if (!departmentValue) {
-      return productData; // show all
-    }
-
-    return productData.filter((product) => product.insDepartment?._id === departmentValue);
-  }, [productData, departmentValue]);
+    return productData;
+  }, [productData]);
 
   useEffect(() => {
     if (!form.tpStartDate || !form.tpPolicyDuration) return;
@@ -581,7 +644,7 @@ const EditPolicy = () => {
   useEffect(() => {
     // const netPremium = round2(parseFloat(form.netPremium) || 0);
 
-    if (departmentValue !== '69539cdef88ccbb626abc903') {
+    if (selectedDeptName !== 'motor') {
       const isTaxApplicable = taxes.IGST || taxes.UGST || taxes.CGST || taxes.SGST;
 
       if (form.netPremium === '') {
@@ -619,22 +682,51 @@ const EditPolicy = () => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    // console.log(name);
-    if (name === 'branchCode') {
-      const selectedId = e.target.value;
-      const selectedName = branchCodeData.find((branch) => branch._id === selectedId);
 
-      setForm((prev) => ({
-        ...prev,
-        branchName: selectedName.branchName
-      }));
+    setForm((prev) => {
+      let nextForm = { ...prev, [name]: value };
+
+      if (name === 'branchCode') {
+        const selectedId = value;
+        const selectedName = branchCodeData.find((branch) => branch._id === selectedId);
+        if (selectedName) {
+          nextForm.branchName = selectedName.branchName;
+        }
+      }
+      if (name === 'retailCustomer') {
+        const selectedId = value;
+        const selectedCustomer = clientList.find((customer) => customer._id === selectedId);
+        if (selectedCustomer) {
+          nextForm.retailCustomer = selectedId;
+          nextForm.cutomerName = selectedCustomer.name || '';
+          nextForm.mobile = selectedCustomer.mobile || '';
+          nextForm.email = selectedCustomer.email || '';
+          nextForm.gstNo = selectedCustomer.gstNo || '';
+        }
+      }
+      if (name === 'insurerName') {
+        const selectedCompanyObj = insCompanyData.find((c) => c.insCompany === value);
+        if (selectedCompanyObj) {
+          nextForm.insCompany = selectedCompanyObj._id;
+        }
+      }
+      if (name === 'insCompany') {
+        const selectedCompanyObj = insCompanyData.find((c) => c._id === value);
+        if (selectedCompanyObj) {
+          nextForm.insurerName = selectedCompanyObj.insCompany;
+        }
+      }
+
+      return nextForm;
+    });
+
+    if (name === 'insDepartment') {
+      setDepartmentValue(value);
     }
-    if (name === 'insDepartment') setDepartmentValue(e.target.value);
-    if (name === 'clientType') setClientTypeValue(e.target.value);
-    setForm((prev) => ({
-      ...prev,
-      [name]: value
-    }));
+    if (name === 'clientType') {
+      setClientTypeValue(value);
+    }
+
     setTaxes({
       ...taxes,
       [e.target.name]: e.target.checked
@@ -646,8 +738,6 @@ const EditPolicy = () => {
       ...prev,
       [name]: error
     }));
-
-    // console.log('Tax value ', taxes);
   };
 
   const handleBrokerage = (e) => setBrokerageValue(e.target.value);
@@ -663,7 +753,7 @@ const EditPolicy = () => {
     if (!form.policyNumber) newErrors.policyNumber = 'Policy Number is required';
     if (!form.paymentMode) newErrors.paymentMode = 'Payment Mode is required';
 
-    if (departmentValue === '69539cdef88ccbb626abc903') {
+    if (selectedDeptName === 'motor') {
       if (!form.tpPolicyDuration && !form.odPolicyDuration) {
         newErrors.tpPolicyDuration = 'TP/OD Policy Duration is required';
         newErrors.odPolicyDuration = 'TP/OD Policy Duration is required';
@@ -714,7 +804,7 @@ const EditPolicy = () => {
             autoClose: 3000,
             theme: 'colored'
           });
-          // navigate('/policy');
+          navigate('/policy');
         }
       } catch (error) {
         console.error('Error updating lead:', error);
@@ -723,7 +813,6 @@ const EditPolicy = () => {
     } else {
       toast.error('Please fill the required Fields');
     }
-    // navigate('/policy');
   };
 
   useEffect(() => {
@@ -743,6 +832,10 @@ const EditPolicy = () => {
     const fetchSubProductsByProduct = async () => {
       const selectedId = form.product;
       const selectedName = productData.find((branch) => branch._id === selectedId);
+      if (!selectedName || !selectedName.productName) {
+        setSubProductData([]);
+        return;
+      }
       const productName = selectedName.productName;
       const res = await get(`subproductCategory/${productName}`);
       // console.log('Sub Products', res.data);
@@ -751,7 +844,39 @@ const EditPolicy = () => {
     };
 
     fetchSubProductsByProduct();
-  }, [form.product]);
+  }, [form.product, productData]);
+
+  useEffect(() => {
+    if (brokerNameData.length > 0) {
+      const exists = brokerNameData.some((b) => b._id === form.brokerName);
+      if (!exists || !form.brokerName) {
+        setForm((prev) => ({
+          ...prev,
+          brokerName: brokerNameData[0]._id
+        }));
+      }
+    }
+  }, [brokerNameData, form.brokerName]);
+
+  useEffect(() => {
+    if (branchBrokerData.length > 0) {
+      const exists = branchBrokerData.some((b) => b._id === form.branchBroker);
+      if (!exists || !form.branchBroker) {
+        setForm((prev) => ({
+          ...prev,
+          branchBroker: branchBrokerData[0]._id
+        }));
+      }
+    } else if (branchCodeData.length > 0) {
+      const exists = branchCodeData.some((b) => b._id === form.branchBroker);
+      if (!exists || !form.branchBroker) {
+        setForm((prev) => ({
+          ...prev,
+          branchBroker: branchCodeData[0]._id
+        }));
+      }
+    }
+  }, [branchBrokerData, branchCodeData, form.branchBroker]);
 
   const isEditMode = Boolean(policyData?._id);
 
@@ -846,6 +971,50 @@ const EditPolicy = () => {
       totalBrokerageAmountincGst: totalBrokerageAmount
     }));
   }, [form.tpPremium, form.odPremium, form.tpBrokerageRate, form.odBrokerageRate, brokerageRateData]);
+
+  useEffect(() => {
+    const total = Number(form.totalBrokerageAmount) || 0;
+    const pct = Number(form.sharePercentage) || 0;
+    setForm((prev) => ({
+      ...prev,
+      coBrokerageAmount: pct ? round2((total * pct) / 100) : ''
+    }));
+  }, [form.totalBrokerageAmount, form.sharePercentage]);
+
+  useEffect(() => {
+    if (selectedDeptName !== 'motor') {
+      const otherPrem = Number(form.permiumOtherThanTerrorism) || 0;
+      const terrPrem = Number(form.terrorism) || 0;
+      const computedNet = round2(otherPrem + terrPrem);
+      setForm((prev) => ({
+        ...prev,
+        netPremium: computedNet
+      }));
+    }
+  }, [form.permiumOtherThanTerrorism, form.terrorism, selectedDeptName]);
+
+  useEffect(() => {
+    const amount = Number(form.totalBrokerageAmount) || 0;
+    const gstPct = Number(form.totalBrokerageGst) || 0;
+    const incGst = round2(amount + (amount * gstPct) / 100);
+    setForm((prev) => ({
+      ...prev,
+      totalBrokerageAmountincGst: incGst
+    }));
+  }, [form.totalBrokerageAmount, form.totalBrokerageGst]);
+
+  useEffect(() => {
+    const net = Number(form.endorsementNetPremium) || 0;
+    const gstId = form.endorsementGst;
+    const gstValue = Number(gstData?.find((g) => g._id === gstId)?.value || 0);
+    const gstAmount = round2(net * (gstValue / 100));
+    const total = round2(net + gstAmount);
+    setForm((prev) => ({
+      ...prev,
+      endorsementGstAmount: gstAmount || '',
+      etotalAmount: total || ''
+    }));
+  }, [form.endorsementNetPremium, form.endorsementGst, gstData]);
 
   // useEffect(() => {
   //   setForm((prev) => ({
@@ -1072,7 +1241,6 @@ const EditPolicy = () => {
               { label: 'Customer Name', name: 'cutomerName', required: true },
               { label: 'Customer Mobile', name: 'mobile' },
               { label: 'Customer Email', name: 'email' },
-              { label: 'Insurer Company', name: 'insurerName', required: true },
               { label: 'GST Number', name: 'gstNo' }
             ].map((field) => (
               <Grid item xs={12} sm={3} key={field.name}>
@@ -1088,6 +1256,26 @@ const EditPolicy = () => {
               </Grid>
             ))}
             <Grid item xs={12} sm={3}>
+              <FormControl fullWidth error={!!errors.insurerName}>
+                <InputLabel id="insurerName-label" required>Insurer Company</InputLabel>
+                <Select
+                  labelId="insurerName-label"
+                  name="insurerName"
+                  value={form.insurerName}
+                  onChange={handleChange}
+                  label="Insurer Company"
+                >
+                  {insCompanyData.length > 0 &&
+                    insCompanyData.map((type) => (
+                      <MenuItem key={type._id} value={type.insCompany}>
+                        {type.insCompany}
+                      </MenuItem>
+                    ))}
+                </Select>
+                {errors.insurerName && <FormHelperText>{errors.insurerName}</FormHelperText>}
+              </FormControl>
+            </Grid>
+            <Grid item xs={12} sm={3}>
               <FormControlLabel
                 control={<Checkbox name="nomineeDetailsCheckbox" checked={showNominee} onChange={handleCheckboxChange} />}
                 label="Fill Nominee Details"
@@ -1101,6 +1289,16 @@ const EditPolicy = () => {
                     label="Nominee Name"
                     name="nomineeName"
                     value={form.nomineeName}
+                    onChange={handleChange}
+                    fullWidth
+                    InputLabelProps={{ shrink: true }}
+                  />
+                </Grid>
+                <Grid item xs={12} sm={3}>
+                  <TextField
+                    label="Nominee Contact Number"
+                    name="nomineeContact"
+                    value={form.nomineeContact}
                     onChange={handleChange}
                     fullWidth
                     InputLabelProps={{ shrink: true }}
@@ -1223,17 +1421,25 @@ const EditPolicy = () => {
               <FormControl fullWidth>
                 <InputLabel id="branchBroker">Broker Branch</InputLabel>
                 <Select labelId="branchBroker" label="branchBroker" name="branchBroker" value={form.branchBroker} onChange={handleChange}>
-                  {branchBrokerData.length > 0 &&
+                  {branchBrokerData?.length > 0 ? (
                     branchBrokerData.map((type) => (
                       <MenuItem key={type._id} value={type._id}>
                         {type.branchBroker}
                       </MenuItem>
-                    ))}
+                    ))
+                  ) : (
+                    branchCodeData?.length > 0 &&
+                    branchCodeData.map((type) => (
+                      <MenuItem key={type._id} value={type._id}>
+                        {type.address ? `${type.address} (${type.branchName || type.branchCode})` : (type.branchName || type.branchCode)}
+                      </MenuItem>
+                    ))
+                  )}
                 </Select>
               </FormControl>
             </Grid>
             {/* MOTOR */}
-            {departmentValue === '69539cdef88ccbb626abc903' ? (
+            {selectedDeptName === 'motor' ? (
               <>
                 <Typography variant="h5" sx={{ my: 2 }}>
                   TP Details
@@ -1402,7 +1608,7 @@ const EditPolicy = () => {
                   </Grid>
                   <Grid item xs={12} sm={1}>
                     <TextField
-                      label="TP GST"
+                      label="OD GST"
                       onChange={handleChange}
                       value={Number(form.odGstAmount).toFixed(2)}
                       name="odGstAmount"
@@ -1417,6 +1623,38 @@ const EditPolicy = () => {
                       onChange={handleChange}
                       value={form.odAmount}
                       name="odAmount"
+                      disabled
+                      fullWidth
+                      InputLabelProps={{ shrink: true }}
+                    />
+                  </Grid>
+                </Grid>
+                <Typography variant="h5" sx={{ my: 2, color: 'primary.main' }}>
+                  TP + OD Summary
+                </Typography>
+                <Grid container spacing={2} sx={{ mb: 2 }}>
+                  <Grid item xs={12} sm={4}>
+                    <TextField
+                      label="TP + OD Net Premium"
+                      value={form.netPremium}
+                      disabled
+                      fullWidth
+                      InputLabelProps={{ shrink: true }}
+                    />
+                  </Grid>
+                  <Grid item xs={12} sm={4}>
+                    <TextField
+                      label="TP + OD GST Amount"
+                      value={Number(form?.gstAmount).toFixed(2) || 0}
+                      disabled
+                      fullWidth
+                      InputLabelProps={{ shrink: true }}
+                    />
+                  </Grid>
+                  <Grid item xs={12} sm={4}>
+                    <TextField
+                      label="TP + OD Total Amount"
+                      value={Number(form.totalAmount).toFixed(2)}
                       disabled
                       fullWidth
                       InputLabelProps={{ shrink: true }}
@@ -1485,7 +1723,7 @@ const EditPolicy = () => {
               />
             </Grid>
             {/* MOTOR */}
-            {departmentValue === '69539cdef88ccbb626abc903' && (
+            {selectedDeptName === 'motor' && (
               <>
                 <Grid item xs={12} sm={9}></Grid>
               </>
@@ -1545,11 +1783,11 @@ const EditPolicy = () => {
             misc = 69539cd6f88ccbb626abc900
             finance = 69522c7b583c668bdda53af5
                             */}
-            {(departmentValue === '695374b412bb6dd679ffa0f6' ||
-              departmentValue === '69539cbff88ccbb626abc8fa' ||
-              departmentValue === '694b9c19d0c701ae30685141') && (
+            {(selectedDeptName === 'engineering' ||
+              selectedDeptName === 'fire' ||
+              selectedDeptName === 'health') && (
               <>
-                {departmentValue !== '694b9c19d0c701ae30685141' && (
+                {selectedDeptName !== 'health' && (
                   <Grid item xs={12} sm={4}>
                     <TextField
                       label={siteLocation}
@@ -1561,7 +1799,7 @@ const EditPolicy = () => {
                     />
                   </Grid>
                 )}
-                <Grid item xs={12} sm={departmentValue === '694b9c19d0c701ae30685141' ? 3 : 4}>
+                <Grid item xs={12} sm={selectedDeptName === 'health' ? 3 : 4}>
                   <TextField
                     label="Number of Premium Installments"
                     name="numberOfInstallments"
@@ -1571,7 +1809,7 @@ const EditPolicy = () => {
                     InputLabelProps={{ shrink: true }}
                   />
                 </Grid>
-                <Grid item xs={12} sm={departmentValue === '694b9c19d0c701ae30685141' ? 3 : 4}>
+                <Grid item xs={12} sm={selectedDeptName === 'health' ? 3 : 4}>
                   <TextField
                     type="date"
                     label="Next Installment Due Date"
@@ -1582,7 +1820,7 @@ const EditPolicy = () => {
                     InputLabelProps={{ shrink: true }}
                   />
                 </Grid>
-                {departmentValue === '694b9c19d0c701ae30685141' && (
+                {selectedDeptName === 'health' && (
                   <Grid item xs={12} sm={3}>
                     <TextField
                       label="Number of Lives Cover"
@@ -1596,7 +1834,7 @@ const EditPolicy = () => {
                 )}
               </>
             )}
-            {departmentValue === '69539cccf88ccbb626abc8fd' && (
+            {selectedDeptName === 'liability' && (
               <>
                 <Grid item xs={12} sm={3}>
                   <TextField
@@ -1621,7 +1859,7 @@ const EditPolicy = () => {
                 </Grid>
               </>
             )}
-            {(departmentValue === 'marine' || departmentValue === '69539cd6f88ccbb626abc900') && (
+            {(selectedDeptName === 'marine' || selectedDeptName === 'misc') && (
               <Grid item xs={12} sm={3}>
                 <FormControl fullWidth>
                   <InputLabel id="incoterms">Incoterms</InputLabel>
@@ -1636,7 +1874,7 @@ const EditPolicy = () => {
                 </FormControl>
               </Grid>
             )}
-            {departmentValue === 'marine' && (
+            {selectedDeptName === 'marine' && (
               <Grid item xs={12} sm={3}>
                 <FormControl fullWidth>
                   <InputLabel id="marineClause">Marine Cargo Clause</InputLabel>
@@ -1681,81 +1919,11 @@ const EditPolicy = () => {
                 </Select>
               </FormControl>
             </Grid>
-            <Grid item xs={12} sm={2}>
-              <TextField
-                label="Net Premium"
-                name="netPremium"
-                onChange={(e) => setForm({ ...form, netPremium: e.target.value })}
-                value={form.netPremium}
-                fullWidth
-                error={!!errors.netPremium}
-                helperText={errors.netPremium}
-                InputLabelProps={{ shrink: true }}
-              />
-            </Grid>
-            <Grid item xs={12} sm={1}>
-              <FormControl fullWidth>
-                <InputLabel id="gst">GST</InputLabel>
-                <Select labelId="gst" label="gst" name="gst" value={form.gst} onChange={handleChange}>
-                  {gstData.length > 0 &&
-                    gstData.map((type) => (
-                      <MenuItem key={type._id} value={type._id}>
-                        {type.value}
-                      </MenuItem>
-                    ))}
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid item xs={12} sm={3}>
-              <TextField
-                label="GST Amt"
-                onChange={handleChange}
-                value={Number(form?.gstAmount).toFixed(2) || 0}
-                name="gstAmount"
-                disabled
-                fullWidth
-                InputLabelProps={{ shrink: true }}
-              />
-            </Grid>
-            <Grid item xs={12} sm={9}>
-              <FormControlLabel
-                control={<Switch checked={taxes.CGST} value={form.CGST} onChange={handleChange} name="CGST" color="primary" />}
-                label="CGST"
-              />
-              <FormControlLabel
-                control={<Switch checked={taxes.SGST} value={form.SGST} onChange={handleChange} name="SGST" color="primary" />}
-                label="SGST"
-              />
-              <FormControlLabel
-                control={<Switch checked={taxes.IGST} value={form.IGST} onChange={handleChange} name="IGST" color="primary" />}
-                label="IGST"
-              />
-              <FormControlLabel
-                control={<Switch checked={taxes.UGST} value={form.UGST} onChange={handleChange} name="UGST" color="primary" />}
-                label="UGST"
-              />
-            </Grid>
-            <Grid item xs={12} sm={3}>
-              <TextField
-                label="Total Amount"
-                name="totalAmount"
-                value={Number(form.totalAmount).toFixed(2)}
-                disabled
-                onChange={handleChange}
-                fullWidth
-                InputLabelProps={{ shrink: true }}
-              />
-            </Grid>
-          </Grid>
-          <Grid item xs={12} sm={5}>
-            <Button variant="contained" onClick={handleSubmit}>
-              Save
-            </Button>
           </Grid>
         </CardContent>
       </Card>
       {/* MOTOR */}
-      {departmentValue === '69539cdef88ccbb626abc903' ? (
+      {selectedDeptName === 'motor' ? (
         <>
           <Divider sx={{ my: 2 }} />
           <Typography variant="h5" gutterBottom>
@@ -1929,6 +2097,7 @@ const EditPolicy = () => {
                 name="endorsementPolicyNumber"
                 value={form.endorsementPolicyNumber}
                 onChange={handleChange}
+                onBlur={(e) => handleFetchEndorsementPolicy(e.target.value)}
                 fullWidth
                 InputLabelProps={{ shrink: true }}
               />
@@ -1975,7 +2144,7 @@ const EditPolicy = () => {
                 InputLabelProps={{ shrink: true }}
               />
             </Grid>
-            <Grid item xs={12} sm={4}>
+            <Grid item xs={12} sm={3}>
               <TextField
                 label="Endorsement Net Premium"
                 value={form.endorsementNetPremium}
@@ -1985,18 +2154,41 @@ const EditPolicy = () => {
                 InputLabelProps={{ shrink: true }}
               />
             </Grid>
-            <Grid item xs={12} sm={9}>
-              <FormControlLabel control={<Checkbox name="ECGST" />} label="Endorsement CGST" />
-              <FormControlLabel control={<Checkbox name="ESGST" />} label="Endorsement SGST" />
-              <FormControlLabel control={<Checkbox name="EIGST" />} label="Endorsement IGST" />
-              <FormControlLabel control={<Checkbox name="EUGST" />} label="Endorsement UGST" />
+            <Grid item xs={12} sm={3}>
+              <FormControl fullWidth>
+                <InputLabel id="endorsementGst">Endorsement GST</InputLabel>
+                <Select
+                  labelId="endorsementGst"
+                  label="Endorsement GST"
+                  name="endorsementGst"
+                  value={form.endorsementGst}
+                  onChange={handleChange}
+                >
+                  {gstData.length > 0 &&
+                    gstData.map((type) => (
+                      <MenuItem key={type._id} value={type._id}>
+                        {type.value}
+                      </MenuItem>
+                    ))}
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid item xs={12} sm={3}>
+              <TextField
+                label="Endorsement GST Amt"
+                value={form.endorsementGstAmount}
+                name="endorsementGstAmount"
+                disabled
+                fullWidth
+                InputLabelProps={{ shrink: true }}
+              />
             </Grid>
             <Grid item xs={12} sm={3}>
               <TextField
                 label="Endorsement Total Amount"
                 name="etotalAmount"
                 value={form.etotalAmount}
-                onChange={handleChange}
+                disabled
                 fullWidth
                 InputLabelProps={{ shrink: true }}
               />
@@ -2015,12 +2207,19 @@ const EditPolicy = () => {
               <FormControl fullWidth error={!!errors.paymentMode}>
                 <InputLabel id="paymentMode">Payment Mode</InputLabel>
                 <Select labelId="paymentMode" label="paymentMode" name="paymentMode" value={form.paymentMode} onChange={handleChange}>
-                  <MenuItem value="ONLINE">ONLINE</MenuItem>
-                  <MenuItem value="CASH">CASH</MenuItem>
-                  <MenuItem value="CHEQUE">CHEQUE</MenuItem>
-                  <MenuItem value="NEFT">NEFT</MenuItem>
-                  <MenuItem value="RTGS">RTGS</MenuItem>
-                  <MenuItem value="UPI">UPI</MenuItem>
+                  {paymentModeData.length > 0 ? (
+                    paymentModeData.map((type) => (
+                      <MenuItem key={type._id} value={type.paymentMode}>
+                        {type.paymentMode}
+                      </MenuItem>
+                    ))
+                  ) : (
+                    ['ONLINE', 'CASH', 'CHEQUE', 'NEFT', 'RTGS', 'UPI'].map((mode) => (
+                      <MenuItem key={mode} value={mode}>
+                        {mode}
+                      </MenuItem>
+                    ))
+                  )}
                 </Select>
                 {errors.paymentMode && <FormHelperText>{errors.paymentMode}</FormHelperText>}
               </FormControl>
@@ -2120,7 +2319,7 @@ const EditPolicy = () => {
                         </RadioGroup>
                       </Grid> */}
 
-            {departmentValue === '69539cdef88ccbb626abc903' ? (
+            {selectedDeptName === 'motor' ? (
               <>
                 <Grid item xs={12} sm={3}>
                   <FormControl fullWidth error={!!errors.tpBrokerageRate}>
@@ -2257,14 +2456,25 @@ const EditPolicy = () => {
             </Grid>
 
             <Grid item xs={12} sm={3}>
-              <TextField
-                label={brokerageValue === 'brokerage' ? 'Total Brokerage GST%' : 'Endorsement Total Brokerage GST%'}
-                name="totalBrokerageGst"
-                value={form.totalBrokerageGst}
-                onChange={handleChange}
-                fullWidth
-                InputLabelProps={{ shrink: true }}
-              />
+              <FormControl fullWidth>
+                <InputLabel id="totalBrokerageGst">
+                  {brokerageValue === 'brokerage' ? 'Total Brokerage GST%' : 'Endorsement Total Brokerage GST%'}
+                </InputLabel>
+                <Select
+                  labelId="totalBrokerageGst"
+                  label={brokerageValue === 'brokerage' ? 'Total Brokerage GST%' : 'Endorsement Total Brokerage GST%'}
+                  name="totalBrokerageGst"
+                  value={form.totalBrokerageGst || ''}
+                  onChange={handleChange}
+                >
+                  {gstData.length > 0 &&
+                    gstData.map((type) => (
+                      <MenuItem key={type._id} value={type.value}>
+                        {type.value}
+                      </MenuItem>
+                    ))}
+                </Select>
+              </FormControl>
             </Grid>
             <Grid item xs={12} sm={3}>
               <TextField
@@ -2276,8 +2486,107 @@ const EditPolicy = () => {
                 InputLabelProps={{ shrink: true }}
               />
             </Grid>
-            <Grid item xs={12} sm={9}>
-              <FormControlLabel control={<Checkbox name="coBrockerageDetails" />} label="Co-Brokerage Details" />
+            <Grid item xs={12} sm={12}>
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    checked={showCoBrokerage}
+                    onChange={(e) => setShowCoBrokerage(e.target.checked)}
+                    name="coBrockerageDetails"
+                  />
+                }
+                label="Co-Brokerage Details"
+              />
+            </Grid>
+            {showCoBrokerage && (
+              <>
+                <Grid item xs={12} sm={3}>
+                  <TextField
+                    label="Share Percentage"
+                    name="sharePercentage"
+                    type="number"
+                    value={form.sharePercentage}
+                    onChange={handleChange}
+                    fullWidth
+                    InputLabelProps={{ shrink: true }}
+                  />
+                </Grid>
+                <Grid item xs={12} sm={3}>
+                  <TextField
+                    label="Co-Brokerage Amount"
+                    name="coBrokerageAmount"
+                    type="number"
+                    value={form.coBrokerageAmount}
+                    onChange={handleChange}
+                    fullWidth
+                    InputProps={{
+                      readOnly: true
+                    }}
+                    InputLabelProps={{ shrink: true }}
+                  />
+                </Grid>
+              </>
+            )}
+          </Grid>
+        </CardContent>
+      </Card>
+
+      <Divider sx={{ my: 2 }} />
+      <Typography variant="h5" gutterBottom>
+        GST & Premium Summary
+      </Typography>
+      <Card>
+        <CardContent>
+          <Grid container spacing={2}>
+            <Grid item xs={12} sm={3}>
+              <TextField
+                label={selectedDeptName === 'motor' ? "TP + OD Net Premium" : "Net Premium"}
+                name="netPremium"
+                onChange={handleChange}
+                value={form.netPremium}
+                disabled
+                fullWidth
+                error={!!errors.netPremium}
+                helperText={errors.netPremium}
+                InputLabelProps={{ shrink: true }}
+              />
+            </Grid>
+            {selectedDeptName !== 'motor' && (
+              <Grid item xs={12} sm={3}>
+                <FormControl fullWidth>
+                  <InputLabel id="gst">GST</InputLabel>
+                  <Select labelId="gst" label="gst" name="gst" value={form.gst} onChange={handleChange}>
+                    {gstData.length > 0 &&
+                      gstData.map((type) => (
+                        <MenuItem key={type._id} value={type._id}>
+                          {type.value}
+                        </MenuItem>
+                      ))}
+                  </Select>
+                </FormControl>
+              </Grid>
+            )}
+            <Grid item xs={12} sm={3}>
+              <TextField
+                label={selectedDeptName === 'motor' ? "TP + OD GST Amt" : "GST Amt"}
+                onChange={handleChange}
+                value={Number(form?.gstAmount).toFixed(2) || 0}
+                name="gstAmount"
+                disabled
+                fullWidth
+                InputLabelProps={{ shrink: true }}
+              />
+            </Grid>
+            <Grid item xs={12} sm={3}>
+              <TextField
+                label={selectedDeptName === 'motor' ? "TP + OD Total Amount" : "Total Amount"}
+                name="totalAmount"
+                value={Number(form.totalAmount).toFixed(2)}
+                disabled
+                onChange={handleChange}
+                fullWidth
+                InputLabelProps={{ shrink: true }}
+              />
             </Grid>
           </Grid>
         </CardContent>

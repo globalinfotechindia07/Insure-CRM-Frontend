@@ -21,12 +21,14 @@ import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { get, put } from 'api/api';
+import swal from 'sweetalert';
 
 const EditLead = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [wantContact, setWantContact] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const isInitialLoad = React.useRef(true); // prevent sync effect from overwriting on page load
 
   const [form, setForm] = useState({
     firstName: '',
@@ -70,6 +72,7 @@ const EditLead = () => {
   const [positions, setPositions] = useState([]);
 
   const [prospects, setProspects] = useState([]);
+  const [branchSettings, setBranchSettings] = useState([]);
 
   const dropdownOptions = {
     gender: ['Male', 'Female', 'Other'],
@@ -200,24 +203,24 @@ const EditLead = () => {
   // Handle prospect select
   const handleProspectChange = (e) => {
     const selectedProspectId = e.target.value;
-    const selectedProspect = prospects.find((p) => p._id === selectedProspectId);
-    if (selectedProspect) {
+    const selectedBranch = branchSettings.find((b) => b._id === selectedProspectId);
+    if (selectedBranch) {
       setForm((prev) => ({
         ...prev,
-        Prospect: selectedProspect._id,
+        Prospect: selectedBranch._id,
         Client: '',
         clientList: '',
-        companyName: selectedProspect.companyName,
-        phoneNo: selectedProspect.phoneNo,
-        altPhoneNo: selectedProspect.altPhoneNo,
-        email: selectedProspect.email,
-        altEmail: selectedProspect.altEmail,
-        address: selectedProspect.address,
-        pincode: selectedProspect.pincode,
-        city: selectedProspect.city,
-        state: selectedProspect.state,
-        country: selectedProspect.country,
-        notes: selectedProspect.notes,
+        companyName: selectedBranch.branchName || selectedBranch.companyName || '',
+        phoneNo: selectedBranch.mobileNumber || '',
+        altPhoneNo: selectedBranch.alternateMobileNumber || '',
+        email: selectedBranch.email || '',
+        altEmail: '',
+        address: selectedBranch.address || '',
+        pincode: selectedBranch.pincode || '',
+        city: selectedBranch.city || '',
+        state: selectedBranch.state || '',
+        country: selectedBranch.country || '',
+        notes: '',
         newCompanyName: ''
       }));
     }
@@ -230,40 +233,46 @@ const EditLead = () => {
       return;
     }
     if (validate()) {
-      // console.log('hello');
-      try {
-        let payload = { ...form, leadCategory };
-        if (leadCategory === 'prospect') {
-          payload.Client = '';
-          payload.clientList = '';
-          payload.newCompanyName = '';
-        } else if (leadCategory === 'client') {
-          payload.Prospect = '';
-          payload.newCompanyName = '';
-        } else if (leadCategory === 'newLead') {
-          payload.Prospect = '';
-          payload.Client = '';
-          payload.clientList = '';
-          // companyName is still required, but newCompanyName is the unique field for new leads
-        }
-        // console.log('payload', payload);
+      swal({
+        title: "Are you sure?",
+        text: "Do you want to update this lead?",
+        icon: "warning",
+        buttons: true,
+        dangerMode: true,
+      }).then(async (willUpdate) => {
+        if (willUpdate) {
+          try {
+            let payload = { ...form, leadCategory, status: 'Active' };
+            if (leadCategory === 'prospect') {
+              payload.Client = '';
+              payload.clientList = '';
+              payload.newCompanyName = '';
+            } else if (leadCategory === 'client') {
+              payload.Prospect = '';
+              payload.newCompanyName = '';
+            } else if (leadCategory === 'newLead') {
+              payload.Prospect = '';
+              payload.Client = '';
+              payload.clientList = '';
+            }
 
-        const response = await put(`lead/${id}`, payload);
-        // console.log(response);
-        if (response) {
-          toast.success(response.message || '✅ Lead updated successfully!', {
-            autoClose: 3000,
-            theme: 'colored'
-          });
+            const response = await put(`lead/${id}`, payload);
+            if (response && response.success) {
+              swal("Updated!", "Lead updated successfully.", "success").then(() => {
+                navigate('/lead-management/lead');
+              });
+            } else {
+              swal("Error!", response?.message || "Failed to update lead", "error");
+            }
+          } catch (error) {
+            console.error('Error updating lead:', error);
+            swal("Error!", "Failed to update lead", "error");
+          }
         }
-      } catch (error) {
-        console.error('Error updating lead:', error);
-        toast.error('Failed to update lead');
-      }
+      });
     } else {
       toast.error('Please fill all required fields correctly');
     }
-    navigate('/lead-management/lead');
   };
 
   const handleContactChange = (index, field, value) => {
@@ -282,13 +291,14 @@ const EditLead = () => {
   // Fetch dropdown and lead details
   const fetchDropdownData = async () => {
     try {
-      const [prospectData, leadRefData, productData, leadstatusData, leadTypeData, staffData] = await Promise.all([
+      const [prospectData, leadRefData, productData, leadstatusData, leadTypeData, staffData, branchSettingsData] = await Promise.all([
         get('prospect'),
         get('leadReference'),
         get('productOrServiceCategory'),
         get('leadstatus'),
         get('leadType'),
-        get('administrative')
+        get('administrative'),
+        get('branchSettings')
       ]);
       setProspects(prospectData.data || []);
       setLeadRefs(leadRefData.data || []);
@@ -296,6 +306,7 @@ const EditLead = () => {
       setStatuses(leadstatusData.data || []);
       setLeadTypes(leadTypeData.data || []);
       setStaffOptions(staffData.data || []);
+      setBranchSettings(branchSettingsData.data || []);
     } catch (err) {
       console.error('Dropdown load error:', err);
     }
@@ -307,7 +318,6 @@ const EditLead = () => {
       const response = await get(`lead/${employeeId}/${id}/`);
       if (response.success) {
         const leadData = response.data;
-        console.log(leadData);
         setLeadCategory(leadData.leadCategory || '');
 
         setForm((prev) => ({
@@ -328,8 +338,12 @@ const EditLead = () => {
           companyName: leadData.companyName || '',
           newCompanyName: leadData.newCompanyName || ''
         }));
+
+        // Allow user-driven dropdown changes to trigger sync after initial load
+        setTimeout(() => {
+          isInitialLoad.current = false;
+        }, 500);
       }
-      // console.log(form);
     } catch (err) {
       console.error('Failed to fetch lead details:', err);
     }
@@ -374,20 +388,24 @@ const EditLead = () => {
   }, []);
 
   // Sync prospect/client selection with company data
+  // Only runs when user MANUALLY changes the dropdown — not on initial page load
   useEffect(() => {
+    if (isInitialLoad.current) return; // skip on first render / data load
+
     if (leadCategory === 'prospect' && form.Prospect) {
-      const selectedProspect = prospects.find((p) => p._id === form.Prospect);
-      if (selectedProspect) {
+      const selectedBranch = branchSettings.find((b) => b._id === form.Prospect);
+      if (selectedBranch) {
         setForm((prev) => ({
           ...prev,
-          companyName: selectedProspect.companyName,
-          phoneNo: selectedProspect.phoneNo,
-          address: selectedProspect.address,
-          pincode: selectedProspect.pincode,
-          city: selectedProspect.city,
-          state: selectedProspect.state,
-          country: selectedProspect.country,
-          notes: selectedProspect.notes,
+          companyName: selectedBranch.branchName || selectedBranch.companyName || '',
+          phoneNo: selectedBranch.mobileNumber || '',
+          altPhoneNo: selectedBranch.alternateMobileNumber || '',
+          email: selectedBranch.email || '',
+          address: selectedBranch.address || '',
+          pincode: selectedBranch.pincode || '',
+          city: selectedBranch.city || '',
+          state: selectedBranch.state || '',
+          country: selectedBranch.country || '',
           newCompanyName: ''
         }));
       }
@@ -406,13 +424,13 @@ const EditLead = () => {
           city: selectedClient.city,
           state: selectedClient.state,
           country: selectedClient.country,
-          notes: '',
           newCompanyName: ''
         }));
       }
     }
     // eslint-disable-next-line
-  }, [leadCategory, form.Prospect, form.clientList, prospects, clientList]);
+  }, [form.Prospect, form.clientList]);
+
 
   useEffect(() => {
     fetchDropdownData();
@@ -457,9 +475,9 @@ const EditLead = () => {
                 error={leadCategory === 'prospect' && !!errors.Prospect}
                 helperText={leadCategory === 'prospect' ? errors.Prospect : ''}
               >
-                {prospects.map((p) => (
-                  <MenuItem key={p._id} value={p._id}>
-                    {p.companyName}
+                {branchSettings.map((b) => (
+                  <MenuItem key={b._id} value={b._id}>
+                    {b.branchName || b.companyName}
                   </MenuItem>
                 ))}
               </TextField>

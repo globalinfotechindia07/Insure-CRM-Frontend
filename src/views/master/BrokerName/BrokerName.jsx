@@ -51,17 +51,92 @@ const BrokerName = () => {
     try {
       const response = await get('brokerName');
       console.log('brokerName data:', response);
-      if (response.status) setData(response.data);
+      if (response && response.status !== "false" && Array.isArray(response.data)) setData(response.data);
       else setData([]);
-      console.log('Data  ', data);
     } catch (error) {
       console.error(error);
+      setData([]);
     }
   };
 
   useEffect(() => {
     fetchBrokerNames();
   }, []);
+
+  const exportCSV = () => {
+    if (!data || data.length === 0) return;
+    const headers = ["Broker Name"];
+    let csvContent = headers.join(",") + "\n";
+    data.forEach(item => {
+      csvContent += `"${(item.brokerName || "").replace(/"/g, '""')}"\n`;
+    });
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", "broker_names.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handleImportCSV = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (evt) => {
+      const text = evt.target.result;
+      const lines = text.split("\n").map(line => line.trim()).filter(line => line !== "");
+      if (lines.length <= 1) {
+        toast.error("CSV file is empty or invalid");
+        return;
+      }
+
+      const header = lines[0].toLowerCase();
+      if (!header.includes("broker name")) {
+        toast.error("Invalid CSV format. Header must contain 'Broker Name'");
+        return;
+      }
+
+      const importedNames = [];
+      for (let i = 1; i < lines.length; i++) {
+        let val = lines[i].trim().replace(/^"|"$/g, '').replace(/""/g, '"');
+        if (val) {
+          importedNames.push(val);
+        }
+      }
+
+      const existingSet = new Set(data.map(item => item.brokerName.toLowerCase().trim()));
+      const uniqueNewNames = [...new Set(importedNames)].filter(name => !existingSet.has(name.toLowerCase().trim()));
+
+      if (uniqueNewNames.length === 0) {
+        toast.info("No new unique broker names found to import.");
+        return;
+      }
+
+      let successCount = 0;
+      for (const name of uniqueNewNames) {
+        try {
+          const res = await post("brokerName", { brokerName: name });
+          if (res && (res.status === true || res.status === "true" || res.data)) {
+            successCount++;
+          }
+        } catch (err) {
+          console.error(`Failed to import broker name: ${name}`, err);
+        }
+      }
+
+      if (successCount === 0) {
+        toast.info("No new unique broker names found to import.");
+      } else {
+        toast.success(`Imported ${successCount} new unique broker names successfully!`);
+      }
+      fetchBrokerNames();
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+  };
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -187,14 +262,18 @@ const BrokerName = () => {
       </Breadcrumb>
       <Grid container justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
         <Typography variant="h5">Broker Name</Typography>
-        <Button variant="contained" startIcon={<Add />} onClick={handleOpen}>
-          Add Broker Name
-        </Button>
-        {/* {(positionPermission.Add === true || isAdmin) && (
-                    <Button variant="contained" startIcon={<Add />} onClick={handleOpen}>
-                      Add position
-                    </Button>
-                  )} */}
+        <div style={{ display: 'flex', gap: '10px' }}>
+          <Button variant="contained" startIcon={<Add />} onClick={handleOpen}>
+            Add Broker Name
+          </Button>
+          <Button variant="contained" color="secondary" onClick={exportCSV}>
+            Export
+          </Button>
+          <Button variant="contained" component="label" sx={{ backgroundColor: '#4caf50', color: 'white', '&:hover': { backgroundColor: '#388e3c' } }}>
+            Import
+            <input type="file" accept=".csv" hidden onChange={handleImportCSV} />
+          </Button>
+        </div>
       </Grid>
       {/* Modal Form */}
       <Dialog open={open} onClose={handleClose}>

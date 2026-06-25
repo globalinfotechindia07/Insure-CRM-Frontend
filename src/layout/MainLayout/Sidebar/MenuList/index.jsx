@@ -12,7 +12,9 @@ import NavItem from './NavItem';
 import { useNavigate } from 'react-router';
 import { fetchSystemRights } from 'reduxSlices/systemRightSlice.js';
 
-const STATIC_BASE_URL = "http://localhost:5050"; 
+const STATIC_BASE_URL = "http://localhost:5050";
+// const STATIC_BASE_URL = "https://grampanchayattigaon/api/"
+
 
 const MenuList = () => {
   const loginRole = localStorage.getItem('loginRole');
@@ -29,11 +31,11 @@ const MenuList = () => {
   useEffect(() => {
     const fetchLogo = async () => {
       try {
-        const res = await get('companySettings');
+        const res = await get('branchSettings');
         const data = res?.data?.[0];
 
-        if (data?.companyLogo) {
-          setLogo(`${STATIC_BASE_URL}${data.companyLogo}`);
+        if (data?.branchLogo || data?.companyLogo) {
+          setLogo(`${STATIC_BASE_URL}${data.branchLogo || data.companyLogo}`);
         }
       } catch (err) {
         console.error('Error fetching logo:', err);
@@ -239,7 +241,7 @@ const MenuList = () => {
         {logo && (
           <img
             src={logo}
-            alt="Company Logo"
+            alt="Branch Logo"
             style={{ maxWidth: '100%', maxHeight: '80px' }}
           />
         )}

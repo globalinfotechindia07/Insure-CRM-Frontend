@@ -30,10 +30,13 @@ import {
   Edit, 
   Delete, 
   Visibility,
-  PowerSettingsNew 
+  PowerSettingsNew,
+  Close
 } from "@mui/icons-material";
 
 import Swal from "sweetalert2";
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 import {
   createInvestigator,
@@ -73,9 +76,10 @@ const InvestigatorPage = () => {
     setLoading(true);
     try {
       const res = await getInvestigators();
-      setData(res.data.data || []);
+      setData(res.data?.data || res.data || []);
     } catch (error) {
       showSnackbar("Failed to fetch investigators", "error");
+      setData([]);
     } finally {
       setLoading(false);
     }
@@ -289,7 +293,7 @@ const InvestigatorPage = () => {
       const res = await getSingleInvestigator(id);
       setViewDialog({
         open: true,
-        investigator: res.data.data,
+        investigator: res.data?.data || res.data,
       });
     } catch (error) {
       Swal.fire({
@@ -301,22 +305,130 @@ const InvestigatorPage = () => {
     }
   };
 
+  const exportCSV = () => {
+    if (!data || data.length === 0) return;
+    const headers = ["Investigator Name", "Email ID", "Contact No", "Address", "Status"];
+    let csvContent = headers.join(",") + "\n";
+    data.forEach(item => {
+      csvContent += `"${(item.investigatorName || '').replace(/"/g, '""')}","${(item.email || '').replace(/"/g, '""')}","${(item.contactNo || '').replace(/"/g, '""')}","${(item.address || '').replace(/"/g, '""')}","${item.status ? 'Active' : 'Inactive'}"\n`;
+    });
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", "investigators.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handleImportCSV = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (evt) => {
+      const text = evt.target.result;
+      const lines = text.split("\n").map(line => line.trim()).filter(line => line !== "");
+      if (lines.length <= 1) {
+        toast.error("CSV file is empty or invalid");
+        return;
+      }
+
+      const header = lines[0].toLowerCase();
+      if (!header.includes("investigator name")) {
+        toast.error("Invalid CSV format. Header must contain 'Investigator Name'");
+        return;
+      }
+
+      const importedInvestigators = [];
+      for (let i = 1; i < lines.length; i++) {
+        const row = lines[i].split(",").map(cell => cell.trim().replace(/^"|"$/g, '').replace(/""/g, '"'));
+        const investigatorName = row[0];
+        const email = row[1] || '';
+        const contactNo = row[2] || '';
+        const address = row[3] || '';
+        const status = row[4] ? row[4].toLowerCase() === 'active' : true;
+        if (investigatorName) {
+          importedInvestigators.push({
+            investigatorName,
+            email,
+            contactNo,
+            address,
+            status
+          });
+        }
+      }
+
+      const existingNames = new Set(data.map(item => (item.investigatorName || '').toLowerCase().trim()));
+      const uniqueNewInvestigators = importedInvestigators.filter(inv => !existingNames.has(inv.investigatorName.toLowerCase().trim()));
+
+      if (uniqueNewInvestigators.length === 0) {
+        toast.info("No new unique investigators found to import.");
+        return;
+      }
+
+      let successCount = 0;
+      for (const inv of uniqueNewInvestigators) {
+        try {
+          const res = await createInvestigator(inv);
+          if (res && (res.status === true || res.status === "true" || res.data)) {
+            successCount++;
+          }
+        } catch (err) {
+          console.error(`Failed to import investigator: ${inv.investigatorName}`, err);
+        }
+      }
+
+      if (successCount === 0) {
+        toast.info("No new unique investigators found to import.");
+      } else {
+        toast.success(`Imported ${successCount} new unique investigators successfully!`);
+      }
+      fetchData();
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+  };
+
   return (
     <div>
       <Grid container justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
         <Typography variant="h5">Investigator Master</Typography>
-        <Button
-          variant="contained"
-          startIcon={<Add />}
-          onClick={handleOpenDialog}
-        >
-          Add Investigator
-        </Button>
+        <div style={{ display: 'flex', gap: '10px' }}>
+          <Button
+            variant="contained"
+            className="global_btn"
+            startIcon={<Add />}
+            onClick={handleOpenDialog}
+          >
+            Add Investigator
+          </Button>
+          <Button variant="contained" color="secondary" onClick={exportCSV}>
+            Export
+          </Button>
+          <Button variant="contained" component="label" sx={{ backgroundColor: '#4caf50', color: 'white', '&:hover': { backgroundColor: '#388e3c' } }}>
+            Import
+            <input type="file" accept=".csv" hidden onChange={handleImportCSV} />
+          </Button>
+        </div>
       </Grid>
 
       {/* Add/Edit Dialog */}
       <Dialog open={open} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
-        <DialogTitle>{editMode ? "Edit Investigator" : "Add Investigator"}</DialogTitle>
+        <DialogTitle>
+          {editMode ? "Edit Investigator" : "Add Investigator"}
+          <IconButton
+            onClick={handleCloseDialog}
+            sx={{
+              position: "absolute",
+              right: 10,
+              top: 10,
+            }}
+          >
+            <Close />
+          </IconButton>
+        </DialogTitle>
         <DialogContent>
           <TextField
             fullWidth
@@ -424,7 +536,7 @@ const InvestigatorPage = () => {
               </Typography>
               <Typography variant="body1" sx={{ mt: 1 }}>
                 <strong>Created At:</strong>{" "}
-                {new Date(viewDialog.investigator.createdAt).toLocaleDateString()}
+                {viewDialog.investigator.createdAt ? new Date(viewDialog.investigator.createdAt).toLocaleDateString() : "N/A"}
               </Typography>
             </Box>
           )}
@@ -520,6 +632,7 @@ const InvestigatorPage = () => {
           {snackbar.message}
         </Alert>
       </Snackbar>
+      <ToastContainer />
     </div>
   );
 };

@@ -29,6 +29,8 @@ import theme from 'assets/scss/_themes-vars.module.scss';
 import value from 'assets/scss/_themes-vars.module.scss';
 import { get, post, put, remove } from '../../../api/api.js';
 import { useSelector } from 'react-redux';
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 const Holiday = () => {
   const [form, setForm] = useState({ holidayName: '', date: '', holidayTypeId: '' });
@@ -61,6 +63,7 @@ const Holiday = () => {
       setData(response?.data || []);
     } catch (error) {
       console.error(error);
+      setData([]);
     }
   };
 
@@ -70,6 +73,7 @@ const Holiday = () => {
       setHolidayTypes(response?.data || []);
     } catch (error) {
       console.error(error);
+      setHolidayTypes([]);
     }
   };
 
@@ -135,6 +139,105 @@ const Holiday = () => {
     } catch (error) {
       console.error(error);
     }
+  };
+
+  const exportCSV = () => {
+    if (!data || data.length === 0) return;
+    const headers = ["Holiday Name", "Date", "Holiday Type"];
+    let csvContent = headers.join(",") + "\n";
+    data.forEach(item => {
+      const hDate = item.date ? new Date(item.date).toISOString().split('T')[0] : '';
+      const hType = item.holidayTypeId?.holidayTypeName || '';
+      csvContent += `"${(item.holidayName || '').replace(/"/g, '""')}","${hDate}","${hType.replace(/"/g, '""')}"\n`;
+    });
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", "holidays.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handleImportCSV = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (evt) => {
+      const text = evt.target.result;
+      const lines = text.split("\n").map(line => line.trim()).filter(line => line !== "");
+      if (lines.length <= 1) {
+        toast.error("CSV file is empty or invalid");
+        return;
+      }
+
+      const header = lines[0].toLowerCase();
+      if (!header.includes("holiday name") || !header.includes("date") || !header.includes("holiday type")) {
+        toast.error("Invalid CSV format. Header must contain 'Holiday Name', 'Date', and 'Holiday Type'");
+        return;
+      }
+
+      const typeMap = {};
+      holidayTypes.forEach(t => {
+        typeMap[t.holidayTypeName.toLowerCase().trim()] = t._id;
+      });
+
+      const imported = [];
+      for (let i = 1; i < lines.length; i++) {
+        const row = lines[i].split(",").map(cell => cell.trim().replace(/^"|"$/g, '').replace(/""/g, '"'));
+        const hName = row[0] || '';
+        const hDate = row[1] || '';
+        const hType = row[2] || '';
+        if (hName && hDate && hType) {
+          imported.push({ hName, hDate, hType });
+        }
+      }
+
+      const existingSet = new Set(data.map(item => `${(item.holidayName || '').toLowerCase().trim()}_${item.date ? new Date(item.date).toISOString().split('T')[0] : ''}`));
+      const uniqueNew = imported.filter(item => !existingSet.has(`${item.hName.toLowerCase().trim()}_${item.hDate}`));
+
+      if (uniqueNew.length === 0) {
+        toast.info("No new unique holidays found to import.");
+        return;
+      }
+
+      let successCount = 0;
+      const missingTypes = new Set();
+      for (const item of uniqueNew) {
+        const typeId = typeMap[item.hType.toLowerCase().trim()];
+        if (!typeId) {
+          missingTypes.add(item.hType);
+          continue;
+        }
+        try {
+          const res = await post("holiday", {
+            holidayName: item.hName,
+            date: item.hDate,
+            holidayTypeId: typeId
+          });
+          if (res) {
+            successCount++;
+          }
+        } catch (err) {
+          console.error(`Failed to import holiday: ${item.hName}`, err);
+        }
+      }
+
+      if (missingTypes.size > 0) {
+        toast.error(`Skipped entries with missing holiday type: ${Array.from(missingTypes).join(", ")}`);
+      }
+
+      if (successCount === 0) {
+        toast.info("No new unique holidays found to import.");
+      } else {
+        toast.success(`Imported ${successCount} new unique holidays successfully!`);
+      }
+      fetchHolidays();
+    };
+    reader.readAsText(file);
+    e.target.value = '';
   };
 
   return (

@@ -24,12 +24,12 @@ import EmailIntegration from './EmailIntegration.jsx';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
-const CompanySettings = () => {
+const BranchSettings = () => {
   const navigate = useNavigate();
-  const [companyList, setCompanyList] = useState([]);
+  const [branchList, setBranchList] = useState([]);
   const [loading, setLoading] = useState(false);
   const [isAdmin, setAdmin] = useState(false);
-  const [companySettingPermission, setCompanySettingPermission] = useState({
+  const [branchSettingPermission, setBranchSettingPermission] = useState({
     View: false,
     Add: false,
     Edit: false,
@@ -40,21 +40,21 @@ const CompanySettings = () => {
   const { user } = useSelector((state) => state.auth || {});
 
   // Handle Edit
-  const handleEditClick = (companyId) => {
-    navigate(`/company-settings/${companyId}`);
+  const handleEditClick = (branchId) => {
+    navigate(`/branch-settings/${branchId}`);
   };
 
   // Handle Add New
   const handleAddClick = () => {
-    navigate('/company-settings/new');
+    navigate('/branch-settings/new');
   };
 
   // Handle Delete
-  const handleDeleteClick = async (companyId, companyName) => {
-    if (window.confirm(`Are you sure you want to delete "${companyName}"?`)) {
+  const handleDeleteClick = async (branchId, branchName) => {
+    if (window.confirm(`Are you sure you want to delete "${branchName}"?`)) {
       try {
         const token = localStorage.getItem('token');
-        const response = await fetch(`http://localhost:5050/api/companySettings/${companyId}`, {
+        const response = await fetch(`http://localhost:5050/api/branchSettings/${branchId}`, {
           method: 'DELETE',
           headers: {
             'Authorization': `Bearer ${token}`
@@ -64,14 +64,14 @@ const CompanySettings = () => {
         const data = await response.json();
 
         if (data.status === 'true') {
-          toast.success('Company deleted successfully!');
-          fetchCompanySettings();
+          toast.success('Branch deleted successfully!');
+          fetchBranchSettings();
         } else {
           toast.error(data.message || 'Delete failed');
         }
       } catch (error) {
         console.error('Delete error:', error);
-        toast.error('Error deleting company');
+        toast.error('Error deleting branch');
       }
     }
   };
@@ -87,14 +87,14 @@ const CompanySettings = () => {
     });
   };
 
-  // Fetch company settings
-  const fetchCompanySettings = async () => {
+  // Fetch branch settings
+  const fetchBranchSettings = async () => {
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
-      console.log('🔗 Fetching company settings...');
+      console.log('🔗 Fetching branch settings...');
 
-      const response = await fetch('http://localhost:5050/api/companySettings/', {
+      const response = await fetch('http://localhost:5050/api/branchSettings/', {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -104,15 +104,15 @@ const CompanySettings = () => {
       console.log('✅ API Response:', data);
 
       if (data.status === 'true' && data.data) {
-        setCompanyList(data.data);
-        console.log('✅ Company list set:', data.data);
+        setBranchList(data.data);
+        console.log('✅ Branch list set:', data.data);
       } else {
         console.error('❌ Unexpected response format:', data);
-        toast.error('Failed to fetch company data');
+        toast.error('Failed to fetch branch data');
       }
     } catch (error) {
-      console.error('❌ Error in fetchCompanySettings:', error);
-      toast.error('Error fetching company data');
+      console.error('❌ Error in fetchBranchSettings:', error);
+      toast.error('Error fetching branch data');
     } finally {
       setLoading(false);
     }
@@ -125,13 +125,14 @@ const CompanySettings = () => {
       setAdmin(true);
     }
 
-    // Set permissions
-    if (systemRights?.actionPermissions?.['company-settings']) {
-      setCompanySettingPermission(systemRights.actionPermissions['company-settings']);
+    // Set permissions (using 'branch-settings' permission key if exists, fallback to 'company-settings')
+    const permissions = systemRights?.actionPermissions?.['branch-settings'] || systemRights?.actionPermissions?.['company-settings'];
+    if (permissions) {
+      setBranchSettingPermission(permissions);
     }
 
-    // Fetch company settings
-    fetchCompanySettings();
+    // Fetch branch settings
+    fetchBranchSettings();
   }, []);
 
   // Show loading state
@@ -159,7 +160,7 @@ const CompanySettings = () => {
         <Grid item xs={12}>
           <Grid container justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
             <Typography variant="h5">Branch Details</Typography>
-            {(companySettingPermission.Add === true || isAdmin) && (
+            {(branchSettingPermission.Add === true || isAdmin) && (
               <Button
                 variant="contained"
                 color="primary"
@@ -177,7 +178,7 @@ const CompanySettings = () => {
                 <Table>
                   <TableHead>
                     <TableRow>
-                      <TableCell><strong>Company branch</strong></TableCell>
+                      <TableCell><strong>Branch Name</strong></TableCell>
                       <TableCell><strong>Contact Info</strong></TableCell>
                       <TableCell><strong>Location</strong></TableCell>
                       <TableCell><strong>Registration</strong></TableCell>
@@ -186,19 +187,19 @@ const CompanySettings = () => {
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {companyList.length === 0 ? (
+                    {branchList.length === 0 ? (
                       <TableRow>
                         <TableCell colSpan={6} align="center">
                           <Typography>No branch data found. Click "Add Branch" to create one.</Typography>
                         </TableCell>
                       </TableRow>
                     ) : (
-                      companyList.map((company) => (
-                        <TableRow key={company._id}>
-                          {/* Company Name */}
+                      branchList.map((branch) => (
+                        <TableRow key={branch._id}>
+                          {/* Branch Name */}
                           <TableCell>
                             <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
-                              {company.companyName || 'N/A'}
+                              {branch.branchName || branch.companyName || 'N/A'}
                             </Typography>
                           </TableCell>
 
@@ -206,21 +207,21 @@ const CompanySettings = () => {
                           <TableCell>
                             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
                               <Typography variant="body2">
-                                <strong>Email:</strong> {company.email || 'N/A'}
+                                <strong>Email:</strong> {branch.email || 'N/A'}
                               </Typography>
                               <Typography variant="body2">
-                                <strong>Mobile:</strong> {company.mobileNumber || 'N/A'}
+                                <strong>Mobile:</strong> {branch.mobileNumber || 'N/A'}
                               </Typography>
-                              {company.alternateMobileNumber && (
+                              {branch.alternateMobileNumber && (
                                 <Typography variant="caption" color="text.secondary">
-                                  Alt: {company.alternateMobileNumber}
+                                  Alt: {branch.alternateMobileNumber}
                                 </Typography>
                               )}
-                              {company.websiteLink && (
+                              {branch.websiteLink && (
                                 <Typography variant="caption">
                                   <Language fontSize="small" sx={{ mr: 0.5, verticalAlign: 'middle' }} />
                                   <a
-                                    href={company.websiteLink.startsWith('http') ? company.websiteLink : `https://${company.websiteLink}`}
+                                    href={branch.websiteLink.startsWith('http') ? branch.websiteLink : `https://${branch.websiteLink}`}
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     style={{ textDecoration: 'none', color: 'inherit' }}
@@ -236,15 +237,15 @@ const CompanySettings = () => {
                           <TableCell>
                             <Box sx={{ display: 'flex', flexDirection: 'column' }}>
                               <Typography variant="body2">
-                                {company.city || 'N/A'}, {company.state || 'N/A'}
+                                {branch.city || 'N/A'}, {branch.state || 'N/A'}
                               </Typography>
                               <Typography variant="caption" color="text.secondary">
                                 <LocationOn fontSize="small" sx={{ mr: 0.5, verticalAlign: 'middle' }} />
-                                {company.country || 'N/A'} {company.pincode ? `- ${company.pincode}` : ''}
+                                {branch.country || 'N/A'} {branch.pincode ? `- ${branch.pincode}` : ''}
                               </Typography>
-                              {company.address && (
+                              {branch.address && (
                                 <Typography variant="caption" color="text.secondary">
-                                  📍 {company.address}
+                                  📍 {branch.address}
                                 </Typography>
                               )}
                             </Box>
@@ -255,10 +256,10 @@ const CompanySettings = () => {
                             <Box sx={{ display: 'flex', flexDirection: 'column' }}>
                               <Typography variant="caption" color="text.secondary">
                                 <Business fontSize="small" sx={{ mr: 0.5, verticalAlign: 'middle' }} />
-                                Created: {formatDate(company.createdAt)}
+                                Created: {formatDate(branch.createdAt)}
                               </Typography>
                               <Typography variant="caption" color="text.secondary">
-                                Updated: {formatDate(company.updatedAt)}
+                                Updated: {formatDate(branch.updatedAt)}
                               </Typography>
                             </Box>
                           </TableCell>
@@ -266,14 +267,14 @@ const CompanySettings = () => {
                           {/* GST No */}
                           <TableCell>
                             <Typography variant="body2">
-                              {company.gstNo || 'N/A'}
+                              {branch.gstNo || 'N/A'}
                             </Typography>
                           </TableCell>
 
                           {/* Actions */}
                           <TableCell>
                             <Box sx={{ display: 'flex', gap: 1 }}>
-                              {(companySettingPermission.Edit === true || isAdmin) && (
+                              {(branchSettingPermission.Edit === true || isAdmin) && (
                                 <IconButton
                                   size="small"
                                   color="primary"
@@ -282,7 +283,7 @@ const CompanySettings = () => {
                                       toast.error('Subscription has ended. Please subscribe to continue working.');
                                       return;
                                     }
-                                    handleEditClick(company._id);
+                                    handleEditClick(branch._id);
                                   }}
                                   title="Edit Branch"
                                 >
@@ -290,7 +291,7 @@ const CompanySettings = () => {
                                 </IconButton>
                               )}
 
-                              {(companySettingPermission.Delete === true || isAdmin) && (
+                              {(branchSettingPermission.Delete === true || isAdmin) && (
                                 <IconButton
                                   size="small"
                                   color="error"
@@ -299,9 +300,9 @@ const CompanySettings = () => {
                                       toast.error('Subscription has ended. Please subscribe to continue working.');
                                       return;
                                     }
-                                    handleDeleteClick(company._id, company.companyName);
+                                    handleDeleteClick(branch._id, branch.branchName || branch.companyName);
                                   }}
-                                  title="Delete Company"
+                                  title="Delete Branch"
                                 >
                                   <Delete fontSize="small" />
                                 </IconButton>
@@ -333,4 +334,4 @@ const CompanySettings = () => {
   );
 };
 
-export default CompanySettings; 
+export default BranchSettings;

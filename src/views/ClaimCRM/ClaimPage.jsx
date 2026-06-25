@@ -28,9 +28,12 @@ import {
   Add,
   Delete,
   Edit,
+  ChangeCircle,
 } from "@mui/icons-material";
 
 import Swal from 'sweetalert2';
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 import {
   createClaim,
@@ -84,6 +87,17 @@ const ClaimPage = () => {
     email: "",
     contactPerson: "",
     vehicleNumber: "",
+    locationOfProperty: "",
+    renewalOrNewPolicy: "",
+    typeOfPolicy: "",
+    wording: "",
+    briefDescriptionOfProperty: "",
+    sumInsured: "",
+    periodOfInsurance: "",
+    insurerName: "",
+    netPremium: "",
+    totalAmount: "",
+    paymentMode: "",
     dateOfLossOrAdmission: "",
     dateOfDischarge: "",
     estimatedLossAmount: "",
@@ -124,7 +138,7 @@ const ClaimPage = () => {
   const fetchPolicies = async () => {
     try {
       const res = await getPolicies();
-      setPolicies(res.data.data || []);
+      setPolicies(res.data || []);
     } catch (error) {
       console.log(error);
     }
@@ -204,20 +218,44 @@ const ClaimPage = () => {
 
     if (!selectedPolicy) return;
 
+    let customerName = selectedPolicy.cutomerName || "";
+    if (!customerName && selectedPolicy.retailCustomer) {
+      customerName = selectedPolicy.retailCustomer.name;
+    }
+    if (!customerName && selectedPolicy.customerGroup) {
+      customerName = selectedPolicy.customerGroup.groupName || selectedPolicy.customerGroup.name;
+    }
+
     setFormData({
       ...formData,
       policyId: selectedPolicy._id,
-      policyNo: selectedPolicy.policyNo || "",
-      insuredName: selectedPolicy.insuredName || "",
-      contactNo: selectedPolicy.contactNo || "",
+      policyNo: selectedPolicy.policyNumber || "",
+      insuredName: customerName,
+      contactNo: selectedPolicy.mobile || "",
       email: selectedPolicy.email || "",
-      contactPerson: selectedPolicy.contactPerson || "",
+      contactPerson: selectedPolicy.cutomerName || customerName,
       vehicleNumber: selectedPolicy.vehicleNumber || "",
+      department: selectedPolicy.insDepartment ? (selectedPolicy.insDepartment.insDepartment || selectedPolicy.insDepartment) : "",
+      locationOfProperty: selectedPolicy.siteLocation || "",
+      renewalOrNewPolicy: selectedPolicy.renewable || "",
+      typeOfPolicy: selectedPolicy.policyType || "",
+      wording: selectedPolicy.marineClause || "",
+      briefDescriptionOfProperty: selectedPolicy.propertyDescription || "",
+      sumInsured: selectedPolicy.sumInsured || 0,
+      periodOfInsurance: selectedPolicy.policyDuration || "",
+      insurerName: selectedPolicy.insurerName || "",
+      netPremium: selectedPolicy.netPremium || 0,
+      totalAmount: selectedPolicy.totalAmount || 0,
+      paymentMode: selectedPolicy.paymentMode || "",
     });
   };
 
   // ================= HANDLE SUBMIT =================
   const handleSubmit = async () => {
+    if (activeTab < 6) {
+      setActiveTab((prev) => prev + 1);
+      return;
+    }
     try {
       const submitData = {
         claimNo: formData.claimNo,
@@ -231,6 +269,17 @@ const ClaimPage = () => {
         email: formData.email,
         contactPerson: formData.contactPerson,
         vehicleNumber: formData.vehicleNumber,
+        locationOfProperty: formData.locationOfProperty,
+        renewalOrNewPolicy: formData.renewalOrNewPolicy,
+        typeOfPolicy: formData.typeOfPolicy,
+        wording: formData.wording,
+        briefDescriptionOfProperty: formData.briefDescriptionOfProperty,
+        sumInsured: formData.sumInsured,
+        periodOfInsurance: formData.periodOfInsurance,
+        insurerName: formData.insurerName,
+        netPremium: formData.netPremium,
+        totalAmount: formData.totalAmount,
+        paymentMode: formData.paymentMode,
         dateOfLossOrAdmission: formData.dateOfLossOrAdmission,
         dateOfDischarge: formData.dateOfDischarge,
         estimatedLossAmount: formData.estimatedLossAmount,
@@ -307,18 +356,37 @@ const ClaimPage = () => {
       cancelButtonText: 'Cancel'
     }).then((result) => {
       if (result.isConfirmed) {
+        let customerName = item.policyId?.cutomerName || "";
+        if (!customerName && item.policyId?.retailCustomer) {
+          customerName = item.policyId.retailCustomer.name;
+        }
+        if (!customerName && item.policyId?.customerGroup) {
+          customerName = item.policyId.customerGroup.groupName || item.policyId.customerGroup.name;
+        }
+
         setFormData({
           claimNo: item.claimNo || "",
-          department: item.department || "",
+          department: item.department || item.policyId?.insDepartment?.name || item.policyId?.insDepartment || "",
           status: item.status || "Pending",
           remarks: item.remarks || "",
           policyId: item.policyId?._id || item.policyId || "",
-          policyNo: item.policyNo || "",
-          insuredName: item.insuredName || "",
-          contactNo: item.contactNo || "",
-          email: item.email || "",
-          contactPerson: item.contactPerson || "",
-          vehicleNumber: item.vehicleNumber || "",
+          policyNo: item.policyId?.policyNumber || item.policyNo || "",
+          insuredName: customerName || item.insuredName || "",
+          contactNo: item.policyId?.mobile || item.contactNo || "",
+          email: item.policyId?.email || item.email || "",
+          contactPerson: item.contactPerson || item.policyId?.cutomerName || customerName || "",
+          vehicleNumber: item.vehicleNumber || item.policyId?.vehicleNumber || "",
+          locationOfProperty: item.locationOfProperty || item.policyId?.siteLocation || "",
+          renewalOrNewPolicy: item.renewalOrNewPolicy || item.policyId?.renewable || "",
+          typeOfPolicy: item.typeOfPolicy || item.policyId?.policyType || "",
+          wording: item.wording || item.policyId?.marineClause || "",
+          briefDescriptionOfProperty: item.briefDescriptionOfProperty || item.policyId?.propertyDescription || "",
+          sumInsured: item.sumInsured || item.policyId?.sumInsured || 0,
+          periodOfInsurance: item.periodOfInsurance || item.policyId?.policyDuration || "",
+          insurerName: item.insurerName || item.policyId?.insurerName || "",
+          netPremium: item.netPremium || item.policyId?.netPremium || 0,
+          totalAmount: item.totalAmount || item.policyId?.totalAmount || 0,
+          paymentMode: item.paymentMode || item.policyId?.paymentMode || "",
           dateOfLossOrAdmission: item.dateOfLossOrAdmission?.split("T")[0] || "",
           dateOfDischarge: item.dateOfDischarge?.split("T")[0] || "",
           estimatedLossAmount: item.estimatedLossAmount || "",
@@ -384,6 +452,49 @@ const ClaimPage = () => {
     }
   };
 
+  // ================= HANDLE STATUS CHANGE =================
+  const handleStatusChange = (item) => {
+    Swal.fire({
+      title: 'Change Claim Status',
+      input: 'select',
+      inputOptions: {
+        'Pending': 'Pending',
+        'Approved': 'Approved',
+        'Rejected': 'Rejected',
+        'Under Process': 'Under Process'
+      },
+      inputValue: item.status || 'Pending',
+      inputPlaceholder: 'Select status',
+      showCancelButton: true,
+      confirmButtonColor: '#3085d6',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'Change',
+      cancelButtonText: 'Cancel'
+    }).then(async (result) => {
+      if (result.isConfirmed && result.value) {
+        try {
+          await updateClaim(item._id, { status: result.value });
+          Swal.fire({
+            icon: 'success',
+            title: 'Updated!',
+            text: `Claim status changed to ${result.value}.`,
+            timer: 2000,
+            showConfirmButton: false
+          });
+          fetchClaims();
+        } catch (error) {
+          console.log(error);
+          Swal.fire({
+            icon: 'error',
+            title: 'Error!',
+            text: 'Failed to update claim status.',
+            confirmButtonColor: '#d33'
+          });
+        }
+      }
+    });
+  };
+
   // ================= RESET FORM =================
   const resetForm = () => {
     setFormData({
@@ -398,6 +509,17 @@ const ClaimPage = () => {
       email: "",
       contactPerson: "",
       vehicleNumber: "",
+      locationOfProperty: "",
+      renewalOrNewPolicy: "",
+      typeOfPolicy: "",
+      wording: "",
+      briefDescriptionOfProperty: "",
+      sumInsured: "",
+      periodOfInsurance: "",
+      insurerName: "",
+      netPremium: "",
+      totalAmount: "",
+      paymentMode: "",
       dateOfLossOrAdmission: "",
       dateOfDischarge: "",
       estimatedLossAmount: "",
@@ -427,6 +549,122 @@ const ClaimPage = () => {
     setActiveTab(0);
   };
 
+  const exportCSV = () => {
+    if (!data || data.length === 0) return;
+    const headers = ["Claim No", "Policy No", "Insured Name", "Department", "Preliminary Surveyor", "Status"];
+    let csvContent = headers.join(",") + "\n";
+    data.forEach(item => {
+      const surveyor = item.preliminarySurveyorId?.surveyorName || '';
+      csvContent += `"${(item.claimNo || '').replace(/"/g, '""')}","${(item.policyNo || '').replace(/"/g, '""')}","${(item.insuredName || '').replace(/"/g, '""')}","${(item.department || '').replace(/"/g, '""')}","${surveyor.replace(/"/g, '""')}","${(item.status || '').replace(/"/g, '""')}"\n`;
+    });
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", "claims.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handleImportCSV = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (evt) => {
+      const text = evt.target.result;
+      const lines = text.split("\n").map(line => line.trim()).filter(line => line !== "");
+      if (lines.length <= 1) {
+        toast.error("CSV file is empty or invalid");
+        return;
+      }
+
+      const header = lines[0].toLowerCase();
+      if (!header.includes("claim no") || !header.includes("policy no")) {
+        toast.error("Invalid CSV format. Header must contain 'Claim No' and 'Policy No'");
+        return;
+      }
+
+      const policyMap = {};
+      policies.forEach(p => {
+        if (p.policyNumber) policyMap[p.policyNumber.toLowerCase().trim()] = p;
+      });
+      const surveyorMap = {};
+      surveyors.forEach(s => {
+        if (s.surveyorName) surveyorMap[s.surveyorName.toLowerCase().trim()] = s._id;
+      });
+
+      const importedClaims = [];
+      for (let i = 1; i < lines.length; i++) {
+        const row = lines[i].split(",").map(cell => cell.trim().replace(/^"|"$/g, '').replace(/""/g, '"'));
+        const claimNo = row[0];
+        const policyNo = row[1];
+        const insuredName = row[2] || '';
+        const department = row[3] || '';
+        const surveyorName = row[4] || '';
+        const status = row[5] || 'Pending';
+
+        if (claimNo && policyNo) {
+          importedClaims.push({
+            claimNo,
+            policyNo,
+            insuredName,
+            department,
+            surveyorName,
+            status
+          });
+        }
+      }
+
+      const existingClaims = new Set(data.map(item => (item.claimNo || '').toLowerCase().trim()));
+      const uniqueNewClaims = importedClaims.filter(c => !existingClaims.has(c.claimNo.toLowerCase().trim()));
+
+      if (uniqueNewClaims.length === 0) {
+        toast.info("No new unique claims found to import.");
+        return;
+      }
+
+      let successCount = 0;
+      for (const item of uniqueNewClaims) {
+        const matchedPolicy = policyMap[item.policyNo.toLowerCase().trim()];
+        const surveyorId = surveyorMap[item.surveyorName.toLowerCase().trim()] || "";
+
+        let payload = {
+          claimNo: item.claimNo,
+          status: item.status,
+          policyNo: item.policyNo,
+          insuredName: item.insuredName,
+          department: item.department,
+          preliminarySurveyorId: surveyorId,
+          policyId: matchedPolicy ? matchedPolicy._id : "",
+          contactNo: matchedPolicy ? matchedPolicy.mobile : "",
+          email: matchedPolicy ? matchedPolicy.email : "",
+          insurerName: matchedPolicy ? matchedPolicy.insurerName : "",
+          sumInsured: matchedPolicy ? matchedPolicy.sumInsured : 0,
+        };
+
+        try {
+          const res = await createClaim(payload);
+          if (res && (res.status === true || res.status === "true" || res.data)) {
+            successCount++;
+          }
+        } catch (err) {
+          console.error(`Failed to import claim: ${item.claimNo}`, err);
+        }
+      }
+
+      if (successCount === 0) {
+        toast.info("No new unique claims found to import.");
+      } else {
+        toast.success(`Imported ${successCount} new unique claims successfully!`);
+      }
+      fetchClaims();
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+  };
+
   const handleTabChange = (event, newValue) => {
     setActiveTab(newValue);
   };
@@ -436,9 +674,18 @@ const ClaimPage = () => {
       {/* HEADER */}
       <Grid container justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
         <Typography variant="h5">Claim Management</Typography>
-        <Button variant="contained" startIcon={<Add />} onClick={() => { resetForm(); setOpen(true); }}>
-          Add Claim
-        </Button>
+        <div style={{ display: 'flex', gap: '10px' }}>
+          <Button variant="contained" startIcon={<Add />} onClick={() => { resetForm(); setOpen(true); }}>
+            Add Claim
+          </Button>
+          <Button variant="contained" color="secondary" onClick={exportCSV}>
+            Export
+          </Button>
+          <Button variant="contained" component="label" sx={{ backgroundColor: '#4caf50', color: 'white', '&:hover': { backgroundColor: '#388e3c' } }}>
+            Import
+            <input type="file" accept=".csv" hidden onChange={handleImportCSV} />
+          </Button>
+        </div>
       </Grid>
 
       {/* ADD/EDIT DIALOG */}
@@ -500,27 +747,69 @@ const ClaimPage = () => {
           <Box hidden={activeTab !== 1}>
             <Grid container spacing={2} sx={{ mt: 1 }}>
               <Grid item xs={12}>
-                <TextField select fullWidth label="Select Policy" name="policyId" value={formData.policyId} onChange={handlePolicyChange}>
-                  <MenuItem value="">Select Policy</MenuItem>
-                  {policies.map((item) => (
-                    <MenuItem key={item._id} value={item._id}>{item.policyNo} - {item.insuredName}</MenuItem>
-                  ))}
+                <TextField select fullWidth label="Policy Management" name="policyId" value={formData.policyId} onChange={handlePolicyChange}>
+                  <MenuItem value="">Select Policy Management</MenuItem>
+                  {policies.map((item) => {
+                    let customerName = item.cutomerName || "";
+                    if (!customerName && item.retailCustomer) {
+                      customerName = item.retailCustomer.name;
+                    }
+                    if (!customerName && item.customerGroup) {
+                      customerName = item.customerGroup.groupName || item.customerGroup.name;
+                    }
+                    return (
+                      <MenuItem key={item._id} value={item._id}>{item.policyNumber} - {customerName}</MenuItem>
+                    );
+                  })}
                 </TextField>
               </Grid>
               <Grid item xs={12} md={6}>
-                <TextField fullWidth label="Policy No" name="policyNo" value={formData.policyNo} disabled />
+                <TextField fullWidth label="Policy No" name="policyNo" value={formData.policyNo} disabled={!!formData.policyNo} onChange={handleChange} />
               </Grid>
               <Grid item xs={12} md={6}>
-                <TextField fullWidth label="Insured Name" name="insuredName" value={formData.insuredName} disabled />
+                <TextField fullWidth label="Insured Name" name="insuredName" value={formData.insuredName} disabled={!!formData.insuredName} onChange={handleChange} />
               </Grid>
               <Grid item xs={12} md={6}>
-                <TextField fullWidth label="Contact No" name="contactNo" value={formData.contactNo} disabled />
+                <TextField fullWidth label="Contact No" name="contactNo" value={formData.contactNo} disabled={!!formData.contactNo} onChange={handleChange} />
               </Grid>
               <Grid item xs={12} md={6}>
-                <TextField fullWidth label="Email" name="email" value={formData.email} disabled />
+                <TextField fullWidth label="Email" name="email" value={formData.email} disabled={!!formData.email} onChange={handleChange} />
               </Grid>
               <Grid item xs={12} md={6}>
-                <TextField fullWidth label="Vehicle Number" name="vehicleNumber" value={formData.vehicleNumber} disabled />
+                <TextField fullWidth label="Vehicle Number" name="vehicleNumber" value={formData.vehicleNumber} disabled={!!formData.vehicleNumber} onChange={handleChange} />
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <TextField fullWidth label="Location of Property" name="locationOfProperty" value={formData.locationOfProperty} disabled={!!formData.locationOfProperty} onChange={handleChange} />
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <TextField fullWidth label="Renewal/New Policy" name="renewalOrNewPolicy" value={formData.renewalOrNewPolicy} disabled={!!formData.renewalOrNewPolicy} onChange={handleChange} />
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <TextField fullWidth label="Type of Policy" name="typeOfPolicy" value={formData.typeOfPolicy} disabled={!!formData.typeOfPolicy} onChange={handleChange} />
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <TextField fullWidth label="Wording" name="wording" value={formData.wording} disabled={!!formData.wording} onChange={handleChange} />
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <TextField fullWidth label="Sum Insured" name="sumInsured" value={formData.sumInsured} disabled={!!formData.sumInsured} onChange={handleChange} />
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <TextField fullWidth label="Period of Insurance" name="periodOfInsurance" value={formData.periodOfInsurance} disabled={!!formData.periodOfInsurance} onChange={handleChange} />
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <TextField fullWidth label="Insurer Name" name="insurerName" value={formData.insurerName} disabled={!!formData.insurerName} onChange={handleChange} />
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <TextField fullWidth label="Net Premium" name="netPremium" value={formData.netPremium} disabled={!!formData.netPremium} onChange={handleChange} />
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <TextField fullWidth label="Total Amount" name="totalAmount" value={formData.totalAmount} disabled={!!formData.totalAmount} onChange={handleChange} />
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <TextField fullWidth label="Payment Mode" name="paymentMode" value={formData.paymentMode} disabled={!!formData.paymentMode} onChange={handleChange} />
+              </Grid>
+              <Grid item xs={12}>
+                <TextField fullWidth multiline rows={2} label="Brief Description of Property" name="briefDescriptionOfProperty" value={formData.briefDescriptionOfProperty} disabled={!!formData.briefDescriptionOfProperty} onChange={handleChange} />
               </Grid>
             </Grid>
           </Box>
@@ -692,8 +981,9 @@ const ClaimPage = () => {
                       />
                     </TableCell>
                     <TableCell>
-                      <IconButton color="primary" onClick={() => handleEdit(item)}><Edit /></IconButton>
-                      <IconButton color="error" onClick={() => handleDelete(item._id)}><Delete /></IconButton>
+                      <IconButton color="primary" onClick={() => handleEdit(item)} title="Edit Claim"><Edit /></IconButton>
+                      <IconButton color="success" onClick={() => handleStatusChange(item)} title="Change Status"><ChangeCircle /></IconButton>
+                      <IconButton color="error" onClick={() => handleDelete(item._id)} title="Delete Claim"><Delete /></IconButton>
                     </TableCell>
                   </TableRow>
                 ))
@@ -706,6 +996,7 @@ const ClaimPage = () => {
           </Table>
         </CardContent>
       </Card>
+      <ToastContainer />
     </div>
   );
 };

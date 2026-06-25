@@ -28,8 +28,9 @@ import Breadcrumb from 'component/Breadcrumb';
 import { gridSpacing } from 'config.js';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import swal from 'sweetalert';
 
-import { Edit, Delete, Info as InfoIcon, PersonAdd } from '@mui/icons-material';
+import { Edit, Delete, Info as InfoIcon } from '@mui/icons-material';
 
 import { get, post, put, remove } from '../../../api/api.js';
 import { useSelector } from 'react-redux';
@@ -55,7 +56,6 @@ const Lead = () => {
   const [isEditMode, setIsEditMode] = useState(false);
   const [done, setDone] = useState(false);
   const [editFollowUpId, setEditFollowUpId] = useState(null);
-  const [isDisableConvertClient, setDisableConvertClient] = useState(null);
 
   const [isAdmin, setAdmin] = useState(false);
   const [leadPermission, setLeadPermission] = useState({
@@ -127,16 +127,24 @@ const Lead = () => {
       toast.error('Subscription has ended. Please subscribe to continue working.');
       return;
     }
-    if (!window.confirm('Are you sure you want to delete this lead?')) return;
-    try {
-      await remove(`lead/${id}`);
-
-      setData((prevData) => prevData.filter((item) => item._id !== id));
-      toast.success('Lead deleted successfully');
-    } catch (err) {
-      console.error(err);
-      toast.error('Failed to delete lead');
-    }
+    swal({
+      title: "Are you sure?",
+      text: "Once deleted, you will not be able to recover this lead!",
+      icon: "warning",
+      buttons: true,
+      dangerMode: true,
+    }).then(async (willDelete) => {
+      if (willDelete) {
+        try {
+          await remove(`lead/${id}`);
+          setData((prevData) => prevData.filter((item) => item._id !== id));
+          swal("Deleted!", "Lead deleted successfully.", "success");
+        } catch (err) {
+          console.error(err);
+          swal("Error!", "Failed to delete lead.", "error");
+        }
+      }
+    });
   };
 
   useEffect(() => {
@@ -232,66 +240,95 @@ const Lead = () => {
     }
   };
 
-  const handleCoverToClient = async (data, index) => {
-    if (localStorage.getItem('expired') === 'true') {
-      toast.error('Subscription has ended. Please subscribe to continue working.');
-      return;
-    }
-    try {
-      // Step 1: Generate current date and +6 months
-      const today = new Date();
-      const sixMonthsLater = new Date();
-      sixMonthsLater.setMonth(today.getMonth() + 6);
 
-      const formatCustomDate = (date) =>
-        date.toLocaleDateString('en-US', {
-          year: 'numeric',
-          month: 'short',
-          day: '2-digit'
-        });
+  const exportCSV = () => {
+    if (!data || data.length === 0) return;
+    const headers = ["Organization", "Number", "City", "Category", "Lead Status", "Product"];
+    let csvContent = headers.join(",") + "\n";
+    data.forEach(item => {
+      const org = item.Prospect?.companyName || item.Client?.clientName || item.newCompanyName || 'N/A';
+      const num = item.phoneNo || '';
+      const city = item.city || '';
+      const cat = item.Client ? 'Client' : item.Prospect ? 'Prospect' : 'New Lead';
+      const status = item.status === 'LS' ? 'Lead Lost' : item.status === 'LW' ? 'Lead Won' : (item.leadstatus?.LeadStatus || 'N/A');
+      const prod = item.productService?.subProductName || '';
+      csvContent += `"${org.replace(/"/g, '""')}","${num.replace(/"/g, '""')}","${city.replace(/"/g, '""')}","${cat.replace(/"/g, '""')}","${status.replace(/"/g, '""')}","${prod.replace(/"/g, '""')}"\n`;
+    });
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", "leads.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
-      // console.log('data', data);
+  const handleImportCSV = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
 
-      const formattedStartDate = formatCustomDate(today);
-      const formattedEndDate = formatCustomDate(sixMonthsLater);
-      const formData = {
-        clientName: data?.Prospect?.companyName || data.Client?.clientName || data.newCompanyName,
-        officialPhoneNo: data.phoneNo,
-        altPhoneNo: data.altPhoneNo,
-        officialMailId: data.email,
-        altMailId: data.altEmail,
-        emergencyContactPerson: '',
-        emergencyContactNo: '',
-        website: '',
-        gstNo: '',
-        panNo: '',
-        logo: null,
-        officeAddress: data.address,
-        pincode: data.pincode,
-        city: data.city,
-        state: data.state,
-        country: data.country,
-        startDate: formattedStartDate,
-        endDate: formattedEndDate,
-        createdBy: localStorage.getItem('Id') || '',
-        contactPerson: (data.contact || []).map((c) => ({
-          name: c.name || '',
-          department: c.department || '',
-          position: c.designation || c.position || '',
-          email: c.email || '',
-          phone: c.phone || ''
-        }))
-      };
-      setDisableConvertClient(index);
-      // console.log('form data is conver to client', formData);
-      const res = await post('admin-clientRegistration', formData);
-      if (res.status === true) {
-        setDisableConvertClient(null);
-        toast.success('converted to client!');
+    const reader = new FileReader();
+    reader.onload = async (evt) => {
+      const text = evt.target.result;
+      const lines = text.split("\n").map(line => line.trim()).filter(line => line !== "");
+      if (lines.length <= 1) {
+        toast.error("CSV file is empty or invalid");
+        return;
       }
-    } catch (err) {
-      toast.error('convert to client failed!');
-    }
+
+      const header = lines[0].toLowerCase();
+      if (!header.includes("organization") || !header.includes("number")) {
+        toast.error("Invalid CSV format. Header must contain 'Organization' and 'Number'");
+        return;
+      }
+
+      const importedLeads = [];
+      for (let i = 1; i < lines.length; i++) {
+        const row = lines[i].split(",").map(cell => cell.trim().replace(/^"|"$/g, '').replace(/""/g, '"'));
+        const org = row[0];
+        const num = row[1];
+        const city = row[2] || '';
+        if (org && num) {
+          importedLeads.push({
+            newCompanyName: org,
+            companyName: org,
+            phoneNo: num,
+            city,
+            leadCategory: 'newLead'
+          });
+        }
+      }
+
+      const existingNumbers = new Set(data.map(item => (item.phoneNo || '').trim()));
+      const uniqueNewLeads = importedLeads.filter(lead => !existingNumbers.has(lead.phoneNo.trim()));
+
+      if (uniqueNewLeads.length === 0) {
+        toast.info("No new unique leads found to import.");
+        return;
+      }
+
+      let successCount = 0;
+      for (const lead of uniqueNewLeads) {
+        try {
+          const res = await post("lead", lead);
+          if (res && (res.status === true || res.status === "true" || res.data)) {
+            successCount++;
+          }
+        } catch (err) {
+          console.error(`Failed to import lead: ${lead.newCompanyName}`, err);
+        }
+      }
+
+      if (successCount === 0) {
+        toast.info("No new unique leads found to import.");
+      } else {
+        toast.success(`Imported ${successCount} new unique leads successfully!`);
+      }
+      getLeadData();
+    };
+    reader.readAsText(file);
+    e.target.value = '';
   };
 
   // color helper for leadstatus
@@ -393,7 +430,7 @@ const Lead = () => {
                 <Typography variant="h6" gutterBottom>
                   Lead List
                 </Typography>
-                <Box display="flex" gap={1}>
+                <Box display="flex" alignItems="center" gap={1}>
                   <TextField
                     size="small"
                     placeholder="Search by organization"
@@ -405,6 +442,13 @@ const Lead = () => {
                       <AddIcon /> Add Lead
                     </Button>
                   )}
+                  <Button variant="contained" color="secondary" onClick={exportCSV}>
+                    Export
+                  </Button>
+                  <Button variant="contained" component="label" sx={{ backgroundColor: '#4caf50', color: 'white', '&:hover': { backgroundColor: '#388e3c' } }}>
+                    Import
+                    <input type="file" accept=".csv" hidden onChange={handleImportCSV} />
+                  </Button>
                 </Box>
               </Box>
 
@@ -501,16 +545,6 @@ const Lead = () => {
                             <IconButton onClick={() => handleopenAddFollowUp(row._id)}>
                               <InfoIcon sx={{ color: 'primary.main' }} />
                             </IconButton>
-                            <Tooltip title="Convert to Client" arrow onClick={() => handleCoverToClient(row, index)}>
-                              <IconButton
-                                size="medium"
-                                variant="contained"
-                                color="success"
-                                disabled={isDisableConvertClient === index || row.Client}
-                              >
-                                <PersonAdd />
-                              </IconButton>
-                            </Tooltip>
                           </Box>
                         </TableCell>
                       </TableRow>

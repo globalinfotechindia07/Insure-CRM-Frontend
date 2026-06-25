@@ -75,18 +75,6 @@ const AddMode = ({ handleClose, getData }) => {
               error={error.paymentMode !== "" ? true : false}
               helperText={error.paymentMode}
             />
-            
-  <TextField
-              fullWidth
-              label="Transaction ID"
-              variant="outlined"
-              onChange={handleInputChange}
-              value={inputData.transactionId}
-              name="transactionId"
-              error={error.transactionId !== "" ? true : false}
-              helperText={error.transactionId}
-            />
-
           </Grid>
           <Grid item xs={12}>
             <div className="btnGroup">

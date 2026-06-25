@@ -107,7 +107,7 @@ const ProductOrServiceCategory = () => {
   // ================= FETCH DEPARTMENTS =================
   const fetchDepartments = async () => {
     try {
-      const res = await getActiveDepartments();
+      const res = await get('insDepartment');
       console.log('Department API Response:', res);
       
       let departments = [];
@@ -249,11 +249,116 @@ const ProductOrServiceCategory = () => {
     });
   };
 
+  const exportCSV = () => {
+    if (!data || data.length === 0) return;
+    const headers = ["Product Name", "Department"];
+    let csvContent = headers.join(",") + "\n";
+    data.forEach(item => {
+      const pName = item.productName || '';
+      const dName = getDepartmentName(item);
+      csvContent += `"${pName.replace(/"/g, '""')}","${dName.replace(/"/g, '""')}"\n`;
+    });
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", "products.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handleImportCSV = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (evt) => {
+      const text = evt.target.result;
+      const lines = text.split("\n").map(line => line.trim()).filter(line => line !== "");
+      if (lines.length <= 1) {
+        toast.error("CSV file is empty or invalid");
+        return;
+      }
+
+      const header = lines[0].toLowerCase();
+      if (!header.includes("product name") || !header.includes("department")) {
+        toast.error("Invalid CSV format. Headers must contain 'Product Name' and 'Department'");
+        return;
+      }
+
+      const deptMap = {};
+      departmentData.forEach(d => {
+        const name = (d.insDepartment || d.departmentName || d.name || d.department || '').toLowerCase().trim();
+        if (name) deptMap[name] = d._id;
+      });
+
+      const importedItems = [];
+      for (let i = 1; i < lines.length; i++) {
+        const row = lines[i].split(",").map(cell => cell.trim().replace(/^"|"$/g, '').replace(/""/g, '"'));
+        const pName = row[0];
+        const dName = row[1];
+        if (pName && dName) {
+          importedItems.push({ pName, dName });
+        }
+      }
+
+      const existingSet = new Set(data.map(item => {
+        const key = `${item.productName.toLowerCase().trim()}_${getDepartmentName(item).toLowerCase().trim()}`;
+        return key;
+      }));
+
+      const uniqueNewItems = importedItems.filter(item => {
+        const key = `${item.pName.toLowerCase().trim()}_${item.dName.toLowerCase().trim()}`;
+        return !existingSet.has(key);
+      });
+
+      if (uniqueNewItems.length === 0) {
+        toast.info("No new unique products found to import.");
+        return;
+      }
+
+      let successCount = 0;
+      const missingDepts = new Set();
+      for (const item of uniqueNewItems) {
+        const deptId = deptMap[item.dName.toLowerCase().trim()];
+        if (!deptId) {
+          missingDepts.add(item.dName);
+          continue;
+        }
+        try {
+          const res = await post("productOrServiceCategory", {
+            productName: item.pName,
+            department: deptId
+          });
+          if (res && (res.status === true || res.status === 'true' || res.data)) {
+            successCount++;
+          }
+        } catch (err) {
+          console.error(`Failed to import product: ${item.pName}`, err);
+        }
+      }
+
+      if (missingDepts.size > 0) {
+        toast.error(`Skipped entries with missing department: ${Array.from(missingDepts).join(", ")}`);
+      }
+
+      if (successCount === 0) {
+        toast.info("No new unique products found to import.");
+      } else {
+        toast.success(`Imported ${successCount} new unique products successfully!`);
+      }
+      fetchData();
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+  };
+
   // ================= HANDLE EDIT =================
   const handleEdit = (row) => {
     setForm({ 
       productName: row.productName, 
-      department: row?.department?._id || row?.department || ''
+      department: row?.department?._id || row?.department || row?.insDepartment?._id || row?.insDepartment || ''
     });
     setEditIndex(data.findIndex(item => item._id === row._id));
     setEditId(row._id);
@@ -287,8 +392,12 @@ const ProductOrServiceCategory = () => {
     const lowerSearch = searchTerm.toLowerCase().trim();
     return data.filter((entry) => {
       const productName = entry?.productName?.toLowerCase() || '';
-      const department = entry?.department?.name?.toLowerCase() || 
-                         entry?.department?.toLowerCase() || '';
+      const deptObj = entry?.department || entry?.insDepartment;
+      const department = deptObj?.insDepartment?.toLowerCase() ||
+                         deptObj?.departmentName?.toLowerCase() || 
+                         deptObj?.name?.toLowerCase() || 
+                         deptObj?.department?.toLowerCase() ||
+                         (typeof deptObj === 'string' ? deptObj.toLowerCase() : '') || '';
       return productName.includes(lowerSearch) || department.includes(lowerSearch);
     });
   }, [data, searchTerm]);
@@ -299,8 +408,12 @@ const ProductOrServiceCategory = () => {
   }, [filteredData, page, rowsPerPage]);
 
   const getDepartmentName = (item) => {
-    if (item?.department?.name) return item.department.name;
-    if (item?.department && typeof item.department === 'string') return item.department;
+    const deptObj = item?.department || item?.insDepartment;
+    if (deptObj?.insDepartment) return deptObj.insDepartment;
+    if (deptObj?.departmentName) return deptObj.departmentName;
+    if (deptObj?.name) return deptObj.name;
+    if (deptObj?.department) return deptObj.department;
+    if (deptObj && typeof deptObj === 'string') return deptObj;
     return 'N/A';
   };
 
@@ -319,11 +432,20 @@ const ProductOrServiceCategory = () => {
         <Grid item xs={12}>
           <Grid container justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
             <Typography variant="h5">Product/Service Category</Typography>
-            {(productCategoryPermission.Add === true || isAdmin) && (
-              <Button variant="contained" startIcon={<Add />} onClick={handleOpen}>
-                Add Product
+            <div style={{ display: 'flex', gap: '10px' }}>
+              {(productCategoryPermission.Add === true || isAdmin) && (
+                <Button variant="contained" startIcon={<Add />} onClick={handleOpen}>
+                  Add Product
+                </Button>
+              )}
+              <Button variant="contained" color="secondary" onClick={exportCSV}>
+                Export
               </Button>
-            )}
+              <Button variant="contained" component="label" sx={{ backgroundColor: '#4caf50', color: 'white', '&:hover': { backgroundColor: '#388e3c' } }}>
+                Import
+                <input type="file" accept=".csv" hidden onChange={handleImportCSV} />
+              </Button>
+            </div>
           </Grid>
         </Grid>
 
@@ -462,7 +584,7 @@ const ProductOrServiceCategory = () => {
             {departmentData.length > 0 ? (
               departmentData.map((dept) => (
                 <MenuItem key={dept._id} value={dept._id}>
-                  {dept.name}
+                  {dept.departmentName || dept.name || dept.department || dept.insDepartment || ''}
                 </MenuItem>
               ))
             ) : (

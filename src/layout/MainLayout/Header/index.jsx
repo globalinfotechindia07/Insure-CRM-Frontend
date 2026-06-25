@@ -30,7 +30,7 @@ const Header = ({ drawerToggle }) => {
   const loginData = JSON.parse(localStorage.getItem('loginData')) || {};
   const { user } = useSelector((state) => state.auth || {});
 
-  const [companyName, setCompanyName] = useState('');
+  const [branchName, setBranchName] = useState('');
   const [loading, setLoading] = useState(true);
 
   const end = localStorage.getItem('end');
@@ -63,8 +63,8 @@ const Header = ({ drawerToggle }) => {
   const handleClose = () => setOpenPopup(false);
   const handleSubscribe = () => {};
 
-  // ✅ Fetch company settings to get company name
-  const fetchCompanySettings = async () => {
+  // ✅ Fetch branch settings to get branch name
+  const fetchBranchSettings = async () => {
     try {
       setLoading(true);
       
@@ -77,27 +77,27 @@ const Header = ({ drawerToggle }) => {
         return;
       }
       
-      console.log('🔍 Fetching company settings for refId:', refId);
+      console.log('🔍 Fetching branch settings for refId:', refId);
       
-      // Fetch all company settings
-      const response = await get('companySettings/');
-      console.log('Company settings response:', response);
+      // Fetch all branch settings
+      const response = await get('branchSettings/');
+      console.log('Branch settings response:', response);
       
       if (response.status === 'true' && response.data) {
-        // Find company with matching refId
-        const company = response.data.find(c => c.refId === refId);
+        // Find branch with matching refId
+        const branch = response.data.find(c => c.refId === refId);
         
-        if (company) {
-          // ✅ Set company name
-          setCompanyName(company.companyName || '');
+        if (branch) {
+          // ✅ Set branch name
+          setBranchName(branch.branchName || branch.companyName || '');
         } else if (response.data.length > 0) {
-          // If no match by refId, take first company
-          const firstCompany = response.data[0];
-          setCompanyName(firstCompany.companyName || '');
+          // If no match by refId, take first branch
+          const firstBranch = response.data[0];
+          setBranchName(firstBranch.branchName || firstBranch.companyName || '');
         }
       }
     } catch (error) {
-      console.error('Error fetching company settings:', error);
+      console.error('Error fetching branch settings:', error);
     } finally {
       setLoading(false);
     }
@@ -126,21 +126,23 @@ const Header = ({ drawerToggle }) => {
   };
 
   useEffect(() => {
-    fetchCompanySettings();
+    fetchBranchSettings();
     fetchFYData();
   }, [user?.refId]);
 
-  // Listen for company settings updates
+  // Listen for branch settings updates
   useEffect(() => {
-    const handleCompanyUpdate = () => {
-      console.log('Company settings updated, refetching...');
-      fetchCompanySettings();
+    const handleBranchUpdate = () => {
+      console.log('Branch settings updated, refetching...');
+      fetchBranchSettings();
     };
     
-    window.addEventListener('companySettingsUpdated', handleCompanyUpdate);
+    window.addEventListener('branchSettingsUpdated', handleBranchUpdate);
+    window.addEventListener('companySettingsUpdated', handleBranchUpdate);
     
     return () => {
-      window.removeEventListener('companySettingsUpdated', handleCompanyUpdate);
+      window.removeEventListener('branchSettingsUpdated', handleBranchUpdate);
+      window.removeEventListener('companySettingsUpdated', handleBranchUpdate);
     };
   }, []);
 
@@ -303,21 +305,6 @@ const Header = ({ drawerToggle }) => {
             gap: 1
           }}
         >
-          {/* ✅ Dynamic Company Name from API */}
-          <Typography
-            variant="h6"
-            sx={{
-              fontSize: { xs: '12px', sm: '14px' },
-              fontWeight: 'bold',
-              color: '#fff',
-              letterSpacing: '1px',
-              lineHeight: '1.5',
-              textTransform: 'uppercase'
-            }}
-          >
-            {companyName || loginData?.names || 'J P Insurance'}
-          </Typography>
-          &nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;
           <CurrentDate />
         </Box>
 

@@ -26,6 +26,8 @@ import CancelIcon from '@mui/icons-material/Cancel';
 import EditIcon from '@mui/icons-material/Edit';
 import theme from 'assets/scss/_themes-vars.module.scss';
 import value from 'assets/scss/_themes-vars.module.scss';
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 // import { axiosInstance } from '../../../api/api.js';
 
@@ -41,13 +43,7 @@ const LeadStatus = () => {
 
   const [errors, setErrors] = useState({});
   const [open, setOpen] = useState(false);
-  const [data, setData] = useState([
-    //   {
-    //   LeadStatus: 'Example Status',
-    //   shortForm: 'Ex',
-    //   colorCode: '#123456'
-    // }
-  ]);
+  const [data, setData] = useState([]);
   const [editIndex, setEditIndex] = useState(null);
   const [isAdmin, setAdmin] = useState(false);
   const [leadStatusPermission, setLeadStatusPermission] = useState({
@@ -71,9 +67,10 @@ const LeadStatus = () => {
   const fetchLeadStatuses = async () => {
     try {
       const response = await get('leadStatus');
-      setData(response.data);
+      setData(response.data || []);
     } catch (error) {
       console.error(error);
+      setData([]);
     }
   };
 
@@ -143,6 +140,84 @@ const LeadStatus = () => {
     }
   };
 
+  const exportCSV = () => {
+    if (!data || data.length === 0) return;
+    const headers = ["Lead Status", "Short Form", "Color Code"];
+    let csvContent = headers.join(",") + "\n";
+    data.forEach(item => {
+      csvContent += `"${(item.LeadStatus || '').replace(/"/g, '""')}","${(item.shortForm || '').replace(/"/g, '""')}","${(item.colorCode || '').replace(/"/g, '""')}"\n`;
+    });
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", "lead_statuses.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handleImportCSV = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (evt) => {
+      const text = evt.target.result;
+      const lines = text.split("\n").map(line => line.trim()).filter(line => line !== "");
+      if (lines.length <= 1) {
+        toast.error("CSV file is empty or invalid");
+        return;
+      }
+
+      const header = lines[0].toLowerCase();
+      if (!header.includes("lead status") || !header.includes("short form") || !header.includes("color code")) {
+        toast.error("Invalid CSV format. Header must contain 'Lead Status', 'Short Form', and 'Color Code'");
+        return;
+      }
+
+      const imported = [];
+      for (let i = 1; i < lines.length; i++) {
+        const row = lines[i].split(",").map(cell => cell.trim().replace(/^"|"$/g, '').replace(/""/g, '"'));
+        const lStatus = row[0] || '';
+        const shortForm = row[1] || '';
+        const colorCode = row[2] || '';
+        if (lStatus && shortForm && colorCode) {
+          imported.push({ LeadStatus: lStatus, shortForm, colorCode });
+        }
+      }
+
+      const existingSet = new Set(data.map(item => (item.LeadStatus || '').toLowerCase().trim()));
+      const uniqueNew = imported.filter(item => !existingSet.has(item.LeadStatus.toLowerCase().trim()));
+
+      if (uniqueNew.length === 0) {
+        toast.info("No new unique lead statuses found to import.");
+        return;
+      }
+
+      let successCount = 0;
+      for (const item of uniqueNew) {
+        try {
+          const res = await post("leadStatus", item);
+          if (res) {
+            successCount++;
+          }
+        } catch (err) {
+          console.error(`Failed to import lead status: ${item.LeadStatus}`, err);
+        }
+      }
+
+      if (successCount === 0) {
+        toast.info("No new unique lead statuses found to import.");
+      } else {
+        toast.success(`Imported ${successCount} new unique lead statuses successfully!`);
+      }
+      fetchLeadStatuses();
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+  };
+
   return (
     <div>
       <Breadcrumb>
@@ -156,11 +231,20 @@ const LeadStatus = () => {
 
       <Grid container justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
         <Typography variant="h5">Lead Status</Typography>
-        {(leadStatusPermission?.Add === true || isAdmin) && (
-          <Button variant="contained" startIcon={<Add />} onClick={handleOpen}>
-            Add Lead Status
+        <div style={{ display: 'flex', gap: '10px' }}>
+          {(leadStatusPermission.Add === true || isAdmin) && (
+            <Button variant="contained" startIcon={<Add />} onClick={handleOpen}>
+              Add Lead Status
+            </Button>
+          )}
+          <Button variant="contained" color="secondary" onClick={exportCSV}>
+            Export
           </Button>
-        )}
+          <Button variant="contained" component="label" sx={{ backgroundColor: '#4caf50', color: 'white', '&:hover': { backgroundColor: '#388e3c' } }}>
+            Import
+            <input type="file" accept=".csv" hidden onChange={handleImportCSV} />
+          </Button>
+        </div>
       </Grid>
 
       {/* Modal Form */}
@@ -322,6 +406,7 @@ const LeadStatus = () => {
           </CardContent>
         </Card>
       )}
+      <ToastContainer />
     </div>
   );
 };

@@ -26,6 +26,7 @@ import SaveIcon from '@mui/icons-material/Save';
 import CancelIcon from '@mui/icons-material/Cancel';
 import EditIcon from '@mui/icons-material/Edit';
 import value from 'assets/scss/_themes-vars.module.scss';
+import swal from 'sweetalert';
 
 import { get, post, put, remove } from '../../../api/api.js';
 
@@ -49,16 +50,16 @@ const BranchBroker = () => {
     setOpen(true);
   };
 
-  // Fetch all Branch Brokers from backend
   const fetchBranchBrokers = async () => {
     setLoading(true);
     try {
       const response = await get('branchBroker');
-      console.log('branchBroker data:', response.data);
-      setData(response.data || []);  // ✅ CHANGE 1: || [] ADD KIYA
+      console.log('branchBroker data:', response?.data);
+      if (response && response.status !== "false" && Array.isArray(response.data)) setData(response.data);
+      else setData([]);
     } catch (error) {
       console.error(error);
-      setData([]);  // ✅ CHANGE 2: setData([]) ADD KIYA
+      setData([]);
     } finally {
       setLoading(false);
     }
@@ -67,6 +68,81 @@ const BranchBroker = () => {
   useEffect(() => {
     fetchBranchBrokers();
   }, []);
+
+  const exportCSV = () => {
+    if (!data || data.length === 0) return;
+    const headers = ["Broker Branch Name"];
+    let csvContent = headers.join(",") + "\n";
+    data.forEach(item => {
+      csvContent += `"${(item.branchBroker || "").replace(/"/g, '""')}"\n`;
+    });
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", "broker_branch_names.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handleImportCSV = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (evt) => {
+      const text = evt.target.result;
+      const lines = text.split("\n").map(line => line.trim()).filter(line => line !== "");
+      if (lines.length <= 1) {
+        toast.error("CSV file is empty or invalid");
+        return;
+      }
+
+      const header = lines[0].toLowerCase();
+      if (!header.includes("broker branch name")) {
+        toast.error("Invalid CSV format. Header must contain 'Broker Branch Name'");
+        return;
+      }
+
+      const importedNames = [];
+      for (let i = 1; i < lines.length; i++) {
+        let val = lines[i].trim().replace(/^"|"$/g, '').replace(/""/g, '"');
+        if (val) {
+          importedNames.push(val);
+        }
+      }
+
+      const existingSet = new Set(data.map(item => item.branchBroker.toLowerCase().trim()));
+      const uniqueNewNames = [...new Set(importedNames)].filter(name => !existingSet.has(name.toLowerCase().trim()));
+
+      if (uniqueNewNames.length === 0) {
+        toast.info("No new unique broker branch names found to import.");
+        return;
+      }
+
+      let successCount = 0;
+      for (const name of uniqueNewNames) {
+        try {
+          const res = await post("branchBroker", { branchBroker: name });
+          if (res && (res.status === true || res.status === "true" || res.data)) {
+            successCount++;
+          }
+        } catch (err) {
+          console.error(`Failed to import broker branch name: ${name}`, err);
+        }
+      }
+
+      if (successCount === 0) {
+        toast.info("No new unique broker branch names found to import.");
+      } else {
+        toast.success(`Imported ${successCount} new unique broker branch names successfully!`);
+      }
+      fetchBranchBrokers();
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+  };
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -87,44 +163,72 @@ const BranchBroker = () => {
   const handleSubmit = async () => {
     console.log('Submit ', form);
     if (!validate()) return;
-    
-    try {
-      if (editIndex !== null) {
-        // Update existing
-        const id = data[editIndex]._id;
-        await put(`branchBroker/${id}`, { branchBroker: form.branchBroker });
-        toast.success('Record Edited Successfully');
-      } else {
-        // Create new
+
+    const isEdit = editIndex !== null;
+
+    if (isEdit) {
+      swal({
+        title: "Update Branch Broker?",
+        text: "Do you want to update this broker branch name?",
+        icon: "warning",
+        buttons: ["Cancel", "Update"],
+      }).then(async (willUpdate) => {
+        if (willUpdate) {
+          try {
+            const id = data[editIndex]._id;
+            await put(`branchBroker/${id}`, { branchBroker: form.branchBroker });
+            swal("Updated!", "Record updated successfully.", "success");
+            setOpen(false);
+            setForm({ branchBroker: '' });
+            setEditIndex(null);
+            fetchBranchBrokers();
+          } catch (error) {
+            console.error(error);
+            swal("Error!", "Update failed.", "error");
+          }
+        }
+      });
+    } else {
+      try {
         await post('branchBroker', { branchBroker: form.branchBroker });
         toast.success('Record Saved Successfully');
+        setOpen(false);
+        setForm({ branchBroker: '' });
+        setEditIndex(null);
+        fetchBranchBrokers();
+      } catch (error) {
+        console.error(error);
+        toast.error('Operation Failed');
       }
-      setOpen(false);
-      setForm({ branchBroker: '' });
-      setEditIndex(null);
-      fetchBranchBrokers();
-    } catch (error) {
-      console.error(error);
-      toast.error('Operation Failed');
     }
   };
 
   const handleEdit = (index) => {
-    setForm(data[index]);
+    setForm({ ...data[index] });
     setEditIndex(index);
     setOpen(true);
   };
 
   const handleDelete = async (index) => {
-    try {
-      const id = data[index]._id;
-      await remove(`branchBroker/${id}`);
-      fetchBranchBrokers();
-      toast.success('Record Deleted Successfully');
-    } catch (error) {
-      console.error(error);
-      toast.error('Delete Failed');
-    }
+    const id = data[index]._id;
+    swal({
+      title: "Are you sure?",
+      text: "Once deleted, you will not be able to recover this record!",
+      icon: "warning",
+      buttons: ["Cancel", "Delete"],
+      dangerMode: true,
+    }).then(async (willDelete) => {
+      if (willDelete) {
+        try {
+          await remove(`branchBroker/${id}`);
+          swal("Deleted!", "Record deleted successfully.", "success");
+          fetchBranchBrokers();
+        } catch (error) {
+          console.error(error);
+          swal("Error!", "Delete failed.", "error");
+        }
+      }
+    });
   };
 
   return (
@@ -140,9 +244,18 @@ const BranchBroker = () => {
       
       <Grid container justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
         <Typography variant="h5">Broker Branch Name</Typography>
-        <Button variant="contained" startIcon={<Add />} onClick={handleOpen}>
-          Add Broker Branch Name
-        </Button>
+        <div style={{ display: 'flex', gap: '10px' }}>
+          <Button variant="contained" startIcon={<Add />} onClick={handleOpen}>
+            Add Broker Branch Name
+          </Button>
+          <Button variant="contained" color="secondary" onClick={exportCSV}>
+            Export
+          </Button>
+          <Button variant="contained" component="label" sx={{ backgroundColor: '#4caf50', color: 'white', '&:hover': { backgroundColor: '#388e3c' } }}>
+            Import
+            <input type="file" accept=".csv" hidden onChange={handleImportCSV} />
+          </Button>
+        </div>
       </Grid>
 
       {/* Modal Form */}

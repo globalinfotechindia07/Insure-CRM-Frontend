@@ -4,6 +4,7 @@ import axios from 'axios';
 // const REACT_APP_API_URL = 'https://insure.isyncerp.com/api/';
 // const REACT_APP_API_URL = 'https://jpinsurancebroker.co.in/api/';
 const REACT_APP_API_URL = 'http://localhost:5050/api/';
+// const REACT_APP_API_URL = 'https://grampanchayattigaon/api/';
 export default REACT_APP_API_URL;
 //  REACT_APP_API_URL;
 
@@ -15,6 +16,9 @@ export const retrieveToken = () => {
       token = v.split('=')[1];
     }
   });
+  if (!token) {
+    token = localStorage.getItem('token') || '';
+  }
   return token;
 };
 
@@ -22,7 +26,7 @@ export const retrieveToken = () => {
 export const get = async (url) => {
   const token = retrieveToken();
   const companyId = localStorage.getItem('companyId');
-  const response = await fetch(`${REACT_APP_API_URL}${url}?companyId=${encodeURIComponent(companyId)}`, {
+  const response = await fetch(`${REACT_APP_API_URL}${url}${url.includes('?') ? '&' : '?'}companyId=${encodeURIComponent(companyId)}`, {
     headers: {
       Authorization: `Bearer ${token}`,
       'Content-Type': 'application/json'
@@ -57,7 +61,7 @@ export const post = async (url, data) => {
     ...(isFormData ? {} : { 'Content-Type': 'application/json' })
   };
 
-  const response = await fetch(`${REACT_APP_API_URL}${url}?companyId=${encodeURIComponent(companyId)}`, {
+  const response = await fetch(`${REACT_APP_API_URL}${url}${url.includes('?') ? '&' : '?'}companyId=${encodeURIComponent(companyId)}`, {
     method: 'POST',
     headers,
     body: isFormData ? data : JSON.stringify(data)
@@ -95,7 +99,7 @@ export const put = async (url, data) => {
     ...(isFormData ? {} : { 'Content-Type': 'application/json' })
   };
 
-  const response = await fetch(`${REACT_APP_API_URL}${url}?companyId=${encodeURIComponent(companyId)}`, {
+  const response = await fetch(`${REACT_APP_API_URL}${url}${url.includes('?') ? '&' : '?'}companyId=${encodeURIComponent(companyId)}`, {
     method: 'PUT',
     headers,
     body: isFormData ? data : JSON.stringify(data)

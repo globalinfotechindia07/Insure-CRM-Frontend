@@ -29,6 +29,8 @@ import theme from 'assets/scss/_themes-vars.module.scss';
 import value from 'assets/scss/_themes-vars.module.scss';
 
 import swal from 'sweetalert';
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 // import { axiosInstance } from '../../../api/api.js';
 import { get, post, put, remove } from '../../../api/api.js';
@@ -61,10 +63,11 @@ const SubProductCategory = () => {
   const fetchProductCategory = async () => {
     try {
       const response = await get('productOrServiceCategory');
-      console.log('product category: ', response.data);
-      setProductCategory(response.data);
+      console.log('product category: ', response?.data);
+      setProductCategory(Array.isArray(response?.data) ? response.data : []);
     } catch (error) {
       console.error('Error fetching product categories:', error);
+      setProductCategory([]);
     }
   };
   // use axiosInstance to fetch data from the server with useEffect
@@ -78,11 +81,16 @@ const SubProductCategory = () => {
     }
     get('SubProductCategory')
       .then((response) => {
-        console.log('get sub product category: ', response.data || []);
-        setData(response.data);
+        console.log('get sub product category: ', response?.data || []);
+        if (response && response.status !== "false" && Array.isArray(response.data)) {
+          setData(response.data);
+        } else {
+          setData([]);
+        }
       })
       .catch((error) => {
         console.error('Error fetching data:', error);
+        setData([]);
       });
 
     fetchProductCategory();
@@ -217,6 +225,112 @@ const SubProductCategory = () => {
     setOpen(true);
   };
 
+  const exportCSV = () => {
+    if (!data || data.length === 0) return;
+    const headers = ["Product Name", "Sub Product Name"];
+    let csvContent = headers.join(",") + "\n";
+    data.forEach(item => {
+      const pName = item.productName || '';
+      const spName = item.subProductName || '';
+      csvContent += `"${pName.replace(/"/g, '""')}","${spName.replace(/"/g, '""')}"\n`;
+    });
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", "sub_products.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handleImportCSV = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (evt) => {
+      const text = evt.target.result;
+      const lines = text.split("\n").map(line => line.trim()).filter(line => line !== "");
+      if (lines.length <= 1) {
+        toast.error("CSV file is empty or invalid");
+        return;
+      }
+
+      const header = lines[0].toLowerCase();
+      if (!header.includes("product name") || !header.includes("sub product name")) {
+        toast.error("Invalid CSV format. Headers must contain 'Product Name' and 'Sub Product Name'");
+        return;
+      }
+
+      const validProducts = new Set(productCategory.map(p => p.productName.toLowerCase().trim()));
+
+      const importedItems = [];
+      for (let i = 1; i < lines.length; i++) {
+        const row = lines[i].split(",").map(cell => cell.trim().replace(/^"|"$/g, '').replace(/""/g, '"'));
+        const pName = row[0];
+        const spName = row[1];
+        if (pName && spName) {
+          importedItems.push({ pName, spName });
+        }
+      }
+
+      const existingSet = new Set((data || []).map(item => {
+        const key = `${item.productName.toLowerCase().trim()}_${item.subProductName.toLowerCase().trim()}`;
+        return key;
+      }));
+
+      const uniqueNewItems = importedItems.filter(item => {
+        const key = `${item.pName.toLowerCase().trim()}_${item.spName.toLowerCase().trim()}`;
+        return !existingSet.has(key);
+      });
+
+      if (uniqueNewItems.length === 0) {
+        toast.info("No new unique sub products found to import.");
+        return;
+      }
+
+      let successCount = 0;
+      const missingProducts = new Set();
+      for (const item of uniqueNewItems) {
+        if (!validProducts.has(item.pName.toLowerCase().trim())) {
+          missingProducts.add(item.pName);
+          continue;
+        }
+        try {
+          const res = await post("SubProductCategory", {
+            productName: item.pName,
+            subProductName: item.spName
+          });
+          if (res.data) {
+            successCount++;
+          }
+        } catch (err) {
+          console.error(`Failed to import subproduct: ${item.spName}`, err);
+        }
+      }
+
+      if (missingProducts.size > 0) {
+        toast.error(`Skipped entries with missing product category: ${Array.from(missingProducts).join(", ")}`);
+      }
+
+      if (successCount === 0) {
+        toast.info("No new unique sub products found to import.");
+      } else {
+        toast.success(`Imported ${successCount} new unique sub products successfully!`);
+      }
+      get('SubProductCategory')
+        .then((response) => {
+          setData(response.data);
+        })
+        .catch((error) => {
+          console.error('Error fetching data:', error);
+        });
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+  };
+
   console.log('porductCategory: ', productCategory);
 
   return (
@@ -232,11 +346,20 @@ const SubProductCategory = () => {
 
       <Grid container justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
         <Typography variant="h5">Sub Product Categories</Typography>
-        {(subProductCategoryPermission.Add === true || isAdmin) && (
-          <Button variant="contained" startIcon={<Add />} onClick={handleOpen}>
-            Add Category
+        <div style={{ display: 'flex', gap: '10px' }}>
+          {(subProductCategoryPermission.Add === true || isAdmin) && (
+            <Button variant="contained" startIcon={<Add />} onClick={handleOpen}>
+              Add Category
+            </Button>
+          )}
+          <Button variant="contained" color="secondary" onClick={exportCSV}>
+            Export
           </Button>
-        )}
+          <Button variant="contained" component="label" sx={{ backgroundColor: '#4caf50', color: 'white', '&:hover': { backgroundColor: '#388e3c' } }}>
+            Import
+            <input type="file" accept=".csv" hidden onChange={handleImportCSV} />
+          </Button>
+        </div>
       </Grid>
 
       {/* Modal Form */}
@@ -331,7 +454,7 @@ const SubProductCategory = () => {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {data.map((row, index) => (
+                  {data && Array.isArray(data) && data.map((row, index) => (
                     <TableRow key={index}>
                       <TableCell>{index + 1}</TableCell>
                       <TableCell>{row.productName}</TableCell>

@@ -22,7 +22,7 @@ import { useSelector } from 'react-redux';
 
 const STATIC_BASE_URL = "http://localhost:5050"; 
 
-const UpdateCompanySettings = () => {
+const UpdateBranchSettings = () => {
   const navigate = useNavigate();
   const { id } = useParams();
   let pincodeTimeout = useRef();
@@ -40,7 +40,7 @@ const UpdateCompanySettings = () => {
   const [isNewRecord, setIsNewRecord] = useState(false);
 
   const [form, setForm] = useState({
-    companyName: '',
+    branchName: '',
     email: '',
     mobileNumber: '',
     alternateMobileNumber: '',
@@ -63,15 +63,15 @@ const UpdateCompanySettings = () => {
     }
   }, [id]);
 
-  // Fetch existing company data
+  // Fetch existing branch data
   useEffect(() => {
-    const fetchCompany = async () => {
+    const fetchBranch = async () => {
       if (!id || id === 'new') return;
 
       setFetchLoading(true);
       try {
         const token = localStorage.getItem('token');
-        const response = await fetch(`http://localhost:5050/api/companySettings/${id}`, {
+        const response = await fetch(`http://localhost:5050/api/branchSettings/${id}`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -83,7 +83,7 @@ const UpdateCompanySettings = () => {
         if (res.status === 'true' && res.data) {
           const d = res.data;
           setForm({
-            companyName: d.companyName || '',
+            branchName: d.branchName || d.companyName || '',
             email: d.email || '',
             mobileNumber: d.mobileNumber || '',
             alternateMobileNumber: d.alternateMobileNumber || '',
@@ -95,23 +95,20 @@ const UpdateCompanySettings = () => {
             state: d.state || '',
             city: d.city || ''
           });
-          setLogoPreview(d.companyLogo || '');
+          setLogoPreview(d.branchLogo || d.companyLogo || '');
         } else {
           toast.error('Failed to fetch data.');
         }
       } catch (err) {
-        console.error('🔴 Error fetching company:', err);
+        console.error('🔴 Error fetching branch:', err);
         toast.error('Error fetching data');
       } finally {
         setFetchLoading(false);
       }
     };
 
-    fetchCompany();
+    fetchBranch();
   }, [id]);
-
-  // REMOVED: Duplicate and incorrect fetchLogo useEffect that was causing the error
-  // The error was because fetchLogo was not defined but being used in console.log
 
   // Fetch pincode information
   const fetchPincodeDetails = async (value) => {
@@ -171,7 +168,7 @@ const UpdateCompanySettings = () => {
   const validateForm = () => {
     const err = {};
     
-    if (!form.companyName?.trim()) err.companyName = 'Company name is required';
+    if (!form.branchName?.trim()) err.branchName = 'Branch name is required';
     if (!form.email?.trim()) err.email = 'Email is required';
     if (form.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) 
       err.email = 'Valid email required';
@@ -209,9 +206,8 @@ const UpdateCompanySettings = () => {
     try {
       const token = localStorage.getItem('token');
       
-      // Send as JSON payload (without refId to avoid validation error)
       const payload = {
-        companyName: form.companyName,
+        branchName: form.branchName,
         email: form.email,
         mobileNumber: form.mobileNumber,
         alternateMobileNumber: form.alternateMobileNumber || '',
@@ -224,18 +220,17 @@ const UpdateCompanySettings = () => {
         city: form.city
       };
       
-      // Only add refId if it's a new record and refId exists
       if (isNewRecord && refId) {
         payload.refId = refId;
       }
       
       console.log('🟡 Submitting payload:', payload);
       
-      let url = 'http://localhost:5050/api/companySettings/';
+      let url = 'http://localhost:5050/api/branchSettings/';
       let method = 'POST';
       
       if (!isNewRecord) {
-        url = `http://localhost:5050/api/companySettings/${id}`;
+        url = `http://localhost:5050/api/branchSettings/${id}`;
         method = 'PUT';
       }
       
@@ -252,14 +247,14 @@ const UpdateCompanySettings = () => {
       console.log('🟢 API Response:', data);
       
       if (data.status === 'true') {
-        toast.success(isNewRecord ? 'Company created successfully!' : 'Company updated successfully!');
+        toast.success(isNewRecord ? 'Branch created successfully!' : 'Branch updated successfully!');
         
         // Upload logo separately if exists
         if (logoFile) {
           const logoFormData = new FormData();
-          logoFormData.append('companyLogo', logoFile);
+          logoFormData.append('branchLogo', logoFile);
           
-          const logoResponse = await fetch(`http://localhost:5050/api/companySettings/${data.data._id}/logo`, {
+          const logoResponse = await fetch(`http://localhost:5050/api/branchSettings/${data.data._id}/logo`, {
             method: 'POST',
             headers: {
               'Authorization': `Bearer ${token}`
@@ -271,17 +266,21 @@ const UpdateCompanySettings = () => {
           if (logoData.status === 'true') {
             toast.success('Logo uploaded successfully!');
           } else {
-            toast.warning('Company saved but logo upload failed');
+            toast.warning('Branch saved but logo upload failed');
           }
         }
+
+        // Trigger custom update events so header/sidebar refetches
+        window.dispatchEvent(new Event('branchSettingsUpdated'));
+        window.dispatchEvent(new Event('companySettingsUpdated'));
         
-        setTimeout(() => navigate('/company-settings'), 1500);
+        setTimeout(() => navigate('/branch-settings'), 1500);
       } else {
         toast.error(data.message || 'Operation failed');
       }
     } catch (error) {
       console.error('🔴 Error:', error);
-      toast.error(error.message || 'Error saving company');
+      toast.error(error.message || 'Error saving branch');
     } finally {
       setLoading(false);
     }
@@ -291,7 +290,7 @@ const UpdateCompanySettings = () => {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" minHeight="60vh">
         <CircularProgress />
-        <Typography sx={{ ml: 2 }}>Loading company data...</Typography>
+        <Typography sx={{ ml: 2 }}>Loading branch data...</Typography>
       </Box>
     );
   }
@@ -302,11 +301,11 @@ const UpdateCompanySettings = () => {
         <Typography component={Link} to="/" variant="subtitle2" color="inherit">
           Home
         </Typography>
-        <Typography component={Link} to="/company-settings" variant="subtitle2" color="inherit">
-          Company Settings
+        <Typography component={Link} to="/branch-settings" variant="subtitle2" color="inherit">
+          Branch Settings
         </Typography>
         <Typography variant="subtitle2" color="primary">
-          {isNewRecord ? 'Create Company' : 'Update Company'}
+          {isNewRecord ? 'Create Branch' : 'Update Branch'}
         </Typography>
       </Breadcrumb>
 
@@ -314,9 +313,9 @@ const UpdateCompanySettings = () => {
         <Grid item xs={12}>
           <Grid container justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
             <Typography variant="h5">
-              {isNewRecord ? 'Create New Company' : 'Update Company Details'}
+              {isNewRecord ? 'Create New Branch' : 'Update Branch Details'}
             </Typography>
-            <Button variant="outlined" onClick={() => navigate('/company-settings')}>
+            <Button variant="outlined" onClick={() => navigate('/branch-settings')}>
               <ArrowBack /> Back to List
             </Button>
           </Grid>
@@ -324,15 +323,15 @@ const UpdateCompanySettings = () => {
           <Card>
             <CardContent>
               <Grid container spacing={3}>
-                {/* Company Name */}
+                {/* Branch Name */}
                 <Grid item xs={12} sm={6} md={4}>
                   <TextField
-                    label="Company Name *"
-                    name="companyName"
-                    value={form.companyName}
+                    label="Branch Name *"
+                    name="branchName"
+                    value={form.branchName}
                     onChange={handleChange}
-                    error={!!errors.companyName}
-                    helperText={errors.companyName}
+                    error={!!errors.branchName}
+                    helperText={errors.branchName}
                     fullWidth
                     required
                   />
@@ -485,70 +484,13 @@ const UpdateCompanySettings = () => {
                   />
                 </Grid>
 
-                {/* Logo Upload */}
-                <Grid item xs={12}>
-                  <Typography variant="subtitle2" gutterBottom>
-                    Company Logo
-                  </Typography>
-                  
-                  {!logoPreview && !form.companyLogo && (
-                    <Button
-                      variant="outlined"
-                      component="label"
-                      startIcon={<FaUpload />}
-                    >
-                      Choose Logo
-                      <input
-                        type="file"
-                        name="companyLogo"
-                        hidden
-                        accept="image/*"
-                        onChange={handleChange}
-                      />
-                    </Button>
-                  )}
 
-                  {(logoPreview || form.companyLogo) && (
-                    <Box position="relative" display="inline-block">
-                      <img
-                        src={logoPreview || form.companyLogo}
-                        alt="Company Logo"
-                        style={{
-                          width: 120,
-                          height: 120,
-                          objectFit: 'contain',
-                          borderRadius: 8,
-                          border: '1px solid #ddd',
-                          padding: 8
-                        }}
-                      />
-                      <IconButton
-                        size="small"
-                        onClick={handleDeleteLogo}
-                        sx={{
-                          position: 'absolute',
-                          top: -8,
-                          right: -8,
-                          backgroundColor: 'white',
-                          border: '1px solid #ccc',
-                          boxShadow: 1,
-                          '&:hover': {
-                            backgroundColor: '#f8d7da',
-                            color: 'red'
-                          }
-                        }}
-                      >
-                        <FaTrash size={12} />
-                      </IconButton>
-                    </Box>
-                  )}
-                </Grid>
 
                 {/* Submit Button */}
                 <Grid item xs={12}>
                   <Divider sx={{ my: 2 }} />
                   <Box display="flex" gap={2} justifyContent="flex-end">
-                    <Button variant="outlined" onClick={() => navigate('/company-settings')}>
+                    <Button variant="outlined" onClick={() => navigate('/branch-settings')}>
                       Cancel
                     </Button>
                     <Button
@@ -558,7 +500,7 @@ const UpdateCompanySettings = () => {
                       disabled={loading}
                       size="large"
                     >
-                      {loading ? <CircularProgress size={24} /> : (isNewRecord ? 'Create Company' : 'Update Company')}
+                      {loading ? <CircularProgress size={24} /> : (isNewRecord ? 'Create Branch' : 'Update Branch')}
                     </Button>
                   </Box>
                 </Grid>
@@ -572,4 +514,4 @@ const UpdateCompanySettings = () => {
   );
 };
 
-export default UpdateCompanySettings;
+export default UpdateBranchSettings;

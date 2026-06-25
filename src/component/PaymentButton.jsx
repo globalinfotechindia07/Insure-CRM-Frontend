@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-const PaymentButton = ({ 
+const PaymentButton = ({
   amount = 500,  // Amount in rupees
   currency = 'INR',
   customerDetails = {
@@ -40,7 +40,8 @@ const PaymentButton = ({
       // Step 2: Create order on backend
       // Change this URL to your actual backend URL
       const API_URL = 'http://localhost:5050/api';
-      
+      // const API_URL = 'https://grampanchayattigaon/api/';
+
       const orderResponse = await fetch(`${API_URL}/payment/create-order`, {
         method: 'POST',
         headers: {
@@ -83,8 +84,8 @@ const PaymentButton = ({
         },
         // This automatically shows ALL payment modes:
         // UPI, Credit/Debit Cards, Netbanking, Wallets, EMI, etc.
-        
-        handler: async function(response) {
+
+        handler: async function (response) {
           // Step 4: Verify payment
           const verifyResponse = await fetch(`${API_URL}/payment/verify-payment`, {
             method: 'POST',
@@ -109,9 +110,9 @@ const PaymentButton = ({
             throw new Error(verifyData.message);
           }
         },
-        
+
         modal: {
-          ondismiss: function() {
+          ondismiss: function () {
             console.log('Checkout closed');
             alert('Payment cancelled');
           }
@@ -119,12 +120,12 @@ const PaymentButton = ({
       };
 
       const razorpayInstance = new window.Razorpay(options);
-      
-      razorpayInstance.on('payment.failed', function(response) {
+
+      razorpayInstance.on('payment.failed', function (response) {
         console.error('Payment Failed:', response.error);
         alert(`Payment Failed: ${response.error.description}`);
       });
-      
+
       razorpayInstance.open();
 
     } catch (error) {

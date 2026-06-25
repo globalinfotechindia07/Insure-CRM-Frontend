@@ -85,7 +85,7 @@ const Contacts = () => {
 
   const fetchDepartments = async () => {
     try {
-      const res = await get('department');
+      const res = await get('insDepartment');
       const dres = await get('position');
       setPosition(dres.data || []);
       setDeptOptions(res.data || []);
@@ -173,7 +173,7 @@ const Contacts = () => {
       phoneNo: c.phone || '',
       email: c.email || '',
       designation: typeof c.designation === 'object' ? c.designation.designation : c.designation || '',
-      department: typeof c.department === 'object' ? c.department.department : c.department || ''
+      department: typeof c.department === 'object' ? (c.department.insDepartment || c.department.department) : c.department || ''
     });
     setEditIndex(index);
     setOpen(true);
@@ -207,6 +207,95 @@ const Contacts = () => {
   const handleChangeRowsPerPage = (event) => {
     setRowsPerPage(parseInt(event.target.value, 10));
     setPage(0);
+  };
+
+  const exportCSV = () => {
+    if (!data || data.length === 0) return;
+    const headers = ["Company", "Name", "Phone", "Email", "Designation", "Department"];
+    let csvContent = headers.join(",") + "\n";
+    data.forEach(item => {
+      const dept = typeof item.department === 'object' ? (item.department.insDepartment || item.department.department) : item.department || '';
+      csvContent += `"${(item.companyName || '').replace(/"/g, '""')}","${(item.name || '').replace(/"/g, '""')}","${(item.phone || '').replace(/"/g, '""')}","${(item.email || '').replace(/"/g, '""')}","${(item.designation || '').replace(/"/g, '""')}","${(dept || '').replace(/"/g, '""')}"\n`;
+    });
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", "contacts.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handleImportCSV = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (evt) => {
+      const text = evt.target.result;
+      const lines = text.split("\n").map(line => line.trim()).filter(line => line !== "");
+      if (lines.length <= 1) {
+        toast.error("CSV file is empty or invalid");
+        return;
+      }
+
+      const header = lines[0].toLowerCase();
+      if (!header.includes("name") || !header.includes("phone")) {
+        toast.error("Invalid CSV format. Header must contain 'Name' and 'Phone'");
+        return;
+      }
+
+      const importedContacts = [];
+      for (let i = 1; i < lines.length; i++) {
+        const row = lines[i].split(",").map(cell => cell.trim().replace(/^"|"$/g, '').replace(/""/g, '"'));
+        const companyName = row[0] || '';
+        const name = row[1];
+        const phone = row[2];
+        const email = row[3] || '';
+        const designation = row[4] || '';
+        const department = row[5] || '';
+        if (name && phone) {
+          importedContacts.push({
+            companyName,
+            name,
+            phone,
+            email,
+            designation,
+            department
+          });
+        }
+      }
+
+      const existingPhones = new Set(data.map(item => (item.phone || '').trim()));
+      const uniqueNewContacts = importedContacts.filter(c => !existingPhones.has(c.phone.trim()));
+
+      if (uniqueNewContacts.length === 0) {
+        toast.info("No new unique contacts found to import.");
+        return;
+      }
+
+      let successCount = 0;
+      for (const contact of uniqueNewContacts) {
+        try {
+          const res = await post("contact", contact);
+          if (res && (res.status === true || res.status === "true" || res.data)) {
+            successCount++;
+          }
+        } catch (err) {
+          console.error(`Failed to import contact: ${contact.name}`, err);
+        }
+      }
+
+      if (successCount === 0) {
+        toast.info("No new unique contacts found to import.");
+      } else {
+        toast.success(`Imported ${successCount} new unique contacts successfully!`);
+      }
+      fetchContacts();
+    };
+    reader.readAsText(file);
+    e.target.value = '';
   };
 
   return (
@@ -282,8 +371,8 @@ const Contacts = () => {
               >
                 {deptOptions.length > 0 ? (
                   deptOptions.map((d) => (
-                    <MenuItem key={d._id} value={d.department}>
-                      {d.department}
+                    <MenuItem key={d._id} value={d.insDepartment}>
+                      {d.insDepartment}
                     </MenuItem>
                   ))
                 ) : (
@@ -310,7 +399,7 @@ const Contacts = () => {
               Contact List
             </Typography>
 
-            <Box display="flex" gap={2}>
+            <Box display="flex" gap={2} alignItems="center">
               <TextField
                 label="Search"
                 size="small"
@@ -319,7 +408,7 @@ const Contacts = () => {
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
 
-              <Button variant="outlined" color="primary" startIcon={<Refresh />}>
+              <Button variant="outlined" color="primary" startIcon={<Refresh />} onClick={fetchContacts}>
                 Refresh
               </Button>
               {(contactsPermission.Add === true || isAdmin) && (
@@ -327,6 +416,13 @@ const Contacts = () => {
                   Add Contact
                 </Button>
               )}
+              <Button variant="contained" color="secondary" onClick={exportCSV}>
+                Export
+              </Button>
+              <Button variant="contained" component="label" sx={{ backgroundColor: '#4caf50', color: 'white', '&:hover': { backgroundColor: '#388e3c' } }}>
+                Import
+                <input type="file" accept=".csv" hidden onChange={handleImportCSV} />
+              </Button>
             </Box>
           </Box>
           <Box sx={{ width: '100%', overflowX: 'auto' }}>
@@ -352,7 +448,7 @@ const Contacts = () => {
                     <TableCell>{c.phone}</TableCell>
                     <TableCell>{c.email}</TableCell>
                     <TableCell>{c.designation}</TableCell>
-                    <TableCell>{typeof c.department === 'object' ? c.department.department : c.department || 'N/A'}</TableCell>
+                    <TableCell>{typeof c.department === 'object' ? (c.department.insDepartment || c.department.department) : c.department || 'N/A'}</TableCell>
                     <TableCell>
                       <Box sx={{ display: 'flex', gap: 1 }}>
                         {(contactsPermission.Edit === true || isAdmin) && (

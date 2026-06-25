@@ -53,8 +53,8 @@ const AddCustomer = () => {
       gstNo: '',
       panNo: '',
       logo: null,
-      adharNo: '',
-      dlNo: '',
+      aadharNo: '',
+      drivingLicenseNo: '',
       address: '',
       pincode: '',
       city: '',
@@ -63,6 +63,9 @@ const AddCustomer = () => {
       endDate: '',
       createdBy: localStorage.getItem('Id') || '',
       companyId: localStorage.getItem('companyId') || '',
+      authorisedPersonName: '',
+      authorisedPersonContact: '',
+      authorisedPersonEmail: '',
       contactPerson: [
         {
           name: '',
@@ -193,19 +196,7 @@ const AddCustomer = () => {
   };
 
   const validateForm = () => {
-    const newErrors = {};
-
-    // Only required fields
-    if (!form.name) newErrors.name = 'Customer Name is required';
-
-    if (!form.mobile?.match(/^\d{10}$/)) newErrors.mobile = 'Enter valid 10-digit number';
-
-    if (!form.adharNo?.match(/^\d{12}$/)) newErrors.adharNo = 'Enter valid 12-digit number';
-
-    if (!form.email?.match(/^[\w-.]+@([\w-]+\.)+[\w-]{2,4}$/)) newErrors.email = 'Invalid email';
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    return true;
   };
 
   const handleSubmit = async () => {
@@ -216,12 +207,11 @@ const AddCustomer = () => {
     }
     try {
       const role = localStorage.getItem('loginRole');
-      if (role === 'admin') {
-        const res = await post('customerRegistration', form);
-        if (res.data) {
-          toast.success('Customer Registration Successful');
-          navigate('/customer');
-        }
+      const url = role === 'super-admin' ? 'clientRegistration' : 'customerRegistration';
+      const res = await post(url, form);
+      if (res.data) {
+        toast.success('Customer Registration Successful');
+        navigate('/customer');
       }
     } catch (error) {
       console.error('Error submitting form:', error);
@@ -324,6 +314,43 @@ const AddCustomer = () => {
                         </Select>
                       </FormControl>
                     </Grid>
+                    <Grid item xs={12} sm={4}>
+                      <TextField
+                        fullWidth
+                        label="Authorized Person Name"
+                        name="authorisedPersonName"
+                        value={form.authorisedPersonName}
+                        onChange={handleChange}
+                      />
+                    </Grid>
+                    <Grid item xs={12} sm={4}>
+                      <TextField
+                        fullWidth
+                        label="Authorized Person Contact"
+                        name="authorisedPersonContact"
+                        value={form.authorisedPersonContact}
+                        onChange={handleChange}
+                        inputProps={{ maxLength: 10 }}
+                      />
+                    </Grid>
+                    <Grid item xs={12} sm={4}>
+                      <TextField
+                        fullWidth
+                        label="Authorized Person Email"
+                        name="authorisedPersonEmail"
+                        value={form.authorisedPersonEmail}
+                        onChange={handleChange}
+                      />
+                    </Grid>
+                    <Grid item xs={12} sm={4}>
+                      <TextField
+                        fullWidth
+                        label="GST Number"
+                        name="gstNo"
+                        value={form.gstNo}
+                        onChange={handleChange}
+                      />
+                    </Grid>
                     {/* </Grid> */}
                   </>
                 )}
@@ -349,7 +376,7 @@ const AddCustomer = () => {
                     labelId="name"
                     label="Customer Name"
                     name="name"
-                    required={true}
+                    required={false}
                     onChange={handleChange}
                     error={!!errors.name}
                     helperText={errors.name}
@@ -363,12 +390,11 @@ const AddCustomer = () => {
                 {[
                   { label: 'Email', name: 'email', required: false },
                   { label: 'Mobile Number', name: 'mobile', required: false },
-                  { label: 'PAN Number', name: 'panNumber', required: false },
-                  { label: 'ADHAR Number', name: 'adharNumber', required: false },
-                  { label: 'DRIVING LICENCE Number', name: 'dlNumber', required: false },
-                  { label: 'GST Number', name: 'gstNumber', required: false },
+                  { label: 'PAN Number', name: 'panNo', required: false },
+                  { label: 'ADHAR Number', name: 'aadharNo', required: false },
+                  { label: 'DRIVING LICENCE Number', name: 'drivingLicenseNo', required: false },
                   { label: 'ADDRESS', name: 'address', required: false },
-                  { label: 'PIN CODE', name: 'pin', required: false },
+                  { label: 'PIN CODE', name: 'pincode', required: false },
                   { label: 'CITY', name: 'city', required: false },
                   { label: 'STATE', name: 'state', required: false }
                 ].map((field) => (
@@ -377,11 +403,11 @@ const AddCustomer = () => {
                       label={field.label}
                       name={field.name}
                       fullWidth
-                      required={field.required || false}
+                      required={field.required}
                       onChange={handleChange}
                       error={!!errors[field.name]}
                       helperText={errors[field.name]}
-                      inputProps={field.name === 'mobile' ? { maxLength: 10 } : field.name === 'adharNumber' ? { maxLength: 12 } : {}}
+                      inputProps={field.name === 'mobile' ? { maxLength: 10 } : field.name === 'aadharNo' ? { maxLength: 12 } : {}}
                     ></TextField>
                   </Grid>
                 ))}

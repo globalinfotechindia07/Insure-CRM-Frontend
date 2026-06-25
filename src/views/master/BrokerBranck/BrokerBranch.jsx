@@ -94,6 +94,96 @@ const fetchBrokerBranch = async () => {
     }
   };
 
+  const exportCSV = () => {
+    if (!data || data.length === 0) return;
+    const headers = ["Branch ID", "Branch Code", "Branch Name", "Address", "PIN Code", "Mobile", "Email"];
+    let csvContent = headers.join(",") + "\n";
+    data.forEach(item => {
+      csvContent += `"${item.branchId || ''}","${item.branchCode || ''}","${item.branchName || ''}","${(item.address || '').replace(/"/g, '""')}","${item.pinCode || ''}","${item.mobile || ''}","${item.email || ''}"\n`;
+    });
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", "broker_branches.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handleImportCSV = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (evt) => {
+      const text = evt.target.result;
+      const lines = text.split("\n").map(line => line.trim()).filter(line => line !== "");
+      if (lines.length <= 1) {
+        toast.error("CSV file is empty or invalid");
+        return;
+      }
+
+      const header = lines[0].toLowerCase();
+      if (!header.includes("branch code") || !header.includes("branch name")) {
+        toast.error("Invalid CSV format. Header must contain 'Branch Code' and 'Branch Name'");
+        return;
+      }
+
+      const importedBranches = [];
+      for (let i = 1; i < lines.length; i++) {
+        const row = lines[i].split(",").map(cell => cell.trim().replace(/^"|"$/g, '').replace(/""/g, '"'));
+        const bId = row[0] || '';
+        const bCode = row[1] || '';
+        const bName = row[2] || '';
+        const addr = row[3] || '';
+        const pin = row[4] || '';
+        const mob = row[5] || '';
+        const mail = row[6] || '';
+        if (bCode && bName) {
+          importedBranches.push({
+            branchId: bId,
+            branchCode: bCode,
+            branchName: bName,
+            address: addr,
+            pinCode: pin,
+            mobile: mob,
+            email: mail
+          });
+        }
+      }
+
+      const existingSet = new Set(data.map(item => item.branchCode.toLowerCase().trim()));
+      const uniqueNewBranches = importedBranches.filter(b => !existingSet.has(b.branchCode.toLowerCase().trim()));
+
+      if (uniqueNewBranches.length === 0) {
+        toast.info("No new unique branches found to import.");
+        return;
+      }
+
+      let successCount = 0;
+      for (const branch of uniqueNewBranches) {
+        try {
+          const res = await post("brokerBranch", branch);
+          if (res && (res.status === "true" || res.status === true || res.data)) {
+            successCount++;
+          }
+        } catch (err) {
+          console.error(`Failed to import branch: ${branch.branchCode}`, err);
+        }
+      }
+
+      if (successCount === 0) {
+        toast.info("No new unique branches found to import.");
+      } else {
+        toast.success(`Imported ${successCount} new unique branches successfully!`);
+      }
+      fetchBrokerBranch();
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+  };
+
   function initialForm() {
     return {
       branchId: '',
@@ -233,9 +323,18 @@ const fetchBrokerBranch = async () => {
       </Breadcrumb>
       <Grid container justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
         <Typography variant="h5">Broker Branch</Typography>
-        <Button variant="contained" startIcon={<Add />} onClick={handleOpen}>
-          Add Branch
-        </Button>
+        <div style={{ display: 'flex', gap: '10px' }}>
+          <Button variant="contained" startIcon={<Add />} onClick={handleOpen}>
+            Add Branch
+          </Button>
+          <Button variant="contained" color="secondary" onClick={exportCSV}>
+            Export
+          </Button>
+          <Button variant="contained" component="label" sx={{ backgroundColor: '#4caf50', color: 'white', '&:hover': { backgroundColor: '#388e3c' } }}>
+            Import
+            <input type="file" accept=".csv" hidden onChange={handleImportCSV} />
+          </Button>
+        </div>
       </Grid>
 
       {/* Table */}

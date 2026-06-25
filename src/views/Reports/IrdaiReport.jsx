@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   Grid,
   TextField,
@@ -24,7 +24,8 @@ import {
   Box,
   Checkbox,
   FormControlLabel,
-  TableContainer
+  TableContainer,
+  TablePagination
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -38,8 +39,9 @@ import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import ArrowBack from '@mui/icons-material/ArrowBack';
-import { get, post } from '../../api/api';
+import REACT_APP_API_URL, { get, post } from '../../api/api';
 import { set } from 'lodash';
+import axios from 'axios';
 
 const IrdaiReport = () => {
   const [filterValue, setFilterValue] = useState('');
@@ -55,10 +57,51 @@ const IrdaiReport = () => {
   const [financialYear, setFinancialYear] = useState(() => {
     return localStorage.getItem('selectedFY') || '';
   });
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(25);
+
+
+
+
+  useEffect(() => {
+    setPage(0);
+  }, [filterValue, filterDate, financialYear]);
 
   useEffect(() => {
     fetchDropdownData();
   }, []);
+
+  // Listen for storage changes to sync selectedFY across components
+  useEffect(() => {
+    const handleStorageChange = (e) => {
+      if (e.key === 'selectedFY') {
+        const newFY = e.newValue;
+        if (newFY && newFY !== financialYear) {
+          setFinancialYear(newFY);
+        }
+      }
+    };
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, [financialYear]);
+
+  // Validate and default financialYear
+  useEffect(() => {
+    if (financialYearData.length > 0) {
+      const isValid = financialYearData.some(f => f._id === financialYear);
+      if (!isValid) {
+        const selectedFY = localStorage.getItem('selectedFY');
+        if (selectedFY && financialYearData.some(f => f._id === selectedFY)) {
+          setFinancialYear(selectedFY);
+        } else {
+          const defaultFY = financialYearData[0]._id;
+          setFinancialYear(defaultFY);
+          localStorage.setItem('selectedFY', defaultFY);
+          window.dispatchEvent(new Event('storage'));
+        }
+      }
+    }
+  }, [financialYearData, financialYear]);
 
   // Fetch dropdown and lead details
   const fetchDropdownData = async () => {
@@ -74,7 +117,7 @@ const IrdaiReport = () => {
   const handleFilterDateChange = (e) => setFilterDate(e.target.value);
   const handleFilterChange = (e) => setFilterValue(e.target.value);
 
-  useEffect(() => {}, [filterDate, filterValue]);
+  useEffect(() => { }, [filterDate, filterValue]);
 
   // Fetch all policy Detail
 
@@ -98,6 +141,7 @@ const IrdaiReport = () => {
   useEffect(() => {
     if (financialYear) {
       localStorage.setItem('selectedFY', financialYear);
+      window.dispatchEvent(new Event('storage'));
     }
     fetchPolicyDetail();
   }, [financialYear]);
@@ -146,6 +190,53 @@ const IrdaiReport = () => {
     console.log('Date to ', dateTo);
   };
 
+  const handleExportExcel = () => {
+    let tableId = '';
+    let reportName = 'IRDAI_Report';
+
+    if (filterValue === 'byCustomer' || filterValue === 'byCompany') {
+      tableId = 'irdai-matrix-table';
+      reportName = `IRDAI_Matrix_Report_${filterValue === 'byCustomer' ? 'Customer' : 'Company'}`;
+    } else {
+      tableId = 'irdai-department-table';
+      reportName = 'IRDAI_Department_Report';
+    }
+
+    const table = document.getElementById(tableId);
+    if (!table) {
+      toast.error("No report data available to export");
+      return;
+    }
+
+    // Wrap the table HTML in a full HTML document with styling for Excel
+    const html = `
+      <html>
+        <head>
+          <meta charset="utf-8" />
+          <style>
+            table { border-collapse: collapse; font-family: Arial, sans-serif; }
+            th, td { border: 1px solid #dddddd; padding: 8px; text-align: left; }
+            th { background-color: #f5f5f5; font-weight: bold; text-transform: uppercase; }
+            tr.grand-total { background-color: #d1d1d1; font-weight: bold; }
+          </style>
+        </head>
+        <body>
+          ${table.outerHTML}
+        </body>
+      </html>
+    `;
+
+    const blob = new Blob([html], { type: 'application/vnd.ms-excel' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${reportName}_${new Date().toISOString().slice(0, 10)}.xls`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    toast.success("Excel report downloaded successfully");
+  };
+
   const isDateInRange = (policyDate, from, to) => {
     if (!policyDate) return false;
 
@@ -159,7 +250,7 @@ const IrdaiReport = () => {
     return true;
   };
 
-  const departmentResult = policy?.reduce(
+  const departmentResult = (policy || []).reduce(
     (acc, item) => {
       const dept = item?.insDepartment?.insDepartment;
 
@@ -211,9 +302,25 @@ const IrdaiReport = () => {
   const departments = Object.values(departmentsObj);
   const footerTotal = departmentArray[1]; // totals
 
+  const paginatedDepartments = useMemo(() => {
+    return departments.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
+  }, [departments, page, rowsPerPage]);
+
+  const departmentPageSubtotal = useMemo(() => {
+    return paginatedDepartments.reduce(
+      (acc, item) => {
+        acc.count += item.count || 0;
+        acc.totalAmount += item.totalAmount || 0;
+        acc.totalBrokerageAmountincGst += item.totalBrokerageAmountincGst || 0;
+        return acc;
+      },
+      { count: 0, totalAmount: 0, totalBrokerageAmountincGst: 0 }
+    );
+  }, [paginatedDepartments]);
+
   const DEPARTMENTS = ['ENGINEERING', 'FIRE', 'HEALTH', 'LIABILITY', 'MARINE', 'MISCELLANEOUS', 'MOTOR'];
 
-  const companyCustomerResult = policy.reduce(
+  const companyCustomerResult = (policy || []).reduce(
     (acc, item) => {
       const rowKey = filterValue === 'byCompany' ? item?.insCompany?.insCompany : item?.cutomerName;
 
@@ -281,6 +388,28 @@ const IrdaiReport = () => {
   const tableRows = Object.values(companyCustomerResult.rows);
   const footer = companyCustomerResult.grandTotal;
 
+  const paginatedTableRows = useMemo(() => {
+    return tableRows.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
+  }, [tableRows, page, rowsPerPage]);
+
+  const matrixPageSubtotal = useMemo(() => {
+    return paginatedTableRows.reduce(
+      (acc, row) => {
+        DEPARTMENTS.forEach((dept) => {
+          if (!acc.departments[dept]) {
+            acc.departments[dept] = { policies: 0, premium: 0 };
+          }
+          acc.departments[dept].policies += row.departments[dept]?.policies || 0;
+          acc.departments[dept].premium += row.departments[dept]?.premium || 0;
+        });
+        acc.totalPolicies += row.totalPolicies || 0;
+        acc.totalPremium += row.totalPremium || 0;
+        return acc;
+      },
+      { departments: {}, totalPolicies: 0, totalPremium: 0 }
+    );
+  }, [paginatedTableRows]);
+
   return (
     <>
       {loading && (
@@ -312,10 +441,31 @@ const IrdaiReport = () => {
           IRDIA
         </Typography>
       </Breadcrumb>
+      <Grid container spacing={gridSpacing} sx={{ mb: 2 }}>
+        <Grid item xs={12}>
+          <Grid container justifyContent="space-between" alignItems="center">
+            <Typography variant="h5">IRDIA Report</Typography>
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <Button
+                variant="contained"
+                color="secondary"
+                onClick={handleExportExcel}
+                disabled={policy.length === 0}
+              >
+                Export
+              </Button>
+            </div>
+          </Grid>
+        </Grid>
+      </Grid>
       <Grid container spacing={gridSpacing}>
         <Grid item xs={12}>
           <Card>
             <CardContent>
+              <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+                <Typography variant="h5" color="textPrimary" fontWeight="bold">Report Filters</Typography>
+              </Box>
+              <Divider sx={{ mb: 2 }} />
               <Box>
                 <Grid container spacing={1} sx={{ fontWeight: 'bold', textTransform: 'uppercase' }}>
                   <Grid item xs={2}>
@@ -349,11 +499,11 @@ const IrdaiReport = () => {
                     <>
                       <Grid item xs={2}>
                         <TextField select label="filterDate" name="Date" fullWidth value={filterDate} onChange={handleFilterDateChange}>
-                          <MenuItem value="byMonth">BY MONTH</MenuItem>
+                          {/* <MenuItem value="byMonth">BY MONTH</MenuItem> */}
                           <MenuItem value="byDate">BY DATE</MenuItem>
                         </TextField>
                       </Grid>
-                      {filterDate === 'byMonth' ? (
+                      {/* {filterDate === 'byMonth' ? (
                         <>
                           <Grid item xs={2}>
                             <LocalizationProvider dateAdapter={AdapterDateFns}>
@@ -367,30 +517,30 @@ const IrdaiReport = () => {
                             </LocalizationProvider>
                           </Grid>
                         </>
-                      ) : (
-                        <>
-                          <Grid item xs={2}>
-                            <LocalizationProvider dateAdapter={AdapterDateFns}>
-                              <DatePicker
-                                label="From Date"
-                                value={dateFrom}
-                                onChange={(value) => handleDateChange('dateFrom', value)}
-                                slotProps={{ textField: { fullWidth: true } }}
-                              />
-                            </LocalizationProvider>
-                          </Grid>
-                          <Grid item xs={2}>
-                            <LocalizationProvider dateAdapter={AdapterDateFns}>
-                              <DatePicker
-                                label="To Date"
-                                value={dateTo}
-                                onChange={(value) => handleDateChange('dateTo', value)}
-                                slotProps={{ textField: { fullWidth: true } }}
-                              />
-                            </LocalizationProvider>
-                          </Grid>
-                        </>
-                      )}
+                      ) : ( */}
+                      <>
+                        <Grid item xs={2}>
+                          <LocalizationProvider dateAdapter={AdapterDateFns}>
+                            <DatePicker
+                              label="From Date"
+                              value={dateFrom}
+                              onChange={(value) => handleDateChange('dateFrom', value)}
+                              slotProps={{ textField: { fullWidth: true } }}
+                            />
+                          </LocalizationProvider>
+                        </Grid>
+                        <Grid item xs={2}>
+                          <LocalizationProvider dateAdapter={AdapterDateFns}>
+                            <DatePicker
+                              label="To Date"
+                              value={dateTo}
+                              onChange={(value) => handleDateChange('dateTo', value)}
+                              slotProps={{ textField: { fullWidth: true } }}
+                            />
+                          </LocalizationProvider>
+                        </Grid>
+                      </>
+                      {/* )} */}
                       <Grid item xs={2}>
                         <Button size="large" variant="contained" sx={{ my: 1 }} onClick={handleFilter}>
                           Search
@@ -418,7 +568,7 @@ const IrdaiReport = () => {
               <CardContent>
                 <Box>
                   <TableContainer>
-                    <Table size="small">
+                    <Table size="small" id="irdai-department-table">
                       <TableHead>
                         <TableRow
                           sx={{
@@ -435,9 +585,9 @@ const IrdaiReport = () => {
                         </TableRow>
                       </TableHead>
                       <TableBody>
-                        {departments.map((item, index) => (
+                        {paginatedDepartments.map((item, index) => (
                           <TableRow key={item.id}>
-                            <TableCell>{index + 1}</TableCell>
+                            <TableCell>{page * rowsPerPage + index + 1}</TableCell>
                             <TableCell>{item.department}</TableCell>
                             <TableCell>{item.count.toLocaleString('en-IN')}</TableCell>
                             <TableCell>
@@ -452,42 +602,96 @@ const IrdaiReport = () => {
                                 maximumFractionDigits: 2
                               })}
                             </TableCell>
-                            <TableCell>{Number(item.totalBrokerageAmountincGst / item.totalAmount).toFixed(2) + ' %'}</TableCell>
+                            <TableCell>
+                              {item.totalAmount > 0
+                                ? Number(item.totalBrokerageAmountincGst / item.totalAmount).toFixed(2) + ' %'
+                                : '0.00 %'}
+                            </TableCell>
                           </TableRow>
                         ))}
 
-                        {/* GRAND TOTAL ROW */}
+                        {/* PAGE SUBTOTAL ROW */}
                         <TableRow
                           sx={{
-                            backgroundColor: '#e0e0e0',
+                            backgroundColor: '#f9f9f9',
                             fontWeight: 'bold'
                           }}
                         >
                           <TableCell sx={{ px: 1.5, py: 0.8 }}></TableCell>
-                          <TableCell sx={{ px: 1.5, py: 0.8, fontWeight: 'bold' }}>GRAND TOTAL</TableCell>
+                          <TableCell sx={{ px: 1.5, py: 0.8, fontWeight: 'bold', color: 'text.secondary' }}>PAGE SUBTOTAL</TableCell>
 
-                          <TableCell sx={{ px: 1.5, py: 0.8, fontWeight: 'bold' }}>
-                            {Number(footerTotal.count).toLocaleString('en-IN')}
+                          <TableCell sx={{ px: 1.5, py: 0.8, fontWeight: 'bold', color: 'text.secondary' }}>
+                            {Number(departmentPageSubtotal.count).toLocaleString('en-IN')}
                           </TableCell>
 
-                          <TableCell sx={{ px: 1.5, py: 0.8, fontWeight: 'bold' }}>
-                            {Number(footerTotal.totalAmount).toLocaleString('en-IN', {
+                          <TableCell sx={{ px: 1.5, py: 0.8, fontWeight: 'bold', color: 'text.secondary' }}>
+                            {Number(departmentPageSubtotal.totalAmount).toLocaleString('en-IN', {
                               minimumFractionDigits: 2,
                               maximumFractionDigits: 2
                             })}
                           </TableCell>
 
-                          <TableCell sx={{ px: 1.5, py: 0.8, fontWeight: 'bold' }}>
-                            {Number(footerTotal.totalBrokerageAmountincGst).toFixed(2)}
+                          <TableCell sx={{ px: 1.5, py: 0.8, fontWeight: 'bold', color: 'text.secondary' }}>
+                            {Number(departmentPageSubtotal.totalBrokerageAmountincGst).toFixed(2)}
                           </TableCell>
 
-                          <TableCell sx={{ px: 1.5, py: 0.8, fontWeight: 'bold' }}>
-                            {Number(footerTotal.totalBrokerageAmountincGst / footerTotal.totalAmount).toFixed(2) + ' %'}
+                          <TableCell sx={{ px: 1.5, py: 0.8, fontWeight: 'bold', color: 'text.secondary' }}>
+                            {departmentPageSubtotal.totalAmount > 0
+                              ? Number(departmentPageSubtotal.totalBrokerageAmountincGst / departmentPageSubtotal.totalAmount).toFixed(2) + ' %'
+                              : '0.00 %'}
                           </TableCell>
                         </TableRow>
+
+                        {/* GRAND TOTAL ROW */}
+                        {(page + 1) * rowsPerPage >= departments.length && (
+                          <TableRow
+                            sx={{
+                              backgroundColor: '#e0e0e0',
+                              fontWeight: 'bold'
+                            }}
+                          >
+                            <TableCell sx={{ px: 1.5, py: 0.8 }}></TableCell>
+                            <TableCell sx={{ px: 1.5, py: 0.8, fontWeight: 'bold' }}>GRAND TOTAL</TableCell>
+
+                            <TableCell sx={{ px: 1.5, py: 0.8, fontWeight: 'bold' }}>
+                              {Number(footerTotal.count).toLocaleString('en-IN')}
+                            </TableCell>
+
+                            <TableCell sx={{ px: 1.5, py: 0.8, fontWeight: 'bold' }}>
+                              {Number(footerTotal.totalAmount).toLocaleString('en-IN', {
+                                minimumFractionDigits: 2,
+                                maximumFractionDigits: 2
+                              })}
+                            </TableCell>
+
+                            <TableCell sx={{ px: 1.5, py: 0.8, fontWeight: 'bold' }}>
+                              {Number(footerTotal.totalBrokerageAmountincGst).toFixed(2)}
+                            </TableCell>
+
+                            <TableCell sx={{ px: 1.5, py: 0.8, fontWeight: 'bold' }}>
+                              {footerTotal.totalAmount > 0
+                                ? Number(footerTotal.totalBrokerageAmountincGst / footerTotal.totalAmount).toFixed(2) + ' %'
+                                : '0.00 %'}
+                            </TableCell>
+                          </TableRow>
+                        )}
                       </TableBody>
                     </Table>
                   </TableContainer>
+                  <Box display="flex" justifyContent="flex-end" mt={1}>
+                    <TablePagination
+                      component="div"
+                      count={departments.length}
+                      page={page}
+                      onPageChange={(e, newPage) => setPage(newPage)}
+                      rowsPerPage={rowsPerPage}
+                      onRowsPerPageChange={(e) => {
+                        setRowsPerPage(parseInt(e.target.value, 10));
+                        setPage(0);
+                      }}
+                      rowsPerPageOptions={[25, 50, 100]}
+                    />
+                  </Box>
                 </Box>
               </CardContent>
             </Card>
@@ -500,7 +704,7 @@ const IrdaiReport = () => {
             <Card>
               <CardContent>
                 <TableContainer>
-                  <Table size="small">
+                  <Table size="small" id="irdai-matrix-table">
                     <TableHead>
                       {/* HEADER ROW 1 */}
                       <TableRow sx={{ backgroundColor: '#f5f5f5' }}>
@@ -533,9 +737,9 @@ const IrdaiReport = () => {
 
                     <TableBody>
                       {/* BODY */}
-                      {tableRows.map((row, index) => (
+                      {paginatedTableRows.map((row, index) => (
                         <TableRow key={row.name}>
-                          <TableCell>{index + 1}</TableCell>
+                          <TableCell>{page * rowsPerPage + index + 1}</TableCell>
                           <TableCell>{row.name}</TableCell>
 
                           {DEPARTMENTS.map((dept) => (
@@ -550,26 +754,60 @@ const IrdaiReport = () => {
                         </TableRow>
                       ))}
 
-                      {/* FOOTER */}
-                      <TableRow sx={{ backgroundColor: '#d1d1d1', fontWeight: 'bold' }}>
+                      {/* PAGE SUBTOTAL */}
+                      <TableRow sx={{ backgroundColor: '#f0f0f0', fontWeight: 'bold' }}>
                         <TableCell />
-                        <TableCell sx={{ px: 1.5, py: 0.8, fontWeight: 'bold' }}>GRAND TOTAL</TableCell>
+                        <TableCell sx={{ px: 1.5, py: 0.8, fontWeight: 'bold', color: 'text.secondary' }}>PAGE SUBTOTAL</TableCell>
 
                         {DEPARTMENTS.map((dept) => (
                           <React.Fragment key={dept}>
-                            <TableCell sx={{ px: 1.5, py: 0.8, fontWeight: 'bold' }}>{footer.departments[dept]?.policies || 0}</TableCell>
-                            <TableCell sx={{ px: 1.5, py: 0.8, fontWeight: 'bold' }}>
-                              {(footer.departments[dept]?.premium || 0).toLocaleString('en-IN')}
+                            <TableCell sx={{ px: 1.5, py: 0.8, fontWeight: 'bold', color: 'text.secondary' }}>{matrixPageSubtotal.departments[dept]?.policies || 0}</TableCell>
+                            <TableCell sx={{ px: 1.5, py: 0.8, fontWeight: 'bold', color: 'text.secondary' }}>
+                              {(matrixPageSubtotal.departments[dept]?.premium || 0).toLocaleString('en-IN')}
                             </TableCell>
                           </React.Fragment>
                         ))}
 
-                        <TableCell sx={{ px: 1.5, py: 0.8, fontWeight: 'bold' }}>{footer.totalPolicies}</TableCell>
-                        <TableCell sx={{ px: 1.5, py: 0.8, fontWeight: 'bold' }}>{footer.totalPremium.toLocaleString('en-IN')}</TableCell>
+                        <TableCell sx={{ px: 1.5, py: 0.8, fontWeight: 'bold', color: 'text.secondary' }}>{matrixPageSubtotal.totalPolicies}</TableCell>
+                        <TableCell sx={{ px: 1.5, py: 0.8, fontWeight: 'bold', color: 'text.secondary' }}>{matrixPageSubtotal.totalPremium.toLocaleString('en-IN')}</TableCell>
                       </TableRow>
+
+                      {/* FOOTER */}
+                      {(page + 1) * rowsPerPage >= tableRows.length && (
+                        <TableRow sx={{ backgroundColor: '#d1d1d1', fontWeight: 'bold' }}>
+                          <TableCell />
+                          <TableCell sx={{ px: 1.5, py: 0.8, fontWeight: 'bold' }}>GRAND TOTAL</TableCell>
+
+                          {DEPARTMENTS.map((dept) => (
+                            <React.Fragment key={dept}>
+                              <TableCell sx={{ px: 1.5, py: 0.8, fontWeight: 'bold' }}>{footer.departments[dept]?.policies || 0}</TableCell>
+                              <TableCell sx={{ px: 1.5, py: 0.8, fontWeight: 'bold' }}>
+                                {(footer.departments[dept]?.premium || 0).toLocaleString('en-IN')}
+                              </TableCell>
+                            </React.Fragment>
+                          ))}
+
+                          <TableCell sx={{ px: 1.5, py: 0.8, fontWeight: 'bold' }}>{footer.totalPolicies}</TableCell>
+                          <TableCell sx={{ px: 1.5, py: 0.8, fontWeight: 'bold' }}>{footer.totalPremium.toLocaleString('en-IN')}</TableCell>
+                        </TableRow>
+                      )}
                     </TableBody>
                   </Table>
                 </TableContainer>
+                <Box display="flex" justifyContent="flex-end" mt={1}>
+                  <TablePagination
+                    component="div"
+                    count={tableRows.length}
+                    page={page}
+                    onPageChange={(e, newPage) => setPage(newPage)}
+                    rowsPerPage={rowsPerPage}
+                    onRowsPerPageChange={(e) => {
+                      setRowsPerPage(parseInt(e.target.value, 10));
+                      setPage(0);
+                    }}
+                    rowsPerPageOptions={[25, 50, 100]}
+                  />
+                </Box>
               </CardContent>
             </Card>
           </Grid>

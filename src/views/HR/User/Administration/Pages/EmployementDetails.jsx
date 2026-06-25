@@ -143,7 +143,7 @@ function EmploymentDetails({ setValue, setStoredAllData, storedAllData }) {
                 >
                   {deparmentData.map((item) => (
                     <MenuItem key={item._id} value={item._id}>
-                      {item.department}
+                      {item.name}
                     </MenuItem>
                   ))}
                 </TextField>

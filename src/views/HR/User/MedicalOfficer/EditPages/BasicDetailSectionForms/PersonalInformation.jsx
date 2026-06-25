@@ -166,6 +166,30 @@ function PersonalInformation ({ basicDetails, setBasicDetails, errors, handleUpd
 
         <Grid item xs={12} sm={4}>
           <TextField
+            label="PF Number"
+            name="pfNumber"
+            fullWidth
+            value={basicDetails.pfNumber || ''}
+            onChange={handleUpdate}
+            error={!!errors.pfNumber}
+            helperText={errors.pfNumber}
+          />
+        </Grid>
+
+        <Grid item xs={12} sm={4}>
+          <TextField
+            label="ESIC Number"
+            name="esicNumber"
+            fullWidth
+            value={basicDetails.esicNumber || ''}
+            onChange={handleUpdate}
+            error={!!errors.esicNumber}
+            helperText={errors.esicNumber}
+          />
+        </Grid>
+
+        <Grid item xs={12} sm={4}>
+          <TextField
             label='Passport Number'
             name='passPortNumber'
             fullWidth

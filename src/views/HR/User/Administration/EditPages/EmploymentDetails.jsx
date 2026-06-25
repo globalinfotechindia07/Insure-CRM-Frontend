@@ -189,7 +189,7 @@ function EmploymentDetails({ setValue, setStoredAllData, storedAllData }) {
                   {deparmentData?.length > 0 ? (
                     deparmentData.map((item, index) => (
                       <MenuItem key={item._id} value={item._id}>
-                        {item.department}
+                        {item.name}
                       </MenuItem>
                     ))
                   ) : (

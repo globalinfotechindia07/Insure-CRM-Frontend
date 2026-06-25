@@ -34,6 +34,8 @@ import {
 } from "../../services/tpa.service";
 
 import Swal from "sweetalert2";
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 const TPAPage = () => {
 
@@ -57,11 +59,12 @@ const TPAPage = () => {
 
       const res = await getTPAs();
 
-      setData(res.data.data || []);
+      setData(res.data?.data || res.data || []);
 
     } catch (error) {
 
       console.log(error);
+      setData([]);
 
     }
   };
@@ -87,17 +90,37 @@ const TPAPage = () => {
     try {
 
       if (editId) {
-
-        await updateTPA(editId, formData);
-        
-        Swal.fire({
-          icon: "success",
-          title: "Updated!",
-          text: "TPA updated successfully!",
-          timer: 2000,
-          showConfirmButton: false,
+        const result = await Swal.fire({
+          title: "Update Record?",
+          text: "Do you want to update this record?",
+          icon: "warning",
+          showCancelButton: true,
+          confirmButtonColor: "#3085d6",
+          cancelButtonColor: "#d33",
+          confirmButtonText: "Yes, update it!",
+          cancelButtonText: "Cancel"
         });
 
+        if (result.isConfirmed) {
+          await updateTPA(editId, formData);
+          
+          Swal.fire({
+            icon: "success",
+            title: "Updated!",
+            text: "TPA updated successfully!",
+            timer: 2000,
+            showConfirmButton: false,
+          });
+          setOpen(false);
+          setEditId(null);
+          setFormData({
+            tpaName: "",
+            contactNo: "",
+            email: "",
+            address: "",
+          });
+          fetchData();
+        }
       } else {
 
         await createTPA(formData);
@@ -109,21 +132,16 @@ const TPAPage = () => {
           timer: 2000,
           showConfirmButton: false,
         });
-
+        setOpen(false);
+        setEditId(null);
+        setFormData({
+          tpaName: "",
+          contactNo: "",
+          email: "",
+          address: "",
+        });
+        fetchData();
       }
-
-      setOpen(false);
-
-      setEditId(null);
-
-      setFormData({
-        tpaName: "",
-        contactNo: "",
-        email: "",
-        address: "",
-      });
-
-      fetchData();
 
     } catch (error) {
 
@@ -194,6 +212,90 @@ const TPAPage = () => {
     setOpen(true);
   };
 
+  const exportCSV = () => {
+    if (!data || data.length === 0) return;
+    const headers = ["Name of TPA", "Contact No", "Email ID", "Address"];
+    let csvContent = headers.join(",") + "\n";
+    data.forEach(item => {
+      csvContent += `"${(item.tpaName || '').replace(/"/g, '""')}","${(item.contactNo || '').replace(/"/g, '""')}","${(item.email || '').replace(/"/g, '""')}","${(item.address || '').replace(/"/g, '""')}"\n`;
+    });
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", "tpas.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handleImportCSV = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (evt) => {
+      const text = evt.target.result;
+      const lines = text.split("\n").map(line => line.trim()).filter(line => line !== "");
+      if (lines.length <= 1) {
+        toast.error("CSV file is empty or invalid");
+        return;
+      }
+
+      const header = lines[0].toLowerCase();
+      if (!header.includes("tpa")) {
+        toast.error("Invalid CSV format. Header must contain 'Name of TPA'");
+        return;
+      }
+
+      const importedTPAs = [];
+      for (let i = 1; i < lines.length; i++) {
+        const row = lines[i].split(",").map(cell => cell.trim().replace(/^"|"$/g, '').replace(/""/g, '"'));
+        const tpaName = row[0];
+        const contactNo = row[1] || '';
+        const email = row[2] || '';
+        const address = row[3] || '';
+        if (tpaName) {
+          importedTPAs.push({
+            tpaName,
+            contactNo,
+            email,
+            address
+          });
+        }
+      }
+
+      const existingNames = new Set(data.map(item => (item.tpaName || '').toLowerCase().trim()));
+      const uniqueNewTPAs = importedTPAs.filter(t => !existingNames.has(t.tpaName.toLowerCase().trim()));
+
+      if (uniqueNewTPAs.length === 0) {
+        toast.info("No new unique TPAs found to import.");
+        return;
+      }
+
+      let successCount = 0;
+      for (const t of uniqueNewTPAs) {
+        try {
+          const res = await createTPA(t);
+          if (res && (res.status === true || res.status === "true" || res.data)) {
+            successCount++;
+          }
+        } catch (err) {
+          console.error(`Failed to import TPA: ${t.tpaName}`, err);
+        }
+      }
+
+      if (successCount === 0) {
+        toast.info("No new unique TPAs found to import.");
+      } else {
+        toast.success(`Imported ${successCount} new unique TPAs successfully!`);
+      }
+      fetchData();
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+  };
+
   return (
     <div>
 
@@ -210,23 +312,33 @@ const TPAPage = () => {
           TPA Master
         </Typography>
 
-        <Button
-          variant="contained"
-          startIcon={<Add />}
-          onClick={() => {
-            setOpen(true);
-            setEditId(null);
+        <div style={{ display: 'flex', gap: '10px' }}>
+          <Button
+            variant="contained"
+            className="global_btn"
+            startIcon={<Add />}
+            onClick={() => {
+              setOpen(true);
+              setEditId(null);
 
-            setFormData({
-              tpaName: "",
-              contactNo: "",
-              email: "",
-              address: "",
-            });
-          }}
-        >
-          Add TPA
-        </Button>
+              setFormData({
+                tpaName: "",
+                contactNo: "",
+                email: "",
+                address: "",
+              });
+            }}
+          >
+            Add TPA
+          </Button>
+          <Button variant="contained" color="secondary" onClick={exportCSV}>
+            Export
+          </Button>
+          <Button variant="contained" component="label" sx={{ backgroundColor: '#4caf50', color: 'white', '&:hover': { backgroundColor: '#388e3c' } }}>
+            Import
+            <input type="file" accept=".csv" hidden onChange={handleImportCSV} />
+          </Button>
+        </div>
 
       </Grid>
 
@@ -431,7 +543,7 @@ const TPAPage = () => {
         </CardContent>
 
       </Card>
-
+      <ToastContainer />
     </div>
   );
 };
