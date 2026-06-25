@@ -484,64 +484,7 @@ const UpdateBranchSettings = () => {
                   />
                 </Grid>
 
-                {/* Logo Upload */}
-                <Grid item xs={12}>
-                  <Typography variant="subtitle2" gutterBottom>
-                    Branch Logo
-                  </Typography>
-                  
-                  {!logoPreview && (
-                    <Button
-                      variant="outlined"
-                      component="label"
-                      startIcon={<FaUpload />}
-                    >
-                      Choose Logo
-                      <input
-                        type="file"
-                        name="branchLogo"
-                        hidden
-                        accept="image/*"
-                        onChange={handleChange}
-                      />
-                    </Button>
-                  )}
 
-                  {logoPreview && (
-                    <Box position="relative" display="inline-block">
-                      <img
-                        src={logoPreview.startsWith('blob:') || logoPreview.startsWith('http') ? logoPreview : `${STATIC_BASE_URL}${logoPreview}`}
-                        alt="Branch Logo"
-                        style={{
-                          width: 120,
-                          height: 120,
-                          objectFit: 'contain',
-                          borderRadius: 8,
-                          border: '1px solid #ddd',
-                          padding: 8
-                        }}
-                      />
-                      <IconButton
-                        size="small"
-                        onClick={handleDeleteLogo}
-                        sx={{
-                          position: 'absolute',
-                          top: -8,
-                          right: -8,
-                          backgroundColor: 'white',
-                          border: '1px solid #ccc',
-                          boxShadow: 1,
-                          '&:hover': {
-                            backgroundColor: '#f8d7da',
-                            color: 'red'
-                          }
-                        }}
-                      >
-                        <FaTrash size={12} />
-                      </IconButton>
-                    </Box>
-                  )}
-                </Grid>
 
                 {/* Submit Button */}
                 <Grid item xs={12}>
