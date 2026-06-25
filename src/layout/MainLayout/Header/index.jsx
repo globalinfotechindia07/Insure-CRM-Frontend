@@ -305,21 +305,6 @@ const Header = ({ drawerToggle }) => {
             gap: 1
           }}
         >
-          {/* ✅ Dynamic Company Name from API */}
-          <Typography
-            variant="h6"
-            sx={{
-              fontSize: { xs: '12px', sm: '14px' },
-              fontWeight: 'bold',
-              color: '#fff',
-              letterSpacing: '1px',
-              lineHeight: '1.5',
-              textTransform: 'uppercase'
-            }}
-          >
-            {branchName || loginData?.names || 'J P Insurance'}
-          </Typography>
-          &nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;
           <CurrentDate />
         </Box>
 
