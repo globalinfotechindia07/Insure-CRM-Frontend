@@ -2,8 +2,8 @@ import axios from "axios";
 import { retrieveToken } from "./api";
 
 const API = axios.create({
-  // baseURL: "http://localhost:5050/api",
-  baseURL: "https://insure-crm-backend-1-n420.onrender.com/api",
+  baseURL: "http://localhost:5050/api",
+  // baseURL: "https://insure-crm-backend-1-n420.onrender.com/api",
 });
 
 API.interceptors.request.use(
