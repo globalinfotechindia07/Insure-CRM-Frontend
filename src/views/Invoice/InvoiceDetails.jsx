@@ -354,7 +354,7 @@ const InvoiceDetails = ({ closeModal, invoiceData }) => {
     const urlPath = normalized.replace('public/images', 'uploads');
 
     // prepend backend root URL, not /api/
-    console.log(`http://localhost:5050/api/${urlPath}`);
+    // console.log(`http://localhost:5050/api/${urlPath}`);
 
     return `${REACT_APP_API_URL}${urlPath}`;
   };

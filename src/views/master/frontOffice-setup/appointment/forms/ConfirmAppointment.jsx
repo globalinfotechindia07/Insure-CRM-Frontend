@@ -1296,8 +1296,8 @@ const ConfirmAppointment = ({ patientDetail, close, opdPatient, fetchAppointment
   ]);
 
   const handleAddFingerPrint = async () => {
-    const uri = 'https://localhost:8000/SGIFPCapture';
-    // const uri = "http://[IP_ADDRESS]/SGIFPCapture";
+    // const uri = 'https://localhost:8000/SGIFPCapture';
+    const uri = "http://[IP_ADDRESS]/SGIFPCapture";
 
     fetch(uri, {
       method: 'POST'
