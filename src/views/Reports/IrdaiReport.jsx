@@ -194,9 +194,12 @@ const IrdaiReport = () => {
     let tableId = '';
     let reportName = 'IRDAI_Report';
 
-    if (filterValue === 'byCustomer' || filterValue === 'byCompany') {
-      tableId = 'irdai-matrix-table';
-      reportName = `IRDAI_Matrix_Report_${filterValue === 'byCustomer' ? 'Customer' : 'Company'}`;
+    if (filterValue === 'byCustomer') {
+      tableId = 'irdai-customer-table';
+      reportName = 'IRDAI_Matrix_Report_Customer';
+    } else if (filterValue === 'byCompany') {
+      tableId = 'irdai-company-table';
+      reportName = 'IRDAI_Matrix_Report_Company';
     } else {
       tableId = 'irdai-department-table';
       reportName = 'IRDAI_Department_Report';
@@ -324,7 +327,7 @@ const IrdaiReport = () => {
     (acc, item) => {
       const rowKey = filterValue === 'byCompany' ? item?.insCompany?.insCompany : item?.cutomerName;
 
-      const department = item?.insDepartment?.insDepartment;
+      const department = item?.insDepartment?.insDepartment ? item.insDepartment.insDepartment.trim().toUpperCase() : null;
 
       if (!rowKey || !department) return acc;
 
@@ -698,18 +701,134 @@ const IrdaiReport = () => {
           </Grid>
         </Grid>
       )}
-      {(filterValue === 'byCustomer' || filterValue === 'byCompany') && (
+      {filterValue === 'byCustomer' && (
         <Grid container spacing={gridSpacing}>
           <Grid item xs={12}>
             <Card>
               <CardContent>
                 <TableContainer>
-                  <Table size="small" id="irdai-matrix-table">
+                  <Table size="small" id="irdai-customer-table">
                     <TableHead>
                       {/* HEADER ROW 1 */}
                       <TableRow sx={{ backgroundColor: '#f5f5f5' }}>
                         <TableCell rowSpan={2}>SN</TableCell>
-                        <TableCell rowSpan={2}>{filterValue === 'byCustomer' ? 'CUSTOMER' : 'COMPANY'}</TableCell>
+                        <TableCell rowSpan={2}>CUSTOMER</TableCell>
+
+                        {DEPARTMENTS.map((dept) => (
+                          <TableCell key={dept} align="center" colSpan={2}>
+                            {dept}
+                          </TableCell>
+                        ))}
+
+                        <TableCell align="center" colSpan={2}>
+                          TOTAL
+                        </TableCell>
+                      </TableRow>
+
+                      {/* HEADER ROW 2 */}
+                      <TableRow sx={{ backgroundColor: '#e0e0e0' }}>
+                        {DEPARTMENTS.map((dept) => (
+                          <React.Fragment key={dept}>
+                            <TableCell>Policies</TableCell>
+                            <TableCell>Premium</TableCell>
+                          </React.Fragment>
+                        ))}
+                        <TableCell>Total Policies</TableCell>
+                        <TableCell>Total Premium</TableCell>
+                      </TableRow>
+                    </TableHead>
+
+                    <TableBody>
+                      {/* BODY */}
+                      {paginatedTableRows.map((row, index) => (
+                        <TableRow key={row.name}>
+                          <TableCell>{page * rowsPerPage + index + 1}</TableCell>
+                          <TableCell>{row.name}</TableCell>
+
+                          {DEPARTMENTS.map((dept) => (
+                            <React.Fragment key={dept}>
+                              <TableCell>{row.departments[dept]?.policies || 0}</TableCell>
+                              <TableCell>{(row.departments[dept]?.premium || 0).toLocaleString('en-IN')}</TableCell>
+                            </React.Fragment>
+                          ))}
+
+                          <TableCell sx={{ fontWeight: 'bold' }}>{row.totalPolicies}</TableCell>
+                          <TableCell sx={{ fontWeight: 'bold' }}>{row.totalPremium.toLocaleString('en-IN')}</TableCell>
+                        </TableRow>
+                      ))}
+
+                      {/* PAGE SUBTOTAL */}
+                      <TableRow sx={{ backgroundColor: '#f0f0f0', fontWeight: 'bold' }}>
+                        <TableCell />
+                        <TableCell sx={{ px: 1.5, py: 0.8, fontWeight: 'bold', color: 'text.secondary' }}>PAGE SUBTOTAL</TableCell>
+
+                        {DEPARTMENTS.map((dept) => (
+                          <React.Fragment key={dept}>
+                            <TableCell sx={{ px: 1.5, py: 0.8, fontWeight: 'bold', color: 'text.secondary' }}>{matrixPageSubtotal.departments[dept]?.policies || 0}</TableCell>
+                            <TableCell sx={{ px: 1.5, py: 0.8, fontWeight: 'bold', color: 'text.secondary' }}>
+                              {(matrixPageSubtotal.departments[dept]?.premium || 0).toLocaleString('en-IN')}
+                            </TableCell>
+                          </React.Fragment>
+                        ))}
+
+                        <TableCell sx={{ px: 1.5, py: 0.8, fontWeight: 'bold', color: 'text.secondary' }}>{matrixPageSubtotal.totalPolicies}</TableCell>
+                        <TableCell sx={{ px: 1.5, py: 0.8, fontWeight: 'bold', color: 'text.secondary' }}>{matrixPageSubtotal.totalPremium.toLocaleString('en-IN')}</TableCell>
+                      </TableRow>
+
+                      {/* FOOTER */}
+                      {(page + 1) * rowsPerPage >= tableRows.length && (
+                        <TableRow sx={{ backgroundColor: '#d1d1d1', fontWeight: 'bold' }}>
+                          <TableCell />
+                          <TableCell sx={{ px: 1.5, py: 0.8, fontWeight: 'bold' }}>GRAND TOTAL</TableCell>
+
+                          {DEPARTMENTS.map((dept) => (
+                            <React.Fragment key={dept}>
+                              <TableCell sx={{ px: 1.5, py: 0.8, fontWeight: 'bold' }}>{footer.departments[dept]?.policies || 0}</TableCell>
+                              <TableCell sx={{ px: 1.5, py: 0.8, fontWeight: 'bold' }}>
+                                {(footer.departments[dept]?.premium || 0).toLocaleString('en-IN')}
+                              </TableCell>
+                            </React.Fragment>
+                          ))}
+
+                          <TableCell sx={{ px: 1.5, py: 0.8, fontWeight: 'bold' }}>{footer.totalPolicies}</TableCell>
+                          <TableCell sx={{ px: 1.5, py: 0.8, fontWeight: 'bold' }}>{footer.totalPremium.toLocaleString('en-IN')}</TableCell>
+                        </TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+                <Box display="flex" justifyContent="flex-end" mt={1}>
+                  <TablePagination
+                    component="div"
+                    count={tableRows.length}
+                    page={page}
+                    onPageChange={(e, newPage) => setPage(newPage)}
+                    rowsPerPage={rowsPerPage}
+                    onRowsPerPageChange={(e) => {
+                      setRowsPerPage(parseInt(e.target.value, 10));
+                      setPage(0);
+                    }}
+                    rowsPerPageOptions={[25, 50, 100]}
+                  />
+                </Box>
+              </CardContent>
+            </Card>
+          </Grid>
+        </Grid>
+      )}
+
+      {filterValue === 'byCompany' && (
+        <Grid container spacing={gridSpacing}>
+          <Grid item xs={12}>
+            <Card>
+              <CardContent>
+                <TableContainer>
+                  <Table size="small" id="irdai-company-table">
+                    <TableHead>
+                      {/* HEADER ROW 1 */}
+                      <TableRow sx={{ backgroundColor: '#f5f5f5' }}>
+                        <TableCell rowSpan={2}>SN</TableCell>
+                        <TableCell rowSpan={2}>COMPANY</TableCell>
 
                         {DEPARTMENTS.map((dept) => (
                           <TableCell key={dept} align="center" colSpan={2}>
