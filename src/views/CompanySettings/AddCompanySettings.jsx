@@ -34,7 +34,7 @@ const CompanySettings = () => {
     Edit: false,
     Delete: false
   });
-  
+
   const systemRights = useSelector((state) => state.systemRights?.systemRights || {});
   const { user } = useSelector((state) => state.auth || {});
 
@@ -50,15 +50,17 @@ const CompanySettings = () => {
     if (window.confirm(`Are you sure you want to delete "${companyName}"?`)) {
       try {
         const token = localStorage.getItem('token');
-        const response = await fetch(`http://localhost:5050/api/companySettings/${companyId}`, {
+        // const response = await fetch(`http://localhost:5050/api/companySettings/${companyId}`, {
+        const response = await fetch(`https://insure-crm-backend-1-n420.onrender.com/api/companySettings/${companyId}`, {
+
           method: 'DELETE',
           headers: {
             'Authorization': `Bearer ${token}`
           }
         });
-        
+
         const data = await response.json();
-        
+
         if (data.status === 'true') {
           toast.success('Company deleted successfully!');
           fetchCompanySettings();
@@ -85,38 +87,43 @@ const CompanySettings = () => {
   // ✅ Fix: Get logo URL properly
   const getLogoUrl = (logoPath) => {
     if (!logoPath) return null;
-    
+
     console.log('Original logo path:', logoPath);
-    
+
     // If already has full URL, return as is
     if (logoPath.startsWith('http')) {
       return logoPath;
     }
-    
+
     // If starts with /uploads, add base URL
     if (logoPath.startsWith('/uploads')) {
-      const fullUrl = `http://localhost:5050${logoPath}`;
+      // const fullUrl = `http://localhost:5050${logoPath}`;
+      const fullUrl = `https://insure-crm-backend-1-n420.onrender.com${logoPath}`;
+
       console.log('Full logo URL:', fullUrl);
       return fullUrl;
     }
-    
+
     // Fallback
-    return `http://localhost:5050/uploads/company-logo/${logoPath}`;
+    // return `http://localhost:5050/uploads/company-logo/${logoPath}`;
+    return `https://insure-crm-backend-1-n420.onrender.com/uploads/company-logo/${logoPath}`;
+
   };
 
   const fetchCompanySettings = async () => {
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:5050/api/companySettings/', {
+      // const response = await fetch('http://localhost:5050/api/companySettings/', {
+      const response = await fetch('https://insure-crm-backend-1-n420.onrender.com/api/companySettings/', {
         headers: {
           'Authorization': `Bearer ${token}`
         }
       });
-      
+
       const data = await response.json();
       console.log('Company List:', data);
-      
+
       if (data.status === 'true' && data.data) {
         // Log logo paths for debugging
         data.data.forEach(company => {
@@ -141,11 +148,11 @@ const CompanySettings = () => {
     if (loginRole === 'admin' || user?.role === 'admin') {
       setAdmin(true);
     }
-    
+
     if (systemRights?.actionPermissions?.['company-settings']) {
       setCompanySettingPermission(systemRights.actionPermissions['company-settings']);
     }
-    
+
     fetchCompanySettings();
   }, []);
 
@@ -184,7 +191,7 @@ const CompanySettings = () => {
               </Button>
             )}
           </Grid>
-          
+
           <Card>
             <CardContent>
               <Box sx={{ overflowX: 'auto' }}>
@@ -212,8 +219,8 @@ const CompanySettings = () => {
                           {/* Logo */}
                           <TableCell>
                             {company.companyLogo ? (
-                              <img 
-                                src={getLogoUrl(company.companyLogo)} 
+                              <img
+                                src={getLogoUrl(company.companyLogo)}
                                 alt={company.companyName}
                                 style={{
                                   width: 50,
@@ -232,7 +239,7 @@ const CompanySettings = () => {
                               />
                             ) : null}
                             {!company.companyLogo && (
-                              <Avatar 
+                              <Avatar
                                 sx={{ width: 50, height: 50, bgcolor: '#e0e0e0', borderRadius: 2 }}
                                 variant="rounded"
                               >
@@ -240,7 +247,7 @@ const CompanySettings = () => {
                               </Avatar>
                             )}
                             {company.companyLogo && (
-                              <Avatar 
+                              <Avatar
                                 sx={{ width: 50, height: 50, bgcolor: '#e0e0e0', borderRadius: 2, display: 'none' }}
                                 variant="rounded"
                               >
@@ -248,14 +255,14 @@ const CompanySettings = () => {
                               </Avatar>
                             )}
                           </TableCell>
-                          
+
                           {/* Company Name */}
                           <TableCell>
                             <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
                               {company.companyName || 'N/A'}
                             </Typography>
                           </TableCell>
-                          
+
                           {/* Contact Info */}
                           <TableCell>
                             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
@@ -280,7 +287,7 @@ const CompanySettings = () => {
                               )}
                             </Box>
                           </TableCell>
-                          
+
                           {/* Location */}
                           <TableCell>
                             <Box sx={{ display: 'flex', flexDirection: 'column' }}>
@@ -298,14 +305,14 @@ const CompanySettings = () => {
                               )}
                             </Box>
                           </TableCell>
-                          
+
                           {/* GST No */}
                           <TableCell>
                             <Typography variant="body2">
                               {company.gstNo || 'N/A'}
                             </Typography>
                           </TableCell>
-                          
+
                           {/* Actions */}
                           <TableCell>
                             <Box sx={{ display: 'flex', gap: 1 }}>
