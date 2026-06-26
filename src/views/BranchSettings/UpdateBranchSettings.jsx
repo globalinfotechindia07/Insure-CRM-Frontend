@@ -230,7 +230,7 @@ const UpdateBranchSettings = () => {
       console.log('🟡 Submitting payload:', payload);
       
       // let url = 'http://localhost:5050/api/branchSettings/';
-      const url = "https://insure-crm-backend-1-n420.onrender.com/api/branchSettings/";
+      let url = "https://insure-crm-backend-1-n420.onrender.com/api/branchSettings/";
 
       let method = 'POST';
       
