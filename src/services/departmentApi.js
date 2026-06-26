@@ -1,4 +1,6 @@
-const API_BASE_URL = 'http://localhost:5050/api';
+// const API_BASE_URL = 'http://localhost:5050/api';
+const API_BASE_URL = "https://insure-crm-backend-1-n420.onrender.com/api";
+
 
 export const getDepartments = async () => {
     const response = await fetch(`${API_BASE_URL}/department`);

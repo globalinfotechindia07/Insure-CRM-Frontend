@@ -1122,9 +1122,8 @@ const ConfirmAppointment = ({ patientDetail, close, opdPatient, fetchAppointment
       const consultant = consultanta.find((c) => c._id === consultantId._id);
 
       const consultantName = consultant
-        ? `${consultant.basicDetails?.firstName || ''} ${consultant.basicDetails?.middleName || ''} ${
-            consultant.basicDetails?.lastName || ''
-          }`
+        ? `${consultant.basicDetails?.firstName || ''} ${consultant.basicDetails?.middleName || ''} ${consultant.basicDetails?.lastName || ''
+        }`
         : '';
       setInputData({
         ...inputData,
@@ -1297,7 +1296,8 @@ const ConfirmAppointment = ({ patientDetail, close, opdPatient, fetchAppointment
   ]);
 
   const handleAddFingerPrint = async () => {
-    const uri = 'https://localhost:8000/SGIFPCapture';
+    // const uri = 'https://localhost:8000/SGIFPCapture';
+    const uri = "http://[IP_ADDRESS]/SGIFPCapture";
 
     fetch(uri, {
       method: 'POST'
@@ -1390,7 +1390,7 @@ const ConfirmAppointment = ({ patientDetail, close, opdPatient, fetchAppointment
                   value={inputData.patientType}
                   onChange={handleChange}
                   required
-                  //   error={!!errors.patientType}
+                //   error={!!errors.patientType}
                 >
                   <MenuItem value="New">New</MenuItem>
                   <MenuItem value="Follow-Up">Follow-Up</MenuItem>
@@ -2224,34 +2224,34 @@ const ConfirmAppointment = ({ patientDetail, close, opdPatient, fetchAppointment
 
               {(inputData?.payeeCategory.toLowerCase().trim() === 'INSURANCE'.toLowerCase().trim() ||
                 inputData?.payeeCategory.toLowerCase().trim() === 'GIPSAA'.toLowerCase().trim()) && (
-                <>
-                  <Grid item xs={12} sm={2} md={3}>
-                    <FormControl fullWidth variant="outlined">
-                      <InputLabel>TPA</InputLabel>
-                      <Select
-                        MenuProps={{
-                          PaperProps: {
-                            style: { maxHeight: 300 }
-                          }
-                        }}
-                        label="TPA"
-                        name="tpa"
-                        value={inputData.tpaId}
-                        onChange={handleChange}
-                      >
-                        {TpaData &&
-                          TpaData?.map((item, index) => {
-                            return (
-                              <MenuItem key={index} value={item._id}>
-                                {item?.tpaCompanyName}
-                              </MenuItem>
-                            );
-                          })}
-                      </Select>
-                    </FormControl>
-                  </Grid>
-                </>
-              )}
+                  <>
+                    <Grid item xs={12} sm={2} md={3}>
+                      <FormControl fullWidth variant="outlined">
+                        <InputLabel>TPA</InputLabel>
+                        <Select
+                          MenuProps={{
+                            PaperProps: {
+                              style: { maxHeight: 300 }
+                            }
+                          }}
+                          label="TPA"
+                          name="tpa"
+                          value={inputData.tpaId}
+                          onChange={handleChange}
+                        >
+                          {TpaData &&
+                            TpaData?.map((item, index) => {
+                              return (
+                                <MenuItem key={index} value={item._id}>
+                                  {item?.tpaCompanyName}
+                                </MenuItem>
+                              );
+                            })}
+                        </Select>
+                      </FormControl>
+                    </Grid>
+                  </>
+                )}
 
               {formType !== 'OPD' && (
                 <Grid item xs={2}>

@@ -86,16 +86,22 @@ const AddBranchSettings = () => {
     if (!logoPath) return null;
     if (logoPath.startsWith('http')) return logoPath;
     if (logoPath.startsWith('/uploads')) {
-      return `http://localhost:5050${logoPath}`;
+      // return `http://localhost:5050${logoPath}`;
+      const STATIC_BASE_URL = "https://insure-crm-backend-1-n420.onrender.com";
+
     }
-    return `http://localhost:5050/uploads/company-logo/${logoPath}`;
+    // return `http://localhost:5050/uploads/company-logo/${logoPath}`;
+      const STATIC_BASE_URL = "https://insure-crm-backend-1-n420.onrender.com";
+
   };
 
   const fetchBranchSettings = async () => {
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:5050/api/branchSettings/', {
+      // const response = await fetch('http://localhost:5050/api/branchSettings/', {
+        const response = await fetch('https://insure-crm-backend-1-n420.onrender.com/api/branchSettings/', {
+
         headers: {
           'Authorization': `Bearer ${token}`
         }
