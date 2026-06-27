@@ -211,7 +211,7 @@ const EditPolicy = () => {
         get('customerRegistration'),
         get('prefix'),
         get('brokerBranch'),
-        get('insCompany'),
+        get('company'),
         get('insDepartment'),
         get('productOrServiceCategory'),
         get('subproductCategory'),
@@ -732,7 +732,7 @@ const EditPolicy = () => {
         }
       }
       if (name === 'insurerName') {
-        const selectedCompanyObj = insCompanyData.find((c) => c.insCompany === value);
+        const selectedCompanyObj = insCompanyData.find((c) => c.name === value);
         if (selectedCompanyObj) {
           nextForm.insCompany = selectedCompanyObj._id;
         }
@@ -740,7 +740,7 @@ const EditPolicy = () => {
       if (name === 'insCompany') {
         const selectedCompanyObj = insCompanyData.find((c) => c._id === value);
         if (selectedCompanyObj) {
-          nextForm.insurerName = selectedCompanyObj.insCompany;
+          nextForm.insurerName = selectedCompanyObj.name;
         }
       }
 
@@ -1250,8 +1250,8 @@ const EditPolicy = () => {
                 >
                   {insCompanyData.length > 0 &&
                     insCompanyData.map((type) => (
-                      <MenuItem key={type._id} value={type.insCompany}>
-                        {type.insCompany}
+                      <MenuItem key={type._id} value={type.name}>
+                        {type.name}
                       </MenuItem>
                     ))}
                 </Select>
@@ -1384,7 +1384,7 @@ const EditPolicy = () => {
                   {insCompanyData.length > 0 &&
                     insCompanyData.map((type) => (
                       <MenuItem key={type._id} value={type._id}>
-                        {type.insCompany}
+                        {type.name}
                       </MenuItem>
                     ))}
                 </Select>

@@ -92,7 +92,7 @@ const Policy = () => {
   const fetchDropdownData = async () => {
     try {
       const [insCompanyData, insDepartmentData, financialYearData] = await Promise.all([
-        get('insCompany'),
+        get('company'),
         get('insDepartment'),
         get('financialYear')
       ]);
@@ -231,7 +231,7 @@ const Policy = () => {
       result = result.filter(
         (entry) =>
           entry?.cutomerName?.toLowerCase().includes(lowerSearch) ||
-          entry?.insCompany?.insCompany?.toLowerCase().includes(lowerSearch) ||
+          entry?.insCompany?.name?.toLowerCase().includes(lowerSearch) ||
           entry?.insDepartment?.insDepartment?.toLowerCase().includes(lowerSearch) ||
           entry?.policyNumber?.toLowerCase().includes(lowerSearch)
       );
@@ -450,7 +450,7 @@ const Policy = () => {
                   {insCompanyData.length > 0 &&
                     insCompanyData.map((type) => (
                       <MenuItem key={type._id} value={type._id}>
-                        {type.insCompany}
+                        {type.name}
                       </MenuItem>
                     ))}
                 </Select>
@@ -559,7 +559,7 @@ const Policy = () => {
                             variant="body2"
                             sx={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}
                           >
-                            {truncateText(entry?.insCompany?.insCompany)}
+                            {truncateText(entry?.insCompany?.name)}
                           </Typography>
                         </TableCell>
                         <TableCell sx={{ verticalAlign: 'top', py: 1.5 }}>{entry?.insDepartment?.insDepartment}</TableCell>

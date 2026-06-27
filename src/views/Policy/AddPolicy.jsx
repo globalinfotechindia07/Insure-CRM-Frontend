@@ -395,7 +395,7 @@ const AddPolicy = () => {
   };
 
   const fetchInsCompany = async () => {
-    const res = await get('insCompany');
+    const res = await get('company');
     // console.log('insurance Company', res.data);
     if (res.data) setInsCompanyData(res.data);
     else setInsCompanyData([]);
@@ -703,7 +703,7 @@ const AddPolicy = () => {
         }
       }
       if (name === 'insurerName') {
-        const selectedCompanyObj = insCompanyData.find((c) => c.insCompany === value);
+        const selectedCompanyObj = insCompanyData.find((c) => c.name === value);
         if (selectedCompanyObj) {
           nextForm.insCompany = selectedCompanyObj._id;
         }
@@ -711,7 +711,7 @@ const AddPolicy = () => {
       if (name === 'insCompany') {
         const selectedCompanyObj = insCompanyData.find((c) => c._id === value);
         if (selectedCompanyObj) {
-          nextForm.insurerName = selectedCompanyObj.insCompany;
+          nextForm.insurerName = selectedCompanyObj.name;
         }
       }
 
@@ -1147,8 +1147,8 @@ const AddPolicy = () => {
                     >
                       {insCompanyData.length > 0 &&
                         insCompanyData.map((type) => (
-                          <MenuItem key={type._id} value={type.insCompany}>
-                            {type.insCompany}
+                          <MenuItem key={type._id} value={type.name}>
+                            {type.name}
                           </MenuItem>
                         ))}
                     </Select>
@@ -1306,7 +1306,7 @@ const AddPolicy = () => {
                       {insCompanyData.length > 0 &&
                         insCompanyData.map((type) => (
                           <MenuItem key={type._id} value={type._id}>
-                            {type.insCompany}
+                            {type.name}
                           </MenuItem>
                         ))}
                     </Select>
