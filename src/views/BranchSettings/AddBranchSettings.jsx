@@ -87,7 +87,7 @@ const AddBranchSettings = () => {
     if (!logoPath) return null;
     if (logoPath.startsWith('http')) return logoPath;
     if (logoPath.startsWith('/uploads')) {
-      // return `http://localhost:5050${logoPath}`;/
+      // return `http://localhost:5050${logoPath}`;
       const STATIC_BASE_URL = "https://insure-crm-backend-1-n420.onrender.com";
 
     }
