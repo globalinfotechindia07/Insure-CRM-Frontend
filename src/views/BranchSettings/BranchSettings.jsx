@@ -100,7 +100,7 @@ const BranchSettings = () => {
 
       const response = await fetch('https://insure-crm-backend-1-n420.onrender.com/api/branchSettings/', {
 
-      
+
         headers: {
           'Authorization': `Bearer ${token}`
         }

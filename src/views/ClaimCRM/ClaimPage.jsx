@@ -29,6 +29,7 @@ import {
   Delete,
   Edit,
   ChangeCircle,
+  Close,
 } from "@mui/icons-material";
 
 import Swal from 'sweetalert2';
@@ -549,6 +550,70 @@ const ClaimPage = () => {
     setActiveTab(0);
   };
 
+  // ================= CLEAR TAB DATA =================
+  const handleClearTab = () => {
+    let fieldsToClear = [];
+    switch (activeTab) {
+      case 0:
+        fieldsToClear = ["claimNo", "department", "status", "remarks"];
+        break;
+      case 1:
+        fieldsToClear = [
+          "policyId", "policyNo", "insuredName", "contactNo", "email",
+          "vehicleNumber", "locationOfProperty", "renewalOrNewPolicy",
+          "typeOfPolicy", "wording", "sumInsured", "periodOfInsurance",
+          "insurerName", "netPremium", "totalAmount", "paymentMode",
+          "briefDescriptionOfProperty"
+        ];
+        break;
+      case 2:
+        fieldsToClear = [
+          "dateOfLossOrAdmission", "dateOfDischarge",
+          "estimatedLossAmount", "causeOfLoss", "machineryDetails"
+        ];
+        break;
+      case 3:
+        fieldsToClear = [
+          "preliminarySurveyorId", "finalSurveyorId", "tpaId", "investigatorId"
+        ];
+        break;
+      case 4:
+        fieldsToClear = [
+          "invoiceNo", "billOfLadingNo", "lrNo",
+          "insuranceCertificateNo", "journeyFrom", "journeyTo",
+          "surveyorReferenceNumber"
+        ];
+        break;
+      case 5:
+        fieldsToClear = [
+          "settlementType", "claimApprovedAmount",
+          "dateOfApprovalOfClaim", "dateOfSettlement"
+        ];
+        break;
+      case 6:
+        fieldsToClear = [
+          "postHospitalizationDischargeDate",
+          "postHospitalizationAmountClaimed",
+          "postHospitalizationNoOfDays"
+        ];
+        break;
+      default:
+        break;
+    }
+
+    setFormData((prev) => {
+      const updated = { ...prev };
+      fieldsToClear.forEach((field) => {
+        if (field === "status") {
+          updated[field] = "Pending";
+        } else {
+          updated[field] = "";
+        }
+      });
+      return updated;
+    });
+  };
+
   const exportCSV = () => {
     if (!data || data.length === 0) return;
     const headers = ["Claim No", "Policy No", "Insured Name", "Department", "Preliminary Surveyor", "Status"];
@@ -690,7 +755,12 @@ const ClaimPage = () => {
 
       {/* ADD/EDIT DIALOG */}
       <Dialog open={open} onClose={() => { setOpen(false); resetForm(); }} fullWidth maxWidth="lg">
-        <DialogTitle>{isEdit ? "Edit Claim" : "Add New Claim"}</DialogTitle>
+        <DialogTitle sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <span>{isEdit ? "Edit Claim" : "Add New Claim"}</span>
+          <IconButton onClick={() => { setOpen(false); resetForm(); }}>
+            <Close />
+          </IconButton>
+        </DialogTitle>
         <DialogContent>
           <Tabs value={activeTab} onChange={handleTabChange} sx={{ mb: 2 }}>
             <Tab label="Basic Details" />
@@ -800,7 +870,7 @@ const ClaimPage = () => {
                 <TextField fullWidth label="Insurer Name" name="insurerName" value={formData.insurerName} disabled={!!formData.insurerName} onChange={handleChange} />
               </Grid>
               <Grid item xs={12} md={6}>
-                <TextField fullWidth label="Net Premium" name="netPremium" value={formData.netPremium} disabled={!!formData.netPremium} onChange={handleChange} />
+                <TextField fullWidth label="Total Premium" name="netPremium" value={formData.netPremium} disabled={!!formData.netPremium} onChange={handleChange} />
               </Grid>
               <Grid item xs={12} md={6}>
                 <TextField fullWidth label="Total Amount" name="totalAmount" value={formData.totalAmount} disabled={!!formData.totalAmount} onChange={handleChange} />
@@ -830,7 +900,7 @@ const ClaimPage = () => {
                 <TextField fullWidth label="Cause of Loss" name="causeOfLoss" value={formData.causeOfLoss} onChange={handleChange} />
               </Grid>
               <Grid item xs={12}>
-                <TextField fullWidth multiline rows={3} label="Details of Machinery" name="machineryDetails" value={formData.machineryDetails} onChange={handleChange} />
+                <TextField fullWidth multiline rows={3} label="Details of Insured Property" name="machineryDetails" value={formData.machineryDetails} onChange={handleChange} />
               </Grid>
             </Grid>
           </Box>
@@ -938,8 +1008,9 @@ const ClaimPage = () => {
           </Box>
         </DialogContent>
 
-        <DialogActions>
-          <Button color="error" variant="outlined" onClick={() => { setOpen(false); resetForm(); }}>Cancel</Button>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button color="warning" variant="outlined" onClick={handleClearTab} sx={{ mr: "auto" }}>Clear</Button>
+          <Button color="error" variant="outlined" onClick={() => { setActiveTab(0); }}>Back</Button>
           <Button variant="contained" onClick={handleSubmit}>{isEdit ? "Update" : "Save"}</Button>
         </DialogActions>
       </Dialog>
