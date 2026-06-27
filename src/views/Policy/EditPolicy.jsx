@@ -770,54 +770,8 @@ const EditPolicy = () => {
   const handleBrokerage = (e) => setBrokerageValue(e.target.value);
 
   const validateForm = () => {
-    const newErrors = {};
-
-    // Only required fields
-    if (!form.cutomerName) newErrors.cutomerName = 'Customer Name is required';
-    if (!form.insurerName) newErrors.insurerName = 'Insurer Name is required';
-    if (!form.insDepartment) newErrors.insDepartment = 'Department is required';
-    if (!form.product) newErrors.product = 'Product is required';
-    if (!form.policyNumber) newErrors.policyNumber = 'Policy Number is required';
-    if (!form.paymentMode) newErrors.paymentMode = 'Payment Mode is required';
-
-    if (selectedDeptName === 'motor') {
-      if (!form.tpPolicyDuration && !form.odPolicyDuration) {
-        newErrors.tpPolicyDuration = 'TP/OD Policy Duration is required';
-        newErrors.odPolicyDuration = 'TP/OD Policy Duration is required';
-      }
-      // if (!form.odPolicyDuration) newErrors.odPolicyDuration = 'OD Policy Duration is required';
-      if (!form.tpPremium && !form.odPremium) {
-        newErrors.tpPremium = 'TP/OD Premium is required';
-        newErrors.odPremium = 'TP/OD Premium is required';
-      }
-      if (!form.tpBrokerageRate && !form.odBrokerageRate) {
-        newErrors.tpBrokerageRate = 'TP/OD Brokerage Rate is required';
-        newErrors.odBrokerageRate = 'TP/OD Brokerage Rate is required';
-      }
-      // if (!form.odBrokerageRate) newErrors.odBrokerageRate = 'OD Brokerage Rate is required';
-      // if (!form.odPremium) newErrors.odPremium = 'OD Premium is required';
-      if (!form.tpStartDate && !form.odStartDate) {
-        newErrors.tpStartDate = 'TP/OD Start Date is required';
-        newErrors.odStartDate = 'TP/OD Start Date is required';
-      }
-      // if (!form.odStartDate) newErrors.odStartDate = 'OD Start Date is required';
-    } else {
-      if (!form.policyDuration) newErrors.policyDuration = 'Policy Duration is required';
-      if (!form.netPremium) newErrors.netPremium = 'Net Premium is required';
-      if (!form.startDate) newErrors.startDate = 'StartDate is required';
-      if (!form.rateOnTerr) newErrors.rateOnTerr = 'Terrorism Rate is required';
-      if (!form.rateOnOtherTerr) newErrors.rateOnOtherTerr = 'Terrorism Rate is required';
-    }
-
-    // departmentValue === '69539cdef88ccbb626abc903'
-
-    // if (!form.mobile?.match(/^\d{10}$/)) newErrors.mobile = 'Enter valid 10-digit number';
-
-    // if (!form.email?.match(/^[\w-.]+@([\w-]+\.)+[\w-]{2,4}$/)) newErrors.email = 'Invalid email';
-    console.log('All Errors ', newErrors);
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    setErrors({});
+    return true;
   };
 
   const handleSubmit = async () => {
