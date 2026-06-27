@@ -8,3 +8,4 @@ const API = axios.create({
 export const createCustomer = (data) => API.post("/customers", data);
 export const getCustomers = () => API.get("/customers");
 export const deleteCustomer = (id) => API.delete(`/customers/${id}`);
+export const updateCustomer = (id, data) => API.put(`/customers/${id}`, data);

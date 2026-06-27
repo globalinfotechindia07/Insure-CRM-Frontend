@@ -19,20 +19,22 @@ import {
   MenuItem
 } from "@mui/material";
 
-import { Add, Delete, Close } from "@mui/icons-material";
+import { Add, Delete, Close, Edit } from "@mui/icons-material";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
 import {
   createCustomer,
   getCustomers,
-  deleteCustomer
+  deleteCustomer,
+  updateCustomer
 } from "../../services/customerApi";
 
 const CustomerPage = () => {
   const [open, setOpen] = useState(false);
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [editId, setEditId] = useState(null);
 
   // 🔥 Delete Confirmation State
   const [deleteId, setDeleteId] = useState(null);
@@ -83,13 +85,36 @@ const CustomerPage = () => {
     });
   };
 
+  const handleClose = () => {
+    setOpen(false);
+    setEditId(null);
+    setFormData({
+      clientType: "",
+      customerName: "",
+      dob: "",
+      email: "",
+      mobile: "",
+      pan: "",
+      adhar: "",
+      drivingLicence: "",
+      gst: "",
+      address: "",
+      pincode: "",
+      city: "",
+      state: "",
+      authorisedPersonName: "",
+      authorisedPersonContact: "",
+      authorisedPersonEmail: ""
+    });
+  };
+
   // Submit Form
   const handleSubmit = async () => {
 
     const payload = {
       clientType: formData.clientType,
       customerName: formData.customerName,
-      dob: formData.dob,
+      dob: formData.dob || null,
       email: formData.email,
       mobile: formData.mobile,
       pan: formData.pan,
@@ -106,30 +131,15 @@ const CustomerPage = () => {
     };
 
     try {
-      await createCustomer(payload);
-      toast.success("Customer Added ✅");
+      if (editId) {
+        await updateCustomer(editId, payload);
+        toast.success("Customer Updated ✅");
+      } else {
+        await createCustomer(payload);
+        toast.success("Customer Added ✅");
+      }
 
-      setOpen(false);
-
-      setFormData({
-        clientType: "",
-        customerName: "",
-        dob: "",
-        email: "",
-        mobile: "",
-        pan: "",
-        adhar: "",
-        drivingLicence: "",
-        gst: "",
-        address: "",
-        pincode: "",
-        city: "",
-        state: "",
-        authorisedPersonName: "",
-        authorisedPersonContact: "",
-        authorisedPersonEmail: ""
-      });
-
+      handleClose();
       fetchData();
     } catch (err) {
       toast.error(err.response?.data?.message || "Error ❌");
@@ -295,12 +305,12 @@ const CustomerPage = () => {
         </div>
       </Grid>
 
-      {/* Add Customer Dialog */}
-      <Dialog open={open} onClose={() => setOpen(false)}>
+      {/* Add/Edit Customer Dialog */}
+      <Dialog open={open} onClose={handleClose}>
         <DialogTitle>
-          Add Customer
+          {editId ? "Edit Customer" : "Add Customer"}
           <IconButton
-            onClick={() => setOpen(false)}
+            onClick={handleClose}
             sx={{ position: "absolute", right: 8, top: 8 }}
           >
             <Close />
@@ -355,7 +365,7 @@ const CustomerPage = () => {
         </DialogContent>
 
         <DialogActions>
-          <Button onClick={() => setOpen(false)} color="error" variant="contained">
+          <Button onClick={handleClose} color="error" variant="contained">
             Cancel
           </Button>
 
@@ -396,6 +406,34 @@ const CustomerPage = () => {
                     <TableCell>{item.mobile}</TableCell>
                     <TableCell>{item.city}</TableCell>
                     <TableCell>
+                      <IconButton
+                        color="primary"
+                        onClick={() => {
+                          setEditId(item._id);
+                          setFormData({
+                            clientType: item.clientType || "",
+                            customerName: item.customerName || "",
+                            dob: item.dob ? item.dob.split("T")[0] : "",
+                            email: item.email || "",
+                            mobile: item.mobile || "",
+                            pan: item.pan || "",
+                            adhar: item.adhar || "",
+                            drivingLicence: item.drivingLicence || "",
+                            gst: item.gst || "",
+                            address: item.address || "",
+                            pincode: item.pincode || "",
+                            city: item.city || "",
+                            state: item.state || "",
+                            authorisedPersonName: item.authorisedPersonName || "",
+                            authorisedPersonContact: item.authorisedPersonContact || "",
+                            authorisedPersonEmail: item.authorisedPersonEmail || ""
+                          });
+                          setOpen(true);
+                        }}
+                        sx={{ mr: 1 }}
+                      >
+                        <Edit />
+                      </IconButton>
                       <IconButton
                         color="error"
                         onClick={() => {

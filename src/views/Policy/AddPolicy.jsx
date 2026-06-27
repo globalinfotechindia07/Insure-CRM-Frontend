@@ -666,13 +666,40 @@ const AddPolicy = () => {
       }
       if (name === 'retailCustomer') {
         const selectedId = value;
-        const selectedCustomer = clientList.find((customer) => customer._id === selectedId);
-        if (selectedCustomer) {
-          nextForm.retailCustomer = selectedId;
-          nextForm.cutomerName = selectedCustomer.name || '';
-          nextForm.mobile = selectedCustomer.mobile || '';
-          nextForm.email = selectedCustomer.email || '';
-          nextForm.gstNo = selectedCustomer.gstNo || '';
+        if (selectedId === 'other') {
+          nextForm.retailCustomer = 'other';
+          nextForm.cutomerName = '';
+          nextForm.mobile = '';
+          nextForm.email = '';
+          nextForm.gstNo = '';
+        } else {
+          const selectedCustomer = clientList.find((customer) => customer._id === selectedId);
+          if (selectedCustomer) {
+            nextForm.retailCustomer = selectedId;
+            nextForm.cutomerName = selectedCustomer.name || '';
+            nextForm.mobile = selectedCustomer.mobile || '';
+            nextForm.email = selectedCustomer.email || '';
+            nextForm.gstNo = selectedCustomer.gstNo || '';
+          }
+        }
+      }
+      if (name === 'customerGroup') {
+        const selectedId = value;
+        if (selectedId === 'other') {
+          nextForm.customerGroup = 'other';
+          nextForm.cutomerName = '';
+          nextForm.mobile = '';
+          nextForm.email = '';
+          nextForm.gstNo = '';
+        } else {
+          const selectedGroup = customerGroupData.find((group) => group._id === selectedId);
+          if (selectedGroup) {
+            nextForm.customerGroup = selectedId;
+            nextForm.cutomerName = selectedGroup.customerGroupName || '';
+            nextForm.mobile = selectedGroup.mobile || '';
+            nextForm.email = selectedGroup.email || '';
+            nextForm.gstNo = selectedGroup.gstNo || '';
+          }
         }
       }
       if (name === 'insurerName') {
@@ -1010,6 +1037,7 @@ const AddPolicy = () => {
                         value={form.retailCustomer}
                         onChange={handleChange}
                       >
+                        <MenuItem value="other">Other (Create New)</MenuItem>
                         {clientList.length > 0 &&
                           clientList.map((type) => (
                             <MenuItem key={type._id} value={type._id}>
@@ -1031,6 +1059,7 @@ const AddPolicy = () => {
                           value={form.customerGroup}
                           onChange={handleChange}
                         >
+                          <MenuItem value="other">Other (Create New)</MenuItem>
                           {customerGroupData.length > 0 &&
                             customerGroupData.map((type) => (
                               <MenuItem key={type._id} value={type._id}>
