@@ -329,7 +329,7 @@ const ClaimPage = () => {
           timer: 2000
         });
       }
-      
+
       setOpen(false);
       resetForm();
       fetchClaims();
@@ -1009,9 +1009,9 @@ const ClaimPage = () => {
         </DialogContent>
 
         <DialogActions sx={{ px: 3, pb: 2 }}>
-          <Button color="warning" variant="outlined" onClick={handleClearTab} sx={{ mr: "auto" }}>Clear</Button>
-          <Button color="error" variant="outlined" onClick={() => { setActiveTab(0); }}>Back</Button>
-          <Button variant="contained" onClick={handleSubmit}>{isEdit ? "Update" : "Save"}</Button>
+          <Button variant="outlined" onClick={handleClearTab} sx={{ mr: "auto", color: '#212121', borderColor: '#212121', '&:hover': { borderColor: '#000000', backgroundColor: 'rgba(0, 0, 0, 0.04)' } }}>Clear</Button>
+          <Button variant="outlined" onClick={() => { setActiveTab(0); }} sx={{ color: '#212121', borderColor: '#212121', '&:hover': { borderColor: '#000000', backgroundColor: 'rgba(0, 0, 0, 0.04)' } }}>Back</Button>
+          <Button variant="contained" onClick={handleSubmit} sx={{ backgroundColor: '#212121', color: '#fff', '&:hover': { backgroundColor: '#000000' } }}>{isEdit ? "Update" : "Save"}</Button>
         </DialogActions>
       </Dialog>
 
@@ -1042,13 +1042,13 @@ const ClaimPage = () => {
                     <TableCell>{item.department || "-"}</TableCell>
                     <TableCell>{item.preliminarySurveyorId?.surveyorName || "-"}</TableCell>
                     <TableCell>
-                      <Chip 
-                        label={item.status} 
+                      <Chip
+                        label={item.status}
                         color={
-                          item.status === "Approved" ? "success" : 
-                          item.status === "Rejected" ? "error" : 
-                          "warning"
-                        } 
+                          item.status === "Approved" ? "success" :
+                            item.status === "Rejected" ? "error" :
+                              "warning"
+                        }
                       />
                     </TableCell>
                     <TableCell>
