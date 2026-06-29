@@ -104,6 +104,7 @@ const RenewalReminder = () => {
   const [activeTab, setActiveTab] = useState(0);
   const [remindersHistory, setRemindersHistory] = useState([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
 
   // SMS Dialog states
   const [smsDialogOpen, setSmsDialogOpen] = useState(false);
@@ -252,6 +253,58 @@ const RenewalReminder = () => {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleImportCSV = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    setIsUploading(true);
+    Swal.fire({
+      title: 'Uploading...',
+      text: 'Please wait while the CSV is being imported',
+      allowOutsideClick: false,
+      didOpen: () => {
+        Swal.showLoading();
+      }
+    });
+
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const resData = await post('policyDetail/import-csv/', formData);
+      Swal.close();
+
+      if (resData && resData.success) {
+        Swal.fire({
+          icon: 'success',
+          title: 'Success!',
+          text: `Inserted ${resData.insertedCount} Records`,
+          timer: 2000,
+          showConfirmButton: false
+        });
+        fetchPolicyDetail();
+      } else {
+        Swal.fire({
+          icon: 'info',
+          title: 'Processed',
+          text: `Upload processed: ${resData?.message || 'completed'}`,
+        });
+        fetchPolicyDetail();
+      }
+    } catch (error) {
+      console.error(error);
+      Swal.close();
+      Swal.fire({
+        icon: 'error',
+        title: 'Error!',
+        text: 'Error uploading file',
+      });
+    } finally {
+      setIsUploading(false);
+      e.target.value = '';
     }
   };
 
@@ -582,19 +635,38 @@ const RenewalReminder = () => {
           <Tab label="Policies & Renewals" />
           <Tab label={`Sent Reminders History (${remindersHistory.length})`} />
         </Tabs>
-        <Button
-          variant="contained"
-          color="secondary"
-          size="small"
-          onClick={() => {
-            const dataToExport = activeTab === 0 ? filteredData : filteredHistory;
-            const filename = activeTab === 0 ? 'policies_renewals.csv' : 'sent_reminders_history.csv';
-            exportToCSV(dataToExport, filename);
-          }}
-          sx={{ mb: 1 }}
-        >
-          Export
-        </Button>
+        <Box sx={{ display: 'flex', gap: 1 }}>
+          <Button
+            variant="contained"
+            color="secondary"
+            size="small"
+            onClick={() => {
+              const dataToExport = activeTab === 0 ? filteredData : filteredHistory;
+              const filename = activeTab === 0 ? 'policies_renewals.csv' : 'sent_reminders_history.csv';
+              exportToCSV(dataToExport, filename);
+            }}
+            sx={{ mb: 1 }}
+          >
+            Export
+          </Button>
+          {activeTab === 0 && (
+            <Button
+              variant="contained"
+              component="label"
+              size="small"
+              disabled={isUploading}
+              sx={{ mb: 1, backgroundColor: '#4caf50', color: 'white', '&:hover': { backgroundColor: '#388e3c' } }}
+            >
+              {isUploading ? 'Importing...' : 'Import'}
+              <input
+                type="file"
+                accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel"
+                hidden
+                onChange={handleImportCSV}
+              />
+            </Button>
+          )}
+        </Box>
       </Box>
 
       {/* Filters Card */}
