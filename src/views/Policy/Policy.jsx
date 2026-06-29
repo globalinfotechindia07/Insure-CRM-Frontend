@@ -271,12 +271,12 @@ const Policy = () => {
       const formData = new FormData();
       formData.append('file', file);
 
-      const response = await axios.post(`${REACT_APP_API_URL}policyDetail/import-csv/`, formData, {});
-      if (response.data && response.data.success) {
-        toast.success(`Inserted ${response.data.insertedCount} Records`);
+      const resData = await post('policyDetail/import-csv/', formData);
+      if (resData && resData.success) {
+        toast.success(`Inserted ${resData.insertedCount} Records`);
         fetchPolicyDetail();
       } else {
-        toast.success(`Upload processed: ${response.data.message || 'completed'}`);
+        toast.success(`Upload processed: ${resData?.message || 'completed'}`);
         fetchPolicyDetail();
       }
     } catch (error) {
