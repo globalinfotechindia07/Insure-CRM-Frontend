@@ -271,7 +271,7 @@ const Policy = () => {
       const formData = new FormData();
       formData.append('file', file);
 
-      const resData = await post('policyDetail/import-csv/', formData);
+      const resData = await post(`policyDetail/import-csv/?financialYear=${financialYear}`, formData);
       if (resData && resData.success) {
         toast.success(`Inserted ${resData.insertedCount} Records`);
         fetchPolicyDetail();
