@@ -125,7 +125,7 @@ const Holiday = () => {
     setForm({
       holidayName: holiday.holidayName,
       date: holiday.date.split('T')[0],
-      holidayTypeId: holiday.holidayTypeId?._id || holiday.holidayTypeId
+      holidayTypeId: holiday.holidayTypeId?.holidayTypeName || holiday.holidayTypeId || ''
     });
     setEditIndex(index);
     setOpen(true);
@@ -179,11 +179,6 @@ const Holiday = () => {
         return;
       }
 
-      const typeMap = {};
-      holidayTypes.forEach(t => {
-        typeMap[t.holidayTypeName.toLowerCase().trim()] = t._id;
-      });
-
       const imported = [];
       for (let i = 1; i < lines.length; i++) {
         const row = lines[i].split(",").map(cell => cell.trim().replace(/^"|"$/g, '').replace(/""/g, '"'));
@@ -204,18 +199,12 @@ const Holiday = () => {
       }
 
       let successCount = 0;
-      const missingTypes = new Set();
       for (const item of uniqueNew) {
-        const typeId = typeMap[item.hType.toLowerCase().trim()];
-        if (!typeId) {
-          missingTypes.add(item.hType);
-          continue;
-        }
         try {
           const res = await post("holiday", {
             holidayName: item.hName,
             date: item.hDate,
-            holidayTypeId: typeId
+            holidayTypeId: item.hType
           });
           if (res) {
             successCount++;
@@ -223,10 +212,6 @@ const Holiday = () => {
         } catch (err) {
           console.error(`Failed to import holiday: ${item.hName}`, err);
         }
-      }
-
-      if (missingTypes.size > 0) {
-        toast.error(`Skipped entries with missing holiday type: ${Array.from(missingTypes).join(", ")}`);
       }
 
       if (successCount === 0) {
@@ -300,7 +285,6 @@ const Holiday = () => {
             </Grid>
             <Grid item xs={12}>
               <TextField
-                select
                 label="Holiday Type"
                 name="holidayTypeId"
                 value={form.holidayTypeId}
@@ -308,13 +292,7 @@ const Holiday = () => {
                 error={!!errors.holidayTypeId}
                 helperText={errors.holidayTypeId}
                 fullWidth
-              >
-                {holidayTypes.map((type) => (
-                  <MenuItem key={type._id} value={type._id}>
-                    {type.holidayTypeName}
-                  </MenuItem>
-                ))}
-              </TextField>
+              />
             </Grid>
           </Grid>
         </DialogContent>
