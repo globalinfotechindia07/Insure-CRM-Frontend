@@ -241,7 +241,7 @@ const ParametricReport = () => {
               {/* Actions */}
               <Grid item xs={12} sm={3} display="flex" justifyContent="flex-end">
                 <div style={{ display: 'flex', gap: '10px' }}>
-                  <Button variant="contained" color="secondary" onClick={exportCSV}>
+                  <Button variant="contained" color="secondary" onClick={exportCSV} disabled={localStorage.getItem('loginRole') !== 'admin'}>
                     Export
                   </Button>
                 </div>

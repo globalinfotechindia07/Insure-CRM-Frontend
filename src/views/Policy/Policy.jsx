@@ -369,7 +369,7 @@ const Policy = () => {
               >
                 Add Policy
               </Button>
-              <Button variant="contained" color="secondary" onClick={() => handleExportCSV()} disabled={isExporting === true}>
+              <Button variant="contained" color="secondary" onClick={() => handleExportCSV()} disabled={isExporting === true || localStorage.getItem('loginRole') !== 'admin'}>
                 {isExporting === true ? 'Exporting...' : 'Export'}
               </Button>
               <Button variant="contained" component="label" sx={{ backgroundColor: '#4caf50', color: 'white', '&:hover': { backgroundColor: '#388e3c' } }}>

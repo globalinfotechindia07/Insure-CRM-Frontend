@@ -238,11 +238,22 @@ const Holiday = () => {
 
       <Grid container justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
         <Typography variant="h5">Holiday Master</Typography>
-        {(holidayPermission.Add === true || isAdmin) && (
-          <Button variant="contained" startIcon={<Add />} onClick={handleOpen}>
-            Add Holiday
+        <div style={{ display: 'flex', gap: '10px' }}>
+          {(holidayPermission.Add === true || isAdmin) && (
+            <Button variant="contained" startIcon={<Add />} onClick={handleOpen}>
+              Add Holiday
+            </Button>
+          )}
+          <Button variant="contained" color="secondary" onClick={exportCSV} disabled={localStorage.getItem('loginRole') !== 'admin'}>
+            Export
           </Button>
-        )}
+          {isAdmin && (
+            <Button variant="contained" component="label" sx={{ backgroundColor: '#4caf50', color: 'white', '&:hover': { backgroundColor: '#388e3c' } }}>
+              Import
+              <input type="file" accept=".csv" hidden onChange={handleImportCSV} />
+            </Button>
+          )}
+        </div>
       </Grid>
 
       {/* Modal Form */}
