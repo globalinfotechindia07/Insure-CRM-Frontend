@@ -60,8 +60,8 @@ import {
 } from "../../services/investigator.service";
 
 import {
-  getActiveDepartments,
-} from "../../services/departmentApi";
+  get,
+} from "../../api/api";
 
 const ClaimPage = () => {
 
@@ -178,11 +178,11 @@ const ClaimPage = () => {
   // ================= FETCH DEPARTMENTS =================
   const fetchDepartments = async () => {
     try {
-      const res = await getActiveDepartments();
-      console.log("Departments fetched:", res);
-      if (res.success && Array.isArray(res.data)) {
+      const res = await get("insDepartment");
+      console.log("Insurance Departments fetched:", res);
+      if (res && Array.isArray(res.data)) {
         setDepartments(res.data);
-      } else if (res.data && Array.isArray(res.data.data)) {
+      } else if (res && res.data && Array.isArray(res.data.data)) {
         setDepartments(res.data.data);
       } else if (Array.isArray(res)) {
         setDepartments(res);
@@ -776,7 +776,7 @@ const ClaimPage = () => {
           <Box hidden={activeTab !== 0}>
             <Grid container spacing={2} sx={{ mt: 1 }}>
               <Grid item xs={12} md={6}>
-                <TextField fullWidth label="Claim No" name="claimNo" value={formData.claimNo} onChange={handleChange} required />
+                <TextField fullWidth label="Claim No" name="claimNo" value={formData.claimNo} onChange={handleChange} />
               </Grid>
               <Grid item xs={12} md={6}>
                 <TextField
@@ -790,8 +790,8 @@ const ClaimPage = () => {
                   <MenuItem value="">Select Department</MenuItem>
                   {departments.length > 0 ? (
                     departments.map((dept) => (
-                      <MenuItem key={dept._id} value={dept.name}>
-                        {dept.name}
+                      <MenuItem key={dept._id} value={dept.insDepartment || dept.name}>
+                        {dept.insDepartment || dept.name}
                       </MenuItem>
                     ))
                   ) : (

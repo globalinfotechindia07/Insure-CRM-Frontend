@@ -87,6 +87,16 @@ const Holiday = () => {
     fetchHolidayTypes();
   }, [systemRights]);
 
+  const formatDateToDDMMYYYY = (dateString) => {
+    if (!dateString) return '-';
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return '-';
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = date.getFullYear();
+    return `${day}/${month}/${year}`;
+  };
+
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
@@ -348,7 +358,7 @@ const Holiday = () => {
                     <TableRow key={index}>
                       <TableCell>{index + 1}</TableCell>
                       <TableCell>{row.holidayName}</TableCell>
-                      <TableCell>{new Date(row.date).toLocaleDateString()}</TableCell>
+                      <TableCell>{formatDateToDDMMYYYY(row.date)}</TableCell>
                       <TableCell>{row.holidayTypeId?.holidayTypeName || 'N/A'}</TableCell>
                       <TableCell>
                         {(holidayPermission.Edit === true || isAdmin) && (

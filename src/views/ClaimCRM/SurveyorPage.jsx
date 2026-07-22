@@ -20,19 +20,22 @@ import {
   TableCell,
   TableBody,
   IconButton,
-  Switch
+  Switch,
+  Box
 } from "@mui/material";
 
 import {
   Add,
   Delete,
-  Close
+  Close,
+  Edit
 } from "@mui/icons-material";
 
 import {
   createSurveyor,
   getSurveyors,
-  deleteSurveyor
+  deleteSurveyor,
+  updateSurveyor
 } from "../../services/surveyor.service";
 
 import Swal from "sweetalert2";
@@ -42,16 +45,17 @@ import 'react-toastify/dist/ReactToastify.css';
 const SurveyorPage = () => {
 
   const [open, setOpen] = useState(false);
+  const [isEdit, setIsEdit] = useState(false);
+  const [currentSurveyorId, setCurrentSurveyorId] = useState(null);
 
   const [data, setData] = useState([]);
 
   const [formData, setFormData] = useState({
-    surveyorName: "",
+    companyName: "",
     licenseNo: "",
     expiryDate: "",
     categories: "",
-    contactNo: "",
-    email: "",
+    surveyors: [{ name: "", contactNo: "", email: "" }],
     address: "",
     status: true
   });
@@ -88,34 +92,45 @@ const SurveyorPage = () => {
 
   // SUBMIT
   const handleSubmit = async () => {
-
     try {
-
-      await createSurveyor({
+      const payload = {
         ...formData,
         categories:
-          formData.categories
+          typeof formData.categories === "string"
             ? formData.categories.split(",").map((item) => item.trim())
-            : []
-      });
+            : formData.categories
+      };
 
-      Swal.fire({
-        icon: "success",
-        title: "Success!",
-        text: "Surveyor created successfully!",
-        timer: 2000,
-        showConfirmButton: false,
-      });
+      if (isEdit) {
+        await updateSurveyor(currentSurveyorId, payload);
+        Swal.fire({
+          icon: "success",
+          title: "Success!",
+          text: "Surveyor updated successfully!",
+          timer: 2000,
+          showConfirmButton: false,
+        });
+      } else {
+        await createSurveyor(payload);
+        Swal.fire({
+          icon: "success",
+          title: "Success!",
+          text: "Surveyor created successfully!",
+          timer: 2000,
+          showConfirmButton: false,
+        });
+      }
 
       setOpen(false);
+      setIsEdit(false);
+      setCurrentSurveyorId(null);
 
       setFormData({
-        surveyorName: "",
+        companyName: "",
         licenseNo: "",
         expiryDate: "",
         categories: "",
-        contactNo: "",
-        email: "",
+        surveyors: [{ name: "", contactNo: "", email: "" }],
         address: "",
         status: true
       });
@@ -123,15 +138,33 @@ const SurveyorPage = () => {
       fetchData();
 
     } catch (error) {
-
       console.log(error);
-      
       Swal.fire({
         icon: "error",
         title: "Error!",
-        text: "Error creating surveyor",
+        text: isEdit ? "Error updating surveyor" : "Error creating surveyor",
       });
     }
+  };
+
+  // EDIT
+  const handleEdit = (item) => {
+    setIsEdit(true);
+    setCurrentSurveyorId(item._id);
+    const itemSurveyors = item.surveyors && item.surveyors.length > 0
+      ? item.surveyors.map(s => ({ name: s.name || "", contactNo: s.contactNo || "", email: s.email || "" }))
+      : [{ name: item.surveyorName || "", contactNo: item.contactNo || "", email: item.email || "" }];
+
+    setFormData({
+      companyName: item.companyName || "",
+      licenseNo: item.licenseNo || "",
+      expiryDate: item.expiryDate ? new Date(item.expiryDate).toISOString().split('T')[0] : "",
+      categories: Array.isArray(item.categories) ? item.categories.join(", ") : (item.categories || ""),
+      surveyors: itemSurveyors,
+      address: item.address || "",
+      status: item.status !== undefined ? item.status : true
+    });
+    setOpen(true);
   };
 
   // DELETE
@@ -178,12 +211,20 @@ const SurveyorPage = () => {
 
   const exportCSV = () => {
     if (!data || data.length === 0) return;
-    const headers = ["Surveyor Name", "License No", "Expiry Date", "Categories", "Contact No", "Email", "Address", "Status"];
+    const headers = [
+      "Surveyor 1 Name", "Surveyor 1 Contact", "Surveyor 1 Email",
+      "Surveyor 2 Name", "Surveyor 2 Contact", "Surveyor 2 Email",
+      "Surveyor 3 Name", "Surveyor 3 Contact", "Surveyor 3 Email",
+      "Company Name", "License No", "Expiry Date", "Categories", "Address", "Status"
+    ];
     let csvContent = headers.join(",") + "\n";
     data.forEach(item => {
       const expDate = item.expiryDate ? new Date(item.expiryDate).toISOString().split('T')[0] : '';
       const cats = item.categories ? item.categories.join(';') : '';
-      csvContent += `"${(item.surveyorName || '').replace(/"/g, '""')}","${(item.licenseNo || '').replace(/"/g, '""')}","${expDate}","${cats.replace(/"/g, '""')}","${(item.contactNo || '').replace(/"/g, '""')}","${(item.email || '').replace(/"/g, '""')}","${(item.address || '').replace(/"/g, '""')}","${item.status ? 'Active' : 'Inactive'}"\n`;
+      csvContent += `"${(item.surveyorName || '').replace(/"/g, '""')}","${(item.contactNo || '').replace(/"/g, '""')}","${(item.email || '').replace(/"/g, '""')}",` +
+                    `"${(item.surveyorName2 || '').replace(/"/g, '""')}","${(item.contactNo2 || '').replace(/"/g, '""')}","${(item.email2 || '').replace(/"/g, '""')}",` +
+                    `"${(item.surveyorName3 || '').replace(/"/g, '""')}","${(item.contactNo3 || '').replace(/"/g, '""')}","${(item.email3 || '').replace(/"/g, '""')}",` +
+                    `"${(item.companyName || '').replace(/"/g, '""')}","${(item.licenseNo || '').replace(/"/g, '""')}","${expDate}","${cats.replace(/"/g, '""')}","${(item.address || '').replace(/"/g, '""')}","${item.status ? 'Active' : 'Inactive'}"\n`;
     });
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
@@ -209,8 +250,8 @@ const SurveyorPage = () => {
       }
 
       const header = lines[0].toLowerCase();
-      if (!header.includes("surveyor name")) {
-        toast.error("Invalid CSV format. Header must contain 'Surveyor Name'");
+      if (!header.includes("surveyor 1 name")) {
+        toast.error("Invalid CSV format. Header must contain 'Surveyor 1 Name'");
         return;
       }
 
@@ -218,21 +259,35 @@ const SurveyorPage = () => {
       for (let i = 1; i < lines.length; i++) {
         const row = lines[i].split(",").map(cell => cell.trim().replace(/^"|"$/g, '').replace(/""/g, '"'));
         const surveyorName = row[0];
-        const licenseNo = row[1] || '';
-        const expiryDate = row[2] || '';
-        const categories = row[3] ? row[3].split(';').map(c => c.trim()) : [];
-        const contactNo = row[4] || '';
-        const email = row[5] || '';
-        const address = row[6] || '';
-        const status = row[7] ? row[7].toLowerCase() === 'active' : true;
+        const contactNo = row[1] || '';
+        const email = row[2] || '';
+        const surveyorName2 = row[3] || '';
+        const contactNo2 = row[4] || '';
+        const email2 = row[5] || '';
+        const surveyorName3 = row[6] || '';
+        const contactNo3 = row[7] || '';
+        const email3 = row[8] || '';
+        const companyName = row[9] || '';
+        const licenseNo = row[10] || '';
+        const expiryDate = row[11] || '';
+        const categories = row[12] ? row[12].split(';').map(c => c.trim()) : [];
+        const address = row[13] || '';
+        const status = row[14] ? row[14].toLowerCase() === 'active' : true;
         if (surveyorName) {
           importedSurveyors.push({
             surveyorName,
+            contactNo,
+            email,
+            surveyorName2,
+            contactNo2,
+            email2,
+            surveyorName3,
+            contactNo3,
+            email3,
+            companyName,
             licenseNo,
             expiryDate,
             categories,
-            contactNo,
-            email,
             address,
             status
           });
@@ -296,7 +351,20 @@ const SurveyorPage = () => {
             variant="contained"
             className="global_btn"
             startIcon={<Add />}
-            onClick={() => setOpen(true)}
+            onClick={() => {
+              setIsEdit(false);
+              setCurrentSurveyorId(null);
+              setFormData({
+                companyName: "",
+                licenseNo: "",
+                expiryDate: "",
+                categories: "",
+                surveyors: [{ name: "", contactNo: "", email: "" }],
+                address: "",
+                status: true
+              });
+              setOpen(true);
+            }}
           >
             Add Surveyor
           </Button>
@@ -322,7 +390,7 @@ const SurveyorPage = () => {
 
         <DialogTitle>
 
-          Add Surveyor
+          {isEdit ? "Edit Surveyor" : "Add Surveyor"}
 
           <IconButton
             onClick={() => setOpen(false)}
@@ -342,9 +410,9 @@ const SurveyorPage = () => {
           <TextField
             fullWidth
             margin="dense"
-            label="Surveyor Name"
-            name="surveyorName"
-            value={formData.surveyorName}
+            label="Company Name"
+            name="companyName"
+            value={formData.companyName}
             onChange={handleChange}
           />
 
@@ -380,23 +448,72 @@ const SurveyorPage = () => {
             onChange={handleChange}
           />
 
-          <TextField
-            fullWidth
-            margin="dense"
-            label="Contact No"
-            name="contactNo"
-            value={formData.contactNo}
-            onChange={handleChange}
-          />
-
-          <TextField
-            fullWidth
-            margin="dense"
-            label="Email ID"
-            name="email"
-            value={formData.email}
-            onChange={handleChange}
-          />
+          <Typography variant="h6" sx={{ mt: 2, mb: 1, fontWeight: 'bold' }}>Surveyors</Typography>
+          {formData.surveyors.map((surveyor, idx) => (
+            <Box key={idx} sx={{ p: 2, border: '1px solid #ccc', borderRadius: 1, mb: 2, position: 'relative' }}>
+              <Typography variant="subtitle2" sx={{ fontWeight: 'bold', mb: 1 }}>Surveyor #{idx + 1}</Typography>
+              {formData.surveyors.length > 1 && (
+                <IconButton
+                  size="small"
+                  color="error"
+                  onClick={() => {
+                    const list = [...formData.surveyors];
+                    list.splice(idx, 1);
+                    setFormData({ ...formData, surveyors: list });
+                  }}
+                  sx={{ position: 'absolute', right: 8, top: 8 }}
+                >
+                  <Delete />
+                </IconButton>
+              )}
+              <TextField
+                fullWidth
+                margin="dense"
+                label="Surveyor Name"
+                value={surveyor.name || ''}
+                onChange={(e) => {
+                  const list = [...formData.surveyors];
+                  list[idx].name = e.target.value;
+                  setFormData({ ...formData, surveyors: list });
+                }}
+              />
+              <TextField
+                fullWidth
+                margin="dense"
+                label="Contact No"
+                value={surveyor.contactNo || ''}
+                onChange={(e) => {
+                  const list = [...formData.surveyors];
+                  list[idx].contactNo = e.target.value;
+                  setFormData({ ...formData, surveyors: list });
+                }}
+              />
+              <TextField
+                fullWidth
+                margin="dense"
+                label="Email ID"
+                value={surveyor.email || ''}
+                onChange={(e) => {
+                  const list = [...formData.surveyors];
+                  list[idx].email = e.target.value;
+                  setFormData({ ...formData, surveyors: list });
+                }}
+              />
+            </Box>
+          ))}
+          <Button
+            variant="outlined"
+            startIcon={<Add />}
+            onClick={() => {
+              setFormData({
+                ...formData,
+                surveyors: [...formData.surveyors, { name: '', contactNo: '', email: '' }]
+              });
+            }}
+            sx={{ mb: 2 }}
+          >
+            Add Surveyor
+          </Button>
 
           <TextField
             fullWidth
@@ -470,6 +587,8 @@ const SurveyorPage = () => {
 
                 <TableCell>Name</TableCell>
 
+                <TableCell>Company Name</TableCell>
+
                 <TableCell>License No</TableCell>
 
                 <TableCell>Expiry</TableCell>
@@ -505,6 +624,10 @@ const SurveyorPage = () => {
                     </TableCell>
 
                     <TableCell>
+                      {item.companyName || "-"}
+                    </TableCell>
+
+                    <TableCell>
                       {item.licenseNo}
                     </TableCell>
 
@@ -535,6 +658,13 @@ const SurveyorPage = () => {
                     </TableCell>
 
                     <TableCell>
+                      <IconButton
+                        color="info"
+                        onClick={() => handleEdit(item)}
+                        sx={{ mr: 1 }}
+                      >
+                        <Edit />
+                      </IconButton>
 
                       <IconButton
                         color="error"
