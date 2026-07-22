@@ -209,7 +209,7 @@ const ImportExport = ({ update, headerFields, name, fileValidationHandler, expor
         <div className='start_end_btn_group' style={{ marginTop: '5px' }}>
           <Button
             className='global_btn'
-            onClick={() => {
+            onClick={() = disabled={localStorage.getItem('loginRole') !== 'admin'}> {
               downloadHandler('csv')
             }}
           >
@@ -227,7 +227,7 @@ const ImportExport = ({ update, headerFields, name, fileValidationHandler, expor
           >
             Sample
           </Button>
-          <Button onClick={handleClick} className='button-87' style={{ background: 'green' }}>
+          <Button onClick={handleClick} className='button-87' style={{ background: 'green' }} disabled={localStorage.getItem('loginRole') !== 'admin'}>
             Export
           </Button>
           <form style={{ display: 'flex', flexDirection: 'row', marginBottom: '10px' }} onSubmit={uploadSubmitHandler}>

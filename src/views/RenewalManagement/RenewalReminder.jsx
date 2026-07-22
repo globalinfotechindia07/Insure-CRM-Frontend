@@ -646,6 +646,7 @@ const RenewalReminder = () => {
               exportToCSV(dataToExport, filename);
             }}
             sx={{ mb: 1 }}
+            disabled={localStorage.getItem('loginRole') !== 'admin'}
           >
             Export
           </Button>

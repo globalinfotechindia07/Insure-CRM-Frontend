@@ -453,7 +453,7 @@ const IrdaiReport = () => {
                 variant="contained"
                 color="secondary"
                 onClick={handleExportExcel}
-                disabled={policy.length === 0}
+                disabled={policy.length === 0 || localStorage.getItem('loginRole') !== 'admin'}
               >
                 Export
               </Button>

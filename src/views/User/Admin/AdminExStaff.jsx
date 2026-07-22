@@ -282,7 +282,7 @@ const AdminExStaff = () => {
                   </Grid>
                   <Grid item>
                     <div style={{ display: 'flex', gap: '10px' }}>
-                      <Button variant="contained" color="secondary" onClick={exportCSV}>
+                      <Button variant="contained" color="secondary" onClick={exportCSV} disabled={localStorage.getItem('loginRole') !== 'admin'}>
                         Export
                       </Button>
                       <Button variant="contained" component="label" sx={{ backgroundColor: '#4caf50', color: 'white', '&:hover': { backgroundColor: '#388e3c' } }}>
@@ -310,6 +310,7 @@ const AdminExStaff = () => {
                         <TableHead>
                           <TableRow sx={{ verticalAlign: 'top' }}>
                             <TableCell>Sr.No</TableCell>
+                            <TableCell>Employee ID</TableCell>
                             <TableCell>Profile Picture</TableCell>
                             <TableCell>Name</TableCell>
                             <TableCell>Department</TableCell>
@@ -324,6 +325,7 @@ const AdminExStaff = () => {
                           {filteredData.map((item, index) => (
                             <TableRow key={item._id}>
                               <TableCell>{index + 1}</TableCell>
+                              <TableCell>{item.basicDetails?.empCode || 'N/A'}</TableCell>
                               <TableCell>
                                 <Avatar
                                   alt={`${item.basicDetails.firstName} ${item.basicDetails.lastName}`}

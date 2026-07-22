@@ -285,7 +285,7 @@ const AdminStaff = () => {
                             Add
                           </Button>
                         )}
-                        <Button variant="contained" color="secondary" onClick={exportCSV}>
+                        <Button variant="contained" color="secondary" onClick={exportCSV} disabled={localStorage.getItem('loginRole') !== 'admin'}>
                           Export
                         </Button>
                         <Button variant="contained" component="label" sx={{ backgroundColor: '#4caf50', color: 'white', '&:hover': { backgroundColor: '#388e3c' } }}>
@@ -313,6 +313,7 @@ const AdminStaff = () => {
                         <TableHead>
                           <TableRow sx={{ verticalAlign: 'top' }}>
                             <TableCell>Sr.No</TableCell>
+                            <TableCell>Employee ID</TableCell>
                             <TableCell>Profile Picture</TableCell>
                             <TableCell>Name</TableCell>
                             <TableCell>Department</TableCell>
@@ -326,6 +327,7 @@ const AdminStaff = () => {
                         <TableBody>
                           {activeData.map((item, index) => {
                             // const isSuspended = checkifsuspended(item._id);
+                            const empCode = item?.basicDetails?.empCode || 'N/A';
                             const firstName = item?.basicDetails?.firstName || 'N/A';
                             const lastName = item?.basicDetails?.lastName || '';
                             const profilePhoto = item?.basicDetails?.profilePhoto || '';
@@ -337,6 +339,7 @@ const AdminStaff = () => {
                             return (
                               <TableRow sx={{ verticalAlign: 'top' }} key={item._id}>
                                 <TableCell>{index + 1}</TableCell>
+                                <TableCell>{empCode}</TableCell>
                                 <TableCell>
                                   <Avatar
                                     alt={`${firstName} ${lastName}`}

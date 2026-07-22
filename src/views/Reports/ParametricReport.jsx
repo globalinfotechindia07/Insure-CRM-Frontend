@@ -442,7 +442,7 @@ const ParametricReport = () => {
           <Grid container justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
             <Typography variant="h5">Parametric Report</Typography>
             <div style={{ display: 'flex', gap: '10px' }}>
-              <Button variant="contained" color="secondary" onClick={exportCSV}>
+              <Button variant="contained" color="secondary" onClick={exportCSV} disabled={localStorage.getItem('loginRole') !== 'admin'}>
                 Export
               </Button>
             </div>

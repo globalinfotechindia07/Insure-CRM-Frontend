@@ -87,6 +87,16 @@ const Holiday = () => {
     fetchHolidayTypes();
   }, [systemRights]);
 
+  const formatDateToDDMMYYYY = (dateString) => {
+    if (!dateString) return '-';
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return '-';
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = date.getFullYear();
+    return `${day}/${month}/${year}`;
+  };
+
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
@@ -238,11 +248,22 @@ const Holiday = () => {
 
       <Grid container justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
         <Typography variant="h5">Holiday Master</Typography>
-        {(holidayPermission.Add === true || isAdmin) && (
-          <Button variant="contained" startIcon={<Add />} onClick={handleOpen}>
-            Add Holiday
+        <div style={{ display: 'flex', gap: '10px' }}>
+          {(holidayPermission.Add === true || isAdmin) && (
+            <Button variant="contained" startIcon={<Add />} onClick={handleOpen}>
+              Add Holiday
+            </Button>
+          )}
+          <Button variant="contained" color="secondary" onClick={exportCSV} disabled={localStorage.getItem('loginRole') !== 'admin'}>
+            Export
           </Button>
-        )}
+          {isAdmin && (
+            <Button variant="contained" component="label" sx={{ backgroundColor: '#4caf50', color: 'white', '&:hover': { backgroundColor: '#388e3c' } }}>
+              Import
+              <input type="file" accept=".csv" hidden onChange={handleImportCSV} />
+            </Button>
+          )}
+        </div>
       </Grid>
 
       {/* Modal Form */}
@@ -337,7 +358,7 @@ const Holiday = () => {
                     <TableRow key={index}>
                       <TableCell>{index + 1}</TableCell>
                       <TableCell>{row.holidayName}</TableCell>
-                      <TableCell>{new Date(row.date).toLocaleDateString()}</TableCell>
+                      <TableCell>{formatDateToDDMMYYYY(row.date)}</TableCell>
                       <TableCell>{row.holidayTypeId?.holidayTypeName || 'N/A'}</TableCell>
                       <TableCell>
                         {(holidayPermission.Edit === true || isAdmin) && (

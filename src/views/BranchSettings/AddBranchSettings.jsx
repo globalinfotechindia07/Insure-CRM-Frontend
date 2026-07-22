@@ -101,7 +101,7 @@ const AddBranchSettings = () => {
     try {
       const token = localStorage.getItem('token');
       // const response = await fetch('http://localhost:5050/api/branchSettings/', {
-        const response = await fetch('https://insure-crm-backend-1-n420.onrender.com/api/branchSettings/', {
+      const response = await fetch('https://insure-crm-backend-1-n420.onrender.com/api/branchSettings/', {
 
         headers: {
           'Authorization': `Bearer ${token}`

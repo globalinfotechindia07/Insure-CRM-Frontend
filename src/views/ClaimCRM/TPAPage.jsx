@@ -47,6 +47,7 @@ const TPAPage = () => {
 
   const [formData, setFormData] = useState({
     tpaName: "",
+    contactPerson: "",
     contactNo: "",
     email: "",
     address: "",
@@ -115,6 +116,7 @@ const TPAPage = () => {
           setEditId(null);
           setFormData({
             tpaName: "",
+            contactPerson: "",
             contactNo: "",
             email: "",
             address: "",
@@ -136,6 +138,7 @@ const TPAPage = () => {
         setEditId(null);
         setFormData({
           tpaName: "",
+          contactPerson: "",
           contactNo: "",
           email: "",
           address: "",
@@ -204,6 +207,7 @@ const TPAPage = () => {
 
     setFormData({
       tpaName: item.tpaName || "",
+      contactPerson: item.contactPerson || "",
       contactNo: item.contactNo || "",
       email: item.email || "",
       address: item.address || "",
@@ -214,10 +218,10 @@ const TPAPage = () => {
 
   const exportCSV = () => {
     if (!data || data.length === 0) return;
-    const headers = ["Name of TPA", "Contact No", "Email ID", "Address"];
+    const headers = ["Name of TPA", "Contact Person", "Contact No", "Email ID", "Address"];
     let csvContent = headers.join(",") + "\n";
     data.forEach(item => {
-      csvContent += `"${(item.tpaName || '').replace(/"/g, '""')}","${(item.contactNo || '').replace(/"/g, '""')}","${(item.email || '').replace(/"/g, '""')}","${(item.address || '').replace(/"/g, '""')}"\n`;
+      csvContent += `"${(item.tpaName || '').replace(/"/g, '""')}","${(item.contactPerson || '').replace(/"/g, '""')}","${(item.contactNo || '').replace(/"/g, '""')}","${(item.email || '').replace(/"/g, '""')}","${(item.address || '').replace(/"/g, '""')}"\n`;
     });
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
@@ -252,12 +256,14 @@ const TPAPage = () => {
       for (let i = 1; i < lines.length; i++) {
         const row = lines[i].split(",").map(cell => cell.trim().replace(/^"|"$/g, '').replace(/""/g, '"'));
         const tpaName = row[0];
-        const contactNo = row[1] || '';
-        const email = row[2] || '';
-        const address = row[3] || '';
+        const contactPerson = row[1] || '';
+        const contactNo = row[2] || '';
+        const email = row[3] || '';
+        const address = row[4] || '';
         if (tpaName) {
           importedTPAs.push({
             tpaName,
+            contactPerson,
             contactNo,
             email,
             address
@@ -323,6 +329,7 @@ const TPAPage = () => {
 
               setFormData({
                 tpaName: "",
+                contactPerson: "",
                 contactNo: "",
                 email: "",
                 address: "",
@@ -331,7 +338,7 @@ const TPAPage = () => {
           >
             Add TPA
           </Button>
-          <Button variant="contained" color="secondary" onClick={exportCSV}>
+          <Button variant="contained" color="secondary" onClick={exportCSV} disabled={localStorage.getItem('loginRole') !== 'admin'}>
             Export
           </Button>
           <Button variant="contained" component="label" sx={{ backgroundColor: '#4caf50', color: 'white', '&:hover': { backgroundColor: '#388e3c' } }}>
@@ -376,6 +383,15 @@ const TPAPage = () => {
             label="Name of TPA"
             name="tpaName"
             value={formData.tpaName}
+            onChange={handleChange}
+          />
+
+          <TextField
+            fullWidth
+            margin="dense"
+            label="Contact Person Name"
+            name="contactPerson"
+            value={formData.contactPerson}
             onChange={handleChange}
           />
 
@@ -450,6 +466,10 @@ const TPAPage = () => {
                 </TableCell>
 
                 <TableCell>
+                  Contact Person
+                </TableCell>
+
+                <TableCell>
                   Contact No
                 </TableCell>
 
@@ -483,6 +503,10 @@ const TPAPage = () => {
 
                     <TableCell>
                       {item.tpaName}
+                    </TableCell>
+
+                    <TableCell>
+                      {item.contactPerson || "-"}
                     </TableCell>
 
                     <TableCell>
@@ -526,7 +550,7 @@ const TPAPage = () => {
                 <TableRow>
 
                   <TableCell
-                    colSpan={6}
+                    colSpan={7}
                     align="center"
                   >
                     No TPA Found

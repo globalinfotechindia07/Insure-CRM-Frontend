@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { toUppercasePayload } from 'utils/uppercaseUtils';
 
 // const REACT_APP_API_URL = 'https://miraicrm.com/api/';
 // const REACT_APP_API_URL = 'https://insure.isyncerp.com/api/';
@@ -53,15 +54,15 @@ export const get = async (url) => {
 //   return response.json();
 // };
 
+export { toUppercasePayload };
+
 export const post = async (url, data) => {
   const token = retrieveToken();
   const companyId = localStorage.getItem('companyId');
-  // console.log('Using Token (POST):', token);
 
   const isFormData = data instanceof FormData;
   const headers = {
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    // DO NOT set Content-Type for FormData — browser will set the correct boundary.
     ...(isFormData ? {} : { 'Content-Type': 'application/json' })
   };
 
@@ -71,28 +72,12 @@ export const post = async (url, data) => {
     body: isFormData ? data : JSON.stringify(data)
   });
 
-  // optional: helper behavior for 401 so component can catch it
   if (response.status === 401) {
-    // either return JSON with error or throw — we'll throw so UI can handle it
     throw new Error('Unauthorized');
   }
 
   return response.json();
 };
-
-// Update request API
-// export const put = async (url, data) => {
-//   const token = retrieveToken();
-//   const response = await fetch(`${REACT_APP_API_URL}${url}`, {
-//     method: 'PUT',
-//     headers: {
-//       Authorization: `Bearer ${token}`,
-//       'Content-Type': 'application/json'
-//     },
-//     body: JSON.stringify(data)
-//   });
-//   return response.json();
-// };
 
 export const put = async (url, data) => {
   const token = retrieveToken();

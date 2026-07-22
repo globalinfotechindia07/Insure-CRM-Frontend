@@ -213,7 +213,7 @@ const Endorsement = () => {
           <Button variant="contained" startIcon={<Add />} onClick={handleOpen}>
             Add Endorsement
           </Button>
-          <Button variant="contained" color="secondary" onClick={exportCSV}>
+          <Button variant="contained" color="secondary" onClick={exportCSV} disabled={localStorage.getItem('loginRole') !== 'admin'}>
             Export
           </Button>
           <Button variant="contained" component="label" sx={{ backgroundColor: '#4caf50', color: 'white', '&:hover': { backgroundColor: '#388e3c' } }}>
