@@ -50,9 +50,9 @@ import SearchIcon from '@mui/icons-material/Search';
 import ClearIcon from '@mui/icons-material/Clear';
 import value from 'assets/scss/_themes-vars.module.scss';
 import REACT_APP_API_URL, { get, post, put, remove } from '../../api/api';
-import axios from 'axios';
 import { useSelector } from 'react-redux';
 import swal from 'sweetalert';
+import { formatAmountWithCommas } from '../../utils/formValidation';
 
 const initialState = {
   financialYear: ''
@@ -564,9 +564,9 @@ const Policy = () => {
                         </TableCell>
                         <TableCell sx={{ verticalAlign: 'top', py: 1.5 }}>{entry?.insDepartment?.insDepartment}</TableCell>
                         <TableCell sx={{ verticalAlign: 'top', py: 1.5 }}>{entry?.policyNumber}</TableCell>
-                        <TableCell sx={{ verticalAlign: 'top', py: 1.5 }}>{Number(entry?.netPremium).toFixed(2)}</TableCell>
-                        <TableCell sx={{ verticalAlign: 'top', py: 1.5 }}>{Number(entry?.gstAmount).toFixed(2)}</TableCell>
-                        <TableCell sx={{ verticalAlign: 'top', py: 1.5 }}>{Number(entry?.totalAmount).toFixed(2)}</TableCell>
+                        <TableCell sx={{ verticalAlign: 'top', py: 1.5 }}>{formatAmountWithCommas(entry?.netPremium)}</TableCell>
+                        <TableCell sx={{ verticalAlign: 'top', py: 1.5 }}>{formatAmountWithCommas(entry?.gstAmount)}</TableCell>
+                        <TableCell sx={{ verticalAlign: 'top', py: 1.5 }}>{formatAmountWithCommas(entry?.totalAmount)}</TableCell>
                         <TableCell
                           sx={{
                             verticalAlign: 'bottom',

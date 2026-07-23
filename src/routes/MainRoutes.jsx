@@ -68,6 +68,7 @@ import UpdateClient from 'views/Client/UpdateClient';
 import UpdateBranchSettings from 'views/BranchSettings/UpdateBranchSettings';
 import GstPercentage from 'views/master/GstPercentage/GstPercentage';
 import InvoiceDetails from 'views/Invoice/InvoiceDetails';
+import NotFound from 'views/NotFound/NotFound';
 import TaskDetailView from 'views/TaskManager/TaskDetailView';
 import Priority from 'views/master/Priority/Priority';
 import Pipeline from 'views/LeadManagement/Pipeline/Pipeline';
@@ -1710,6 +1711,10 @@ const MainRoutes = {
     //       )
     //     },
 
+    {
+      path: '*',
+      element: <NotFound />
+    }
   ]
 };
 

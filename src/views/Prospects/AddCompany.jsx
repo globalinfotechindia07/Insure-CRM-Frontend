@@ -22,6 +22,7 @@ import AddIcon from '@mui/icons-material/Add';
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
 import 'react-toastify/dist/ReactToastify.css';
+import { validateFormFields, formatApiErrorMessage } from '../../utils/formValidation';
 
 const AddCompany = () => {
   const [form, setForm] = useState({
@@ -120,37 +121,32 @@ const AddCompany = () => {
   }, [form.pincode]);
 
   const validate = () => {
-    const newErrors = {};
     const requiredFields = ['companyName', 'phoneNo', 'address', 'pincode', 'city', 'state', 'country'];
-
-    requiredFields.forEach((field) => {
-      if (!form[field]) newErrors[field] = 'Required';
+    const { isValid, errors: validationErrors } = validateFormFields(form, requiredFields, setErrors, {
+      showToast: true,
+      toastPrefix: 'Cannot save company.'
     });
 
-    // Improved email validation regex
     const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    let hasContactError = false;
 
-    // if (form.email && !emailRegex.test(form.email)) {
-    //   newErrors.email = 'Invalid email format';
-    // }
-
-    // if (form.altEmail && !emailRegex.test(form.altEmail)) {
-    //   newErrors.altEmail = 'Invalid email format';
-    // }
-
-    // Validate contacts if any
     if (wantContact && form.contacts.length > 0) {
       form.contacts.forEach((contact, index) => {
         if (contact.email && !emailRegex.test(contact.email)) {
-          if (!newErrors.contacts) newErrors.contacts = {};
-          if (!newErrors.contacts[index]) newErrors.contacts[index] = {};
-          newErrors.contacts[index].email = 'Invalid email format';
+          hasContactError = true;
+          setErrors((prev) => ({
+            ...prev,
+            contacts: {
+              ...(prev?.contacts || {}),
+              [index]: { ...(prev?.contacts?.[index] || {}), email: 'Invalid email format' }
+            }
+          }));
+          toast.error(`Contact #${index + 1} has an invalid email format`);
         }
       });
     }
 
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    return isValid && !hasContactError;
   };
 
   const handleChange = (e) => {
@@ -190,34 +186,8 @@ const AddCompany = () => {
         setIsLoading(true);
         const response = await post('prospect', form);
 
-        if (response.status === 'true') {
+        if (response.status === 'true' || response.status === true || response.success === true) {
           toast.success('Company created successfully!');
-
-          // POST contacts to /api/contact if any
-          // if (form.contacts && form.contacts.length > 0) {
-          //   for (const contact of form.contacts) {
-          //     const contactPayload = {
-          //       companyName: form.companyName,
-          //       name: contact.name,
-          //       email: contact.email,
-          //       designation: contact.designation,
-          //       phone: contact.phone,
-          //       department: contact.dept
-          //     };
-          //     try {
-          //       const contactRes = await post('contact', contactPayload);
-          //       if (contactRes.status === 'true' || contactRes.status === true) {
-          //         console.log('Contact API response:', contactRes);
-          //         toast.success(`Contact "${contact.name}" added successfully!`);
-          //       } else {
-          //         toast.error(`Failed to add contact "${contact.name}": ${contactRes.error || 'Unknown error'}`);
-          //       }
-          //     } catch (err) {
-          //       console.error('Error posting contact:', err);
-          //       toast.error(`Error adding contact "${contact.name}"`);
-          //     }
-          //   }
-          // }
 
           setForm({
             email: '',
@@ -235,16 +205,14 @@ const AddCompany = () => {
           setWantContact(false);
           setErrors({});
         } else {
-          toast.error(`Failed to create company: ${response.error || 'Unknown error'}`);
+          toast.error(formatApiErrorMessage(response.error || response.message, 'Failed to create company'));
         }
       } catch (error) {
         console.error('Error submitting form:', error);
-        toast.error('Something went wrong while submitting the form');
+        toast.error(formatApiErrorMessage(error.message, 'Something went wrong while submitting the form'));
       } finally {
         setIsLoading(false);
       }
-    } else {
-      toast.error('Please fill all required fields correctly');
     }
   };
 

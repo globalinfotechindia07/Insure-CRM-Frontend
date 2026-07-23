@@ -20,6 +20,7 @@ import {
 } from '@mui/material';
 import Breadcrumb from 'component/Breadcrumb';
 import { Link } from 'react-router-dom';
+import { validateFormFields } from '../../../utils/formValidation';
 import { Add, Edit, Delete, Close } from '@mui/icons-material';
 import SaveIcon from '@mui/icons-material/Save';
 import CancelIcon from '@mui/icons-material/Cancel';
@@ -48,12 +49,12 @@ const Status = () => {
   const systemRights = useSelector((state) => state.systemRights.systemRights);
 
   const validate = () => {
-    const newErrors = {};
-    if (!form.Status.trim()) {
-      newErrors.Status = 'Status is required';
-    }
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    const rules = { Status: 'Status Name' };
+    const { isValid } = validateFormFields(form, rules, setErrors, {
+      showToast: true,
+      toastPrefix: 'Cannot save Status.'
+    });
+    return isValid;
   };
 
   // Fetch all statuses from backend

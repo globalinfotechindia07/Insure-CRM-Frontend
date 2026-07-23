@@ -22,6 +22,7 @@ import {
 } from '@mui/material';
 import { toast, ToastContainer } from 'react-toastify';
 import { Link, useNavigate, useParams } from 'react-router-dom';
+import { validateFormFields, formatApiErrorMessage, formatAmountWithCommas, parseAmount, POLICY_AMOUNT_FIELDS } from '../../utils/formValidation';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
@@ -260,7 +261,8 @@ const EditPolicy = () => {
         setPolicyData(res.data);
         console.log('Pol ', policyData);
         setDepartmentValue(policyData.insDepartment?._id || policyData.insDepartment || '');
-        setClientTypeValue(policyData.clientType || 'retail');
+        const normClientType = String(policyData.clientType || 'retail').toLowerCase();
+        setClientTypeValue(normClientType);
         setBranchNameId(policyData.branchCode?._id || policyData.branchCode || '');
         setForm((prev) => ({
           ...prev,
@@ -268,7 +270,7 @@ const EditPolicy = () => {
           branchName: policyData?.branchName || '',
           email: policyData?.email || '',
           mobile: policyData?.mobile || '',
-          clientType: policyData?.clientType || '',
+          clientType: normClientType,
           cutomerName: policyData?.cutomerName || '',
           showNominee: policyData?.showNominee || false,
           nomineeName: policyData?.nomineeName || '',
@@ -308,39 +310,39 @@ const EditPolicy = () => {
           chassisNumber: policyData?.chassisNumber || '',
           insurerName: policyData?.insurerName || '',
           gstNo: policyData?.gstNo || '',
-          sumInsured: policyData?.sumInsured || '',
+          sumInsured: formatAmountWithCommas(policyData?.sumInsured),
           occupation: policyData?.occupation || '',
-          permiumOtherThanTerrorism: policyData?.permiumOtherThanTerrorism || '',
+          permiumOtherThanTerrorism: formatAmountWithCommas(policyData?.permiumOtherThanTerrorism),
           policyNumber: policyData?.policyNumber || '',
-          terrorism: policyData?.terrorism || '',
-          netPremium: policyData?.netPremium || '',
-          gstAmount: Number(policyData?.gstAmount ?? 0) || '',
+          terrorism: formatAmountWithCommas(policyData?.terrorism),
+          netPremium: formatAmountWithCommas(policyData?.netPremium),
+          gstAmount: formatAmountWithCommas(policyData?.gstAmount),
           endorsementName: policyData?.endorsementName || '',
           endorsementPolicyNumber: policyData?.endorsementPolicyNumber || '',
-          endorsementTerrorism: policyData?.endorsementTerrorism || '',
-          endorsementOtherTerrorism: policyData?.endorsementOtherTerrorism || '',
-          endorsementNetPremium: policyData?.endorsementNetPremium || '',
-          endorsementGstAmount: policyData?.endorsementGstAmount || '',
-          etotalAmount: policyData?.etotalAmount || '',
+          endorsementTerrorism: formatAmountWithCommas(policyData?.endorsementTerrorism),
+          endorsementOtherTerrorism: formatAmountWithCommas(policyData?.endorsementOtherTerrorism),
+          endorsementNetPremium: formatAmountWithCommas(policyData?.endorsementNetPremium),
+          endorsementGstAmount: formatAmountWithCommas(policyData?.endorsementGstAmount),
+          etotalAmount: formatAmountWithCommas(policyData?.etotalAmount),
           endorStartDate: policyData?.endorStartDate ? policyData?.endorStartDate?.split('T')[0] : '',
           endorEndDate: policyData?.endorEndDate ? policyData?.endorEndDate?.split('T')[0] : '',
           paymentMode: policyData?.paymentMode || '',
-          paidAmount: policyData?.paidAmount || '',
+          paidAmount: formatAmountWithCommas(policyData?.paidAmount),
           chequeNo: policyData?.chequeNo || '',
           transactionDate: policyData?.transactionDate ? policyData?.transactionDate?.split('T')[0] : '',
           posMisRef: policyData?.posMisRef || '',
           bqpCode: policyData?.bqpCode || '',
-          amountOnOtherTerr: policyData?.amountOnOtherTerr || '',
-          amountOnTerr: policyData?.amountOnTerr || '',
-          tpBrokerageAmount: policyData?.tpBrokerageAmount || '',
-          odBrokerageAmount: policyData?.odBrokerageAmount || '',
+          amountOnOtherTerr: formatAmountWithCommas(policyData?.amountOnOtherTerr),
+          amountOnTerr: formatAmountWithCommas(policyData?.amountOnTerr),
+          tpBrokerageAmount: formatAmountWithCommas(policyData?.tpBrokerageAmount),
+          odBrokerageAmount: formatAmountWithCommas(policyData?.odBrokerageAmount),
 
-          totalBrokerageAmount: policyData?.totalBrokerageAmount || '',
+          totalBrokerageAmount: formatAmountWithCommas(policyData?.totalBrokerageAmount),
           totalBrokerageGst: policyData?.totalBrokerageGst || '',
-          totalBrokerageAmountincGst: policyData?.totalBrokerageAmountincGst || '',
-          totalAmount: Number(policyData?.totalAmount ?? 0) || '',
+          totalBrokerageAmountincGst: formatAmountWithCommas(policyData?.totalBrokerageAmountincGst),
+          totalAmount: formatAmountWithCommas(policyData?.totalAmount),
           sharePercentage: policyData?.sharePercentage || '',
-          coBrokerageAmount: policyData?.coBrokerageAmount || '',
+          coBrokerageAmount: formatAmountWithCommas(policyData?.coBrokerageAmount),
           financialYear: policyData?.financialYear?._id
             ? String(policyData?.financialYear._id)
             : policyData?.financialYear
@@ -606,16 +608,16 @@ const EditPolicy = () => {
   }, [subProductData, selectedProductName]);
 
   useEffect(() => {
-    const tpPremium = form?.tpPremium ? parseFloat(form.tpPremium) : 0;
+    const tpPremium = parseAmount(form?.tpPremium);
     const tpGstId = form?.tpGst;
-    const tpGstValue = gstData?.find((i) => i._id === tpGstId)?.value || 0;
+    const tpGstValue = parseAmount(gstData?.find((i) => i._id === tpGstId)?.value);
 
     const tpGstAmount = round2(tpPremium * (tpGstValue / 100));
     const tpAmount = round2(tpPremium + tpGstAmount);
 
-    const odPremium = form?.odPremium ? parseFloat(form.odPremium) : 0;
+    const odPremium = parseAmount(form?.odPremium);
     const odGstId = form?.odGst;
-    const odGstValue = gstData?.find((i) => i._id === odGstId)?.value || 0;
+    const odGstValue = parseAmount(gstData?.find((i) => i._id === odGstId)?.value);
 
     const odGstAmount = round2(odPremium * (odGstValue / 100));
     const odAmount = round2(odPremium + odGstAmount);
@@ -626,27 +628,19 @@ const EditPolicy = () => {
 
     setForm((prev) => ({
       ...prev,
-      // gstAmount: gstAmount,
-      // totalAmount: calculatedTotal > 0 ? calculatedTotal.toFixed(2) : ''
-      tpGstAmount: tpGstAmount,
-      tpAmount: tpAmount,
-      odGstAmount: odGstAmount,
-      odAmount: odAmount,
-      netPremium: totalPremium,
-      gstAmount: tpGstAmount + odGstAmount,
-      totalAmount: totalAmount,
-      paidAmount: totalAmount
+      tpGstAmount: formatAmountWithCommas(tpGstAmount),
+      tpAmount: formatAmountWithCommas(tpAmount),
+      odGstAmount: formatAmountWithCommas(odGstAmount),
+      odAmount: formatAmountWithCommas(odAmount),
+      netPremium: formatAmountWithCommas(totalPremium),
+      gstAmount: formatAmountWithCommas(gstAmount),
+      totalAmount: formatAmountWithCommas(totalAmount),
+      paidAmount: formatAmountWithCommas(totalAmount)
     }));
-
-    // console.log(`tpPre ${tpPremium} gst id ${tpGstId} gst value ${tpGstValue} tax amount ${tpGstAmount} and tpAmount ${tpAmount}`);
-  }, [form.tpPremium, form.odPremium, form.tpGst, form.odGst]);
+  }, [form.tpPremium, form.odPremium, form.tpGst, form.odGst, gstData]);
 
   useEffect(() => {
-    // const netPremium = round2(parseFloat(form.netPremium) || 0);
-
     if (selectedDeptName !== 'motor') {
-      const isTaxApplicable = taxes.IGST || taxes.UGST || taxes.CGST || taxes.SGST;
-
       if (form.netPremium === '') {
         setForm((prev) => ({
           ...prev,
@@ -656,25 +650,22 @@ const EditPolicy = () => {
         }));
         return;
       }
-      const netPremium = round2(safeNum(form.netPremium));
+      const netPremium = round2(parseAmount(form.netPremium));
 
       if (form.netPremium != '') {
-        // const gstId = form?.gst;
-        const gstValue = safeNum(gstData?.find((i) => i._id === form.gst)?.value);
-
+        const gstValue = parseAmount(gstData?.find((i) => i._id === form.gst)?.value);
         const gstAmount = round2(netPremium * (gstValue / 100)) || 0;
-
         const totalAmount = round2(netPremium + gstAmount);
 
         setForm((prev) => ({
           ...prev,
-          gstAmount,
-          totalAmount,
-          paidAmount: totalAmount
+          gstAmount: formatAmountWithCommas(gstAmount),
+          totalAmount: formatAmountWithCommas(totalAmount),
+          paidAmount: formatAmountWithCommas(totalAmount)
         }));
       }
     }
-  }, [form.netPremium, form.gst, departmentValue, gstData]);
+  }, [form.netPremium, form.gst, selectedDeptName, gstData]);
 
   const safeNum = (v) => (v === '' || v === null || v === undefined ? 0 : Number(v) || 0);
 
@@ -682,9 +673,10 @@ const EditPolicy = () => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
+    const valToSet = POLICY_AMOUNT_FIELDS.includes(name) ? formatAmountWithCommas(value) : value;
 
     setForm((prev) => {
-      let nextForm = { ...prev, [name]: value };
+      let nextForm = { ...prev, [name]: valToSet };
 
       if (name === 'branchCode') {
         const selectedId = value;
@@ -751,7 +743,7 @@ const EditPolicy = () => {
       setDepartmentValue(value);
     }
     if (name === 'clientType') {
-      setClientTypeValue(value);
+      setClientTypeValue(String(value).toLowerCase());
     }
 
     setTaxes({
@@ -770,29 +762,176 @@ const EditPolicy = () => {
   const handleBrokerage = (e) => setBrokerageValue(e.target.value);
 
   const validateForm = () => {
-    setErrors({});
-    return true;
+    const newErrors = {};
+    const missingFields = [];
+
+    if (!form.clientType) {
+      newErrors.clientType = 'Client Type is required';
+      missingFields.push('Client Type');
+    }
+    if (!form.branchCode) {
+      newErrors.branchCode = 'Branch Code is required';
+      missingFields.push('Branch Code');
+    }
+    if (!form.insurerName && !form.cutomerName) {
+      newErrors.insurerName = 'Customer Name is required';
+      missingFields.push('Customer Name');
+    }
+    if (!form.insDepartment) {
+      newErrors.insDepartment = 'Insurance Department is required';
+      missingFields.push('Insurance Department');
+    }
+    if (!form.product) {
+      newErrors.product = 'Product is required';
+      missingFields.push('Product');
+    }
+    if (!form.insCompany) {
+      newErrors.insCompany = 'Insurance Company is required';
+      missingFields.push('Insurance Company');
+    }
+    if (!form.policyNumber) {
+      newErrors.policyNumber = 'Policy Number is required';
+      missingFields.push('Policy Number');
+    }
+    if (!form.paymentMode) {
+      newErrors.paymentMode = 'Payment Mode is required';
+      missingFields.push('Payment Mode');
+    }
+
+    if (clientTypeValue === 'retail' || form.clientType === 'retail') {
+      if (!form.retailCustomer) {
+        newErrors.retailCustomer = 'Retail Customer is required';
+        missingFields.push('Retail Customer');
+      }
+    } else if (clientTypeValue === 'corporate' || form.clientType === 'corporate') {
+      if (!form.customerGroup) {
+        newErrors.customerGroup = 'Parent Group is required';
+        missingFields.push('Parent Group');
+      }
+    }
+
+    if (selectedDeptName === 'motor') {
+      if (!form.tpPolicyDuration && !form.odPolicyDuration) {
+        newErrors.tpPolicyDuration = 'TP/OD Policy Duration is required';
+        missingFields.push('TP/OD Policy Duration');
+      }
+      if (!form.tpPremium && !form.odPremium) {
+        newErrors.tpPremium = 'TP/OD Premium is required';
+        missingFields.push('TP/OD Premium');
+      }
+      if (!form.tpStartDate && !form.odStartDate) {
+        newErrors.tpStartDate = 'TP/OD Start Date is required';
+        missingFields.push('TP/OD Start Date');
+      }
+    } else {
+      if (!form.policyDuration) {
+        newErrors.policyDuration = 'Policy Duration is required';
+        missingFields.push('Policy Duration');
+      }
+      if (!form.netPremium) {
+        newErrors.netPremium = 'Net Premium is required';
+        missingFields.push('Net Premium');
+      }
+      if (!form.startDate) {
+        newErrors.startDate = 'Start Date is required';
+        missingFields.push('Start Date');
+      }
+    }
+
+    if (form.email && !/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(form.email.trim())) {
+      newErrors.email = 'Invalid email format';
+      missingFields.push('Valid Email Format');
+    }
+
+    if (form.mobile && !/^[0-9+\s\-()]{7,15}$/.test(String(form.mobile).trim())) {
+      newErrors.mobile = 'Invalid mobile number';
+      missingFields.push('Valid Mobile Number');
+    }
+
+    setErrors(newErrors);
+    const isValid = Object.keys(newErrors).length === 0;
+
+    if (!isValid) {
+      toast.error(`Policy form cannot be updated due to errors: ${missingFields.join(', ')}`);
+    }
+
+    return isValid;
+  };
+
+  const sanitizeFormPayload = (formData) => {
+    const cleaned = { ...formData };
+    const numericKeys = [
+      'sumInsured',
+      'netPremium',
+      'gstAmount',
+      'totalAmount',
+      'endorsementNetPremium',
+      'endorsementGstAmount',
+      'etotalAmount',
+      'paidAmount',
+      'amountOnOtherTerr',
+      'amountOnTerr',
+      'tpBrokerageAmount',
+      'odBrokerageAmount',
+      'totalBrokerageAmount',
+      'totalBrokerageGst',
+      'totalBrokerageAmountincGst',
+      'sharePercentage',
+      'coBrokerageAmount',
+      'tpPremium',
+      'odPremium',
+      'tpGstAmount',
+      'odGstAmount',
+      'tpAmount',
+      'odAmount'
+    ];
+
+    numericKeys.forEach((key) => {
+      if (cleaned[key] !== undefined && cleaned[key] !== null) {
+        if (typeof cleaned[key] === 'string') {
+          const stripped = cleaned[key].replace(/,/g, '').trim();
+          if (stripped === '') {
+            cleaned[key] = null;
+          } else if (!isNaN(Number(stripped))) {
+            cleaned[key] = Number(stripped);
+          }
+        }
+      }
+    });
+
+    return cleaned;
   };
 
   const handleSubmit = async () => {
-    if (validateForm()) {
-      console.log('form submitted', form);
-      try {
-        const response = await put(`policyDetail/${id}`, form);
-        console.log(response);
-        if (response) {
-          toast.success(response.message || '✅ Record updated successfully!', {
-            autoClose: 3000,
-            theme: 'colored'
-          });
-          navigate('/policy');
+    if (!validateForm()) return;
+    try {
+      const payload = sanitizeFormPayload(form);
+      const response = await put(`policyDetail/${id}`, payload);
+      const isSuccess = response && response.success !== false && response.status !== 'false' && response.status !== false && !response.error;
+
+      if (isSuccess) {
+        toast.success(response.message || '✅ Policy updated successfully!', {
+          autoClose: 3000,
+          theme: 'colored'
+        });
+        navigate('/policy');
+      } else {
+        const userFriendlyMsg = formatApiErrorMessage(response?.error || response?.message);
+        toast.error(userFriendlyMsg, { autoClose: 6000 });
+
+        if (response?.error && response.error.includes('at path "')) {
+          const match = response.error.match(/at path "([^"]+)"/);
+          if (match && match[1]) {
+            setErrors((prev) => ({
+              ...prev,
+              [match[1]]: userFriendlyMsg
+            }));
+          }
         }
-      } catch (error) {
-        console.error('Error updating lead:', error);
-        toast.error('Failed to update lead');
       }
-    } else {
-      toast.error('Please fill the required Fields');
+    } catch (error) {
+      console.error('Error updating policy:', error);
+      toast.error(formatApiErrorMessage(error.message, 'Failed to update policy. Please try again.'));
     }
   };
 
@@ -865,22 +1004,20 @@ const EditPolicy = () => {
     // ⛔ wait until gstData is loaded
     if (!gstData || gstData.length === 0) return;
 
-    const tpPremium = Number(form.tpPremium);
-    const odPremium = Number(form.odPremium);
+    const tpPremium = parseAmount(form.tpPremium);
+    const odPremium = parseAmount(form.odPremium);
 
     // ⛔ if both premiums are empty, don’t calculate
     if (!tpPremium && !odPremium) return;
 
-    const tpGstValue = gstData.find((i) => i._id === form.tpGst)?.value;
-
-    const odGstValue = gstData.find((i) => i._id === form.odGst)?.value;
+    const tpGstValue = parseAmount(gstData.find((i) => i._id === form.tpGst)?.value);
+    const odGstValue = parseAmount(gstData.find((i) => i._id === form.odGst)?.value);
 
     // ⛔ in edit mode, don’t override existing values
     if (isEditMode && !tpGstValue && !odGstValue) return;
 
-    const tpGstAmount = tpGstValue ? tpPremium * (tpGstValue / 100) : Number(form.tpGstAmount || 0);
-
-    const odGstAmount = odGstValue ? odPremium * (odGstValue / 100) : Number(form.odGstAmount || 0);
+    const tpGstAmount = tpGstValue ? tpPremium * (tpGstValue / 100) : parseAmount(form.tpGstAmount);
+    const odGstAmount = odGstValue ? odPremium * (odGstValue / 100) : parseAmount(form.odGstAmount);
 
     const netPremium = tpPremium + odPremium;
     const gstAmount = tpGstAmount + odGstAmount;
@@ -888,11 +1025,11 @@ const EditPolicy = () => {
 
     setForm((prev) => ({
       ...prev,
-      tpGstAmount,
-      odGstAmount,
-      netPremium,
-      gstAmount,
-      totalAmount
+      tpGstAmount: formatAmountWithCommas(tpGstAmount),
+      odGstAmount: formatAmountWithCommas(odGstAmount),
+      netPremium: formatAmountWithCommas(netPremium),
+      gstAmount: formatAmountWithCommas(gstAmount),
+      totalAmount: formatAmountWithCommas(totalAmount)
     }));
   }, [form.tpPremium, form.odPremium, form.tpGst, form.odGst, gstData]);
 
@@ -905,7 +1042,7 @@ const EditPolicy = () => {
   useEffect(() => {
     if (!brokerageRateData || brokerageRateData.length === 0) return;
 
-    const netPremium = Number(form.netPremium) || 0;
+    const netPremium = parseAmount(form.netPremium);
     if (!netPremium) return;
 
     const otherTerrRate = getRateValue(form.rateOnOtherTerr);
@@ -919,18 +1056,18 @@ const EditPolicy = () => {
 
     setForm((prev) => ({
       ...prev,
-      amountOnOtherTerr,
-      amountOnTerr,
-      totalBrokerageAmount,
-      totalBrokerageAmountincGst: totalBrokerageAmount
+      amountOnOtherTerr: formatAmountWithCommas(amountOnOtherTerr),
+      amountOnTerr: formatAmountWithCommas(amountOnTerr),
+      totalBrokerageAmount: formatAmountWithCommas(totalBrokerageAmount),
+      totalBrokerageAmountincGst: formatAmountWithCommas(totalBrokerageAmount)
     }));
   }, [form.rateOnOtherTerr, form.rateOnTerr, form.netPremium, brokerageRateData]);
 
   useEffect(() => {
     if (!brokerageRateData || brokerageRateData.length === 0) return;
 
-    const tpPremium = Number(form.tpPremium) || 0;
-    const odPremium = Number(form.odPremium) || 0;
+    const tpPremium = parseAmount(form.tpPremium);
+    const odPremium = parseAmount(form.odPremium);
 
     // ⛔ nothing to calculate
     if (!tpPremium && !odPremium) return;
@@ -946,54 +1083,54 @@ const EditPolicy = () => {
 
     setForm((prev) => ({
       ...prev,
-      tpBrokerageAmount,
-      odBrokerageAmount,
-      totalBrokerageAmount,
-      totalBrokerageAmountincGst: totalBrokerageAmount
+      tpBrokerageAmount: formatAmountWithCommas(tpBrokerageAmount),
+      odBrokerageAmount: formatAmountWithCommas(odBrokerageAmount),
+      totalBrokerageAmount: formatAmountWithCommas(totalBrokerageAmount),
+      totalBrokerageAmountincGst: formatAmountWithCommas(totalBrokerageAmount)
     }));
   }, [form.tpPremium, form.odPremium, form.tpBrokerageRate, form.odBrokerageRate, brokerageRateData]);
 
   useEffect(() => {
-    const total = Number(form.totalBrokerageAmount) || 0;
-    const pct = Number(form.sharePercentage) || 0;
+    const total = parseAmount(form.totalBrokerageAmount);
+    const pct = parseAmount(form.sharePercentage);
     setForm((prev) => ({
       ...prev,
-      coBrokerageAmount: pct ? round2((total * pct) / 100) : ''
+      coBrokerageAmount: pct ? formatAmountWithCommas(round2((total * pct) / 100)) : ''
     }));
   }, [form.totalBrokerageAmount, form.sharePercentage]);
 
   useEffect(() => {
     if (selectedDeptName !== 'motor') {
-      const otherPrem = Number(form.permiumOtherThanTerrorism) || 0;
-      const terrPrem = Number(form.terrorism) || 0;
+      const otherPrem = parseAmount(form.permiumOtherThanTerrorism);
+      const terrPrem = parseAmount(form.terrorism);
       const computedNet = round2(otherPrem + terrPrem);
       setForm((prev) => ({
         ...prev,
-        netPremium: computedNet
+        netPremium: formatAmountWithCommas(computedNet)
       }));
     }
   }, [form.permiumOtherThanTerrorism, form.terrorism, selectedDeptName]);
 
   useEffect(() => {
-    const amount = Number(form.totalBrokerageAmount) || 0;
-    const gstPct = Number(form.totalBrokerageGst) || 0;
+    const amount = parseAmount(form.totalBrokerageAmount);
+    const gstPct = parseAmount(form.totalBrokerageGst);
     const incGst = round2(amount + (amount * gstPct) / 100);
     setForm((prev) => ({
       ...prev,
-      totalBrokerageAmountincGst: incGst
+      totalBrokerageAmountincGst: formatAmountWithCommas(incGst)
     }));
   }, [form.totalBrokerageAmount, form.totalBrokerageGst]);
 
   useEffect(() => {
-    const net = Number(form.endorsementNetPremium) || 0;
+    const net = parseAmount(form.endorsementNetPremium);
     const gstId = form.endorsementGst;
-    const gstValue = Number(gstData?.find((g) => g._id === gstId)?.value || 0);
+    const gstValue = parseAmount(gstData?.find((g) => g._id === gstId)?.value || 0);
     const gstAmount = round2(net * (gstValue / 100));
     const total = round2(net + gstAmount);
     setForm((prev) => ({
       ...prev,
-      endorsementGstAmount: gstAmount || '',
-      etotalAmount: total || ''
+      endorsementGstAmount: formatAmountWithCommas(gstAmount) || '',
+      etotalAmount: formatAmountWithCommas(total) || ''
     }));
   }, [form.endorsementNetPremium, form.endorsementGst, gstData]);
 
@@ -1077,17 +1214,18 @@ const EditPolicy = () => {
           </Grid>
           <Grid container spacing={2}>
             <Grid item xs={12} sm={4}>
-              <FormControl fullWidth>
+              <FormControl fullWidth error={!!errors.clientType}>
                 <InputLabel id="clientType">Customer Type</InputLabel>
                 <Select labelId="clientType" label="clientType" name="clientType" value={form.clientType} onChange={handleChange}>
                   <MenuItem value="retail">Retail</MenuItem>
                   <MenuItem value="corporate">Corporate</MenuItem>
                 </Select>
+                {errors.clientType && <FormHelperText>{errors.clientType}</FormHelperText>}
               </FormControl>
             </Grid>
             {clientTypeValue === 'retail' ? (
               <Grid item xs={12} sm={4}>
-                <FormControl fullWidth>
+                <FormControl fullWidth error={!!errors.retailCustomer}>
                   <InputLabel id="retailCustomer">Retail Customer</InputLabel>
                   <Select
                     labelId="retailCustomer"
@@ -1104,12 +1242,13 @@ const EditPolicy = () => {
                         </MenuItem>
                       ))}
                   </Select>
+                  {errors.retailCustomer && <FormHelperText>{errors.retailCustomer}</FormHelperText>}
                 </FormControl>
               </Grid>
             ) : (
               <>
                 <Grid item xs={12} sm={4}>
-                  <FormControl fullWidth>
+                  <FormControl fullWidth error={!!errors.customerGroup}>
                     <InputLabel id="customerGroup">Parent Group</InputLabel>
                     <Select
                       labelId="customerGroup"
@@ -1126,6 +1265,7 @@ const EditPolicy = () => {
                           </MenuItem>
                         ))}
                     </Select>
+                    {errors.customerGroup && <FormHelperText>{errors.customerGroup}</FormHelperText>}
                   </FormControl>
                 </Grid>
                 <Grid item xs={12} sm={4}>
@@ -1185,7 +1325,7 @@ const EditPolicy = () => {
         <CardContent>
           <Grid container spacing={2}>
             <Grid item xs={12} sm={3}>
-              <FormControl fullWidth>
+              <FormControl fullWidth error={!!errors.branchCode}>
                 <InputLabel id="branchCode">Branch Code</InputLabel>
                 <Select labelId="branchCode" label="branchCode" name="branchCode" value={form.branchCode} onChange={handleChange}>
                   {branchCodeData.length > 0 &&
@@ -1195,6 +1335,7 @@ const EditPolicy = () => {
                       </MenuItem>
                     ))}
                 </Select>
+                {errors.branchCode && <FormHelperText>{errors.branchCode}</FormHelperText>}
               </FormControl>
             </Grid>
             <Grid item xs={12} sm={3}>
@@ -1207,7 +1348,7 @@ const EditPolicy = () => {
               />
             </Grid>
             <Grid item xs={12} sm={3}>
-              <FormControl fullWidth>
+              <FormControl fullWidth error={!!errors.prefix}>
                 <InputLabel id="prefix">Title</InputLabel>
                 <Select labelId="prefix" label="prefix" name="prefix" value={form.prefix} onChange={handleChange}>
                   {prefixData.length > 0 &&
@@ -1217,6 +1358,7 @@ const EditPolicy = () => {
                       </MenuItem>
                     ))}
                 </Select>
+                {errors.prefix && <FormHelperText>{errors.prefix}</FormHelperText>}
               </FormControl>
             </Grid>
 
@@ -1378,7 +1520,7 @@ const EditPolicy = () => {
               </FormControl>
             </Grid>
             <Grid item xs={12} sm={4}>
-              <FormControl fullWidth>
+              <FormControl fullWidth error={!!errors.insCompany}>
                 <InputLabel id="insCompany">Insurance Company</InputLabel>
                 <Select labelId="insCompany" label="insCompany" name="insCompany" value={form.insCompany} onChange={handleChange}>
                   {insCompanyData.length > 0 &&
@@ -1388,6 +1530,7 @@ const EditPolicy = () => {
                       </MenuItem>
                     ))}
                 </Select>
+                {errors.insCompany && <FormHelperText>{errors.insCompany}</FormHelperText>}
               </FormControl>
             </Grid>
             <Grid item xs={12} sm={4}>
@@ -1499,7 +1642,7 @@ const EditPolicy = () => {
                     <TextField
                       label="TP GST"
                       onChange={handleChange}
-                      value={Number(form.tpGstAmount).toFixed(2)}
+                      value={form.tpGstAmount || ''}
                       name="tpGstAmount"
                       disabled
                       fullWidth
@@ -1510,7 +1653,7 @@ const EditPolicy = () => {
                     <TextField
                       label="TP Amount"
                       onChange={handleChange}
-                      value={Number(form.tpAmount).toFixed(2)}
+                      value={form.tpAmount || ''}
                       name="tpAmount"
                       disabled
                       fullWidth
@@ -1593,7 +1736,7 @@ const EditPolicy = () => {
                     <TextField
                       label="OD GST"
                       onChange={handleChange}
-                      value={Number(form.odGstAmount).toFixed(2)}
+                      value={form.odGstAmount || ''}
                       name="odGstAmount"
                       disabled
                       fullWidth
@@ -1604,7 +1747,7 @@ const EditPolicy = () => {
                     <TextField
                       label="OD Amount"
                       onChange={handleChange}
-                      value={form.odAmount}
+                      value={form.odAmount || ''}
                       name="odAmount"
                       disabled
                       fullWidth
@@ -1619,7 +1762,7 @@ const EditPolicy = () => {
                   <Grid item xs={12} sm={4}>
                     <TextField
                       label="TP + OD Net Premium"
-                      value={form.netPremium}
+                      value={form.netPremium || ''}
                       disabled
                       fullWidth
                       InputLabelProps={{ shrink: true }}
@@ -1628,7 +1771,7 @@ const EditPolicy = () => {
                   <Grid item xs={12} sm={4}>
                     <TextField
                       label="TP + OD GST Amount"
-                      value={Number(form?.gstAmount).toFixed(2) || 0}
+                      value={form.gstAmount || ''}
                       disabled
                       fullWidth
                       InputLabelProps={{ shrink: true }}
@@ -1637,7 +1780,7 @@ const EditPolicy = () => {
                   <Grid item xs={12} sm={4}>
                     <TextField
                       label="TP + OD Total Amount"
-                      value={Number(form.totalAmount).toFixed(2)}
+                      value={form.totalAmount || ''}
                       disabled
                       fullWidth
                       InputLabelProps={{ shrink: true }}
@@ -1754,6 +1897,8 @@ const EditPolicy = () => {
                 value={form.sumInsured}
                 onChange={handleChange}
                 fullWidth
+                error={!!errors.sumInsured}
+                helperText={errors.sumInsured}
                 InputLabelProps={{ shrink: true }}
               />
             </Grid>
@@ -2328,7 +2473,7 @@ const EditPolicy = () => {
                   <TextField
                     label="TP Brokerage Amount"
                     name="tpBrokerageAmount"
-                    value={Number(form.tpBrokerageAmount).toFixed(2)}
+                    value={form.tpBrokerageAmount || ''}
                     onChange={handleChange}
                     fullWidth
                     InputLabelProps={{ shrink: true }}
@@ -2358,7 +2503,7 @@ const EditPolicy = () => {
                   <TextField
                     label="OD Brokerage Amount"
                     name="odBrokerageAmount"
-                    value={Number(form.odBrokerageAmount).toFixed(2)}
+                    value={form.odBrokerageAmount || ''}
                     onChange={handleChange}
                     fullWidth
                     InputLabelProps={{ shrink: true }}
@@ -2553,7 +2698,7 @@ const EditPolicy = () => {
               <TextField
                 label={selectedDeptName === 'motor' ? "TP + OD GST Amt" : "GST Amt"}
                 onChange={handleChange}
-                value={Number(form?.gstAmount).toFixed(2) || 0}
+                value={form.gstAmount || ''}
                 name="gstAmount"
                 disabled
                 fullWidth
@@ -2564,7 +2709,7 @@ const EditPolicy = () => {
               <TextField
                 label={selectedDeptName === 'motor' ? "TP + OD Total Amount" : "Total Amount"}
                 name="totalAmount"
-                value={Number(form.totalAmount).toFixed(2)}
+                value={form.totalAmount || ''}
                 disabled
                 onChange={handleChange}
                 fullWidth

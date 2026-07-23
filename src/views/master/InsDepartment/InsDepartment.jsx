@@ -19,6 +19,7 @@ import {
 } from '@mui/material';
 import Breadcrumb from 'component/Breadcrumb';
 import { Link } from 'react-router-dom';
+import { validateFormFields } from '../../../utils/formValidation';
 import { Add, Edit, Delete, Close } from '@mui/icons-material';
 import SaveIcon from '@mui/icons-material/Save';
 import CancelIcon from '@mui/icons-material/Cancel';
@@ -66,10 +67,12 @@ const fetchInsDepartments = async () => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
   const validate = () => {
-    const newErrors = {};
-    if (!form.insDepartment) newErrors.insDepartment = 'Insrance Department Name is required';
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    const rules = { insDepartment: 'Insurance Department Name' };
+    const { isValid } = validateFormFields(form, rules, setErrors, {
+      showToast: true,
+      toastPrefix: 'Cannot save Insurance Department.'
+    });
+    return isValid;
   };
 
   const handleSubmit = async () => {
