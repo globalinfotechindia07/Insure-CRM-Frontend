@@ -19,6 +19,7 @@ import {
 } from '@mui/material';
 import Breadcrumb from 'component/Breadcrumb';
 import { Link } from 'react-router-dom';
+import { validateFormFields } from '../../../utils/formValidation';
 import { Add, Edit, Delete, Close } from '@mui/icons-material';
 import SaveIcon from '@mui/icons-material/Save';
 import CancelIcon from '@mui/icons-material/Cancel';
@@ -48,10 +49,12 @@ const Department = () => {
   const systemRights = useSelector((state) => state.systemRights.systemRights);
 
   const validate = () => {
-    const newErrors = {};
-    if (!form.department) newErrors.department = 'department Name is required';
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    const rules = { department: 'Department Name' };
+    const { isValid } = validateFormFields(form, rules, setErrors, {
+      showToast: true,
+      toastPrefix: 'Cannot save Department.'
+    });
+    return isValid;
   };
 
   // Fetch all departments from backend

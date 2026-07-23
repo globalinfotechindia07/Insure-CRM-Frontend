@@ -23,6 +23,7 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
+import { validateFormFields, formatApiErrorMessage } from '../../utils/formValidation';
 import 'react-toastify/dist/ReactToastify.css';
 
 const EditCompany = () => {
@@ -113,25 +114,32 @@ const EditCompany = () => {
   }, [id, navigate]);
 
   const validate = () => {
-    const newErrors = {};
-    ['companyName', 'phoneNo', 'address', 'pincode', 'city', 'state', 'country'].forEach((field) => {
-      if (!form[field]) newErrors[field] = 'Required';
+    const requiredFields = ['companyName', 'phoneNo', 'address', 'pincode', 'city', 'state', 'country'];
+    const { isValid } = validateFormFields(form, requiredFields, setErrors, {
+      showToast: true,
+      toastPrefix: 'Cannot update company.'
     });
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    let hasContactError = false;
 
     if (wantContact && form.contacts.length > 0) {
       form.contacts.forEach((contact, index) => {
         if (contact.email && !emailRegex.test(contact.email)) {
-          if (!newErrors.contacts) newErrors.contacts = {};
-          if (!newErrors.contacts[index]) newErrors.contacts[index] = {};
-          newErrors.contacts[index].email = 'Invalid email';
+          hasContactError = true;
+          setErrors((prev) => ({
+            ...prev,
+            contacts: {
+              ...(prev?.contacts || {}),
+              [index]: { ...(prev?.contacts?.[index] || {}), email: 'Invalid email' }
+            }
+          }));
+          toast.error(`Contact #${index + 1} has an invalid email format`);
         }
       });
     }
 
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    return isValid && !hasContactError;
   };
 
   const handleChange = (e) => {
@@ -169,7 +177,7 @@ const EditCompany = () => {
   };
 
   const handleSubmit = async () => {
-    if (!validate()) return toast.error('Please fix validation errors');
+    if (!validate()) return;
     try {
       setIsLoading(true);
       const oldContacts = (await get(`prospect/${id}`)).data.contacts || [];
@@ -198,10 +206,10 @@ const EditCompany = () => {
           }
         }
       } else {
-        toast.error('Failed to update company');
+        toast.error(formatApiErrorMessage(response.error || response.message, 'Failed to update company'));
       }
     } catch (error) {
-      toast.error('Something went wrong');
+      toast.error(formatApiErrorMessage(error.message, 'Something went wrong while updating company'));
     } finally {
       setIsLoading(false);
     }

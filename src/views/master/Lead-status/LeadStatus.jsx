@@ -20,6 +20,7 @@ import {
 } from '@mui/material';
 import Breadcrumb from 'component/Breadcrumb';
 import { Link } from 'react-router-dom';
+import { validateFormFields } from '../../../utils/formValidation';
 import { Add, Edit, Delete, Close } from '@mui/icons-material';
 import SaveIcon from '@mui/icons-material/Save';
 import CancelIcon from '@mui/icons-material/Cancel';
@@ -55,12 +56,16 @@ const LeadStatus = () => {
   const systemRights = useSelector((state) => state.systemRights.systemRights);
 
   const validate = () => {
-    const newErrors = {};
-    if (!form.LeadStatus) newErrors.LeadStatus = 'Lead Status is required';
-    if (!form.shortForm) newErrors.shortForm = 'Short Form is required';
-    if (!form.colorCode) newErrors.colorCode = 'Color Code is required';
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    const rules = {
+      LeadStatus: 'Lead Status',
+      shortForm: 'Short Form',
+      colorCode: 'Color Code'
+    };
+    const { isValid } = validateFormFields(form, rules, setErrors, {
+      showToast: true,
+      toastPrefix: 'Cannot save Lead Status.'
+    });
+    return isValid;
   };
 
   // Fetch all lead statuses from backend

@@ -23,6 +23,7 @@ import { Add, Edit, Delete, Close, Save, Cancel } from '@mui/icons-material';
 import PriorityHighIcon from '@mui/icons-material/PriorityHigh';
 import Breadcrumb from 'component/Breadcrumb';
 import { toast, ToastContainer } from 'react-toastify';
+import { validateFormFields } from '../../../utils/formValidation';
 import 'react-toastify/dist/ReactToastify.css';
 import swal from 'sweetalert';
 
@@ -45,12 +46,12 @@ const Priority = () => {
   const systemRights = useSelector((state)=>state.systemRights.systemRights);
 
   const validate = () => {
-    const newErrors = {};
-    if (!form.Priority.trim()) {
-      newErrors.Priority = 'Priority is required';
-    }
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    const rules = { Priority: 'Priority Name' };
+    const { isValid } = validateFormFields(form, rules, setErrors, {
+      showToast: true,
+      toastPrefix: 'Cannot save Priority.'
+    });
+    return isValid;
   };
 
   const handleChange = (e) => {

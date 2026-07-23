@@ -22,6 +22,7 @@ import { Link } from 'react-router-dom';
 import { Add, Edit, Delete, Close } from '@mui/icons-material';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import { validateFormFields } from '../../../utils/formValidation';
 import SaveIcon from '@mui/icons-material/Save';
 import CancelIcon from '@mui/icons-material/Cancel';
 import EditIcon from '@mui/icons-material/Edit';
@@ -65,18 +66,16 @@ const LicenceValidity = () => {
   };
 
   const validate = () => {
-    const newErrors = {};
-    if (!form.licenseName || form.licenseName.trim() === '') {
-      newErrors.licenseName = 'License Name is required';
-    }
-    if (!form.brokerName || form.brokerName.trim() === '') {
-      newErrors.brokerName = 'Broker Name is required';
-    }
-    if (!form.licenseNumber || form.licenseNumber.trim() === '') {
-      newErrors.licenseNumber = 'License Number is required';
-    }
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    const rules = {
+      licenseName: 'License Name',
+      brokerName: 'Broker Name',
+      licenseNumber: 'License Number'
+    };
+    const { isValid } = validateFormFields(form, rules, setErrors, {
+      showToast: true,
+      toastPrefix: 'Cannot save License Validity.'
+    });
+    return isValid;
   };
 
   // Fetch License validity from backend

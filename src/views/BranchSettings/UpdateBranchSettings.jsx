@@ -20,7 +20,7 @@ import 'react-toastify/dist/ReactToastify.css';
 import { ArrowBack } from '@mui/icons-material';
 import { useSelector } from 'react-redux';
 
-// const STATIC_BASE_URL = "http://localhost:5050"; 
+//  const STATIC_BASE_URL = "http://localhost:5050"; 
 const STATIC_BASE_URL = "https://insure-crm-backend-1-n420.onrender.com";
 
 const UpdateBranchSettings = () => {

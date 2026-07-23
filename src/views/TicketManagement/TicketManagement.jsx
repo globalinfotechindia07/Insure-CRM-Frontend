@@ -23,6 +23,7 @@ import {
 import { LocalizationProvider, DatePicker } from '@mui/x-date-pickers';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { Link } from 'react-router-dom';
+import { validateFormFields } from '../../utils/formValidation';
 import Breadcrumb from 'component/Breadcrumb';
 import { ToastContainer, toast } from 'react-toastify';
 import Add from '@mui/icons-material/Add';
@@ -98,18 +99,22 @@ const TicketManagement = () => {
   };
 
   const validate = () => {
-    const newErrors = {};
-    if (!form.clientName) newErrors.clientName = 'Client Name is required';
-    if (!form.phoneNumber) newErrors.phoneNumber = 'Phone Number is required';
-    if (!form.product) newErrors.product = 'Product is required';
-    if (!form.serviceType) newErrors.serviceType = 'Service Type is required';
-    if (!form.installDate) newErrors.installDate = 'Installation Date is required';
-    if (!form.expiryDate) newErrors.expiryDate = 'Service Expiry Date is required';
-    if (!form.description) newErrors.description = 'Description is required';
-    if (!form.urgency) newErrors.urgency = 'Urgency is required';
-    if (!form.AssignTo) newErrors.AssignTo = 'Assign To is required';
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    const rules = {
+      clientName: 'Client Name',
+      phoneNumber: { label: 'Phone Number', type: 'phone' },
+      product: 'Product',
+      serviceType: 'Service Type',
+      installDate: 'Installation Date',
+      expiryDate: 'Service Expiry Date',
+      description: 'Description',
+      urgency: 'Urgency',
+      AssignTo: 'Assign To'
+    };
+    const { isValid } = validateFormFields(form, rules, setErrors, {
+      showToast: true,
+      toastPrefix: 'Cannot save ticket.'
+    });
+    return isValid;
   };
 
   const handleOpen = () => {

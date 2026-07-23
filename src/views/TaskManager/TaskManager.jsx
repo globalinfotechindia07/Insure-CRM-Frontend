@@ -23,6 +23,7 @@ import {
 } from '@mui/material';
 import { Link } from 'react-router-dom';
 import Breadcrumb from 'component/Breadcrumb';
+import { validateFormFields } from '../../utils/formValidation';
 import { gridSpacing } from 'config.js';
 import { Add, Save as SaveIcon, Delete, Edit } from '@mui/icons-material';
 import AddIcon from '@mui/icons-material/Add';
@@ -290,6 +291,14 @@ const TaskManager = () => {
       return;
     }
     e.preventDefault();
+
+    const { isValid } = validateFormFields(
+      form,
+      ['title', 'priority', 'status', 'assignedTo', 'startDate', 'endDate'],
+      setErrors,
+      { showToast: true, toastPrefix: 'Cannot save task.' }
+    );
+    if (!isValid) return;
 
     // Prepare payload for API
     const payload = {
