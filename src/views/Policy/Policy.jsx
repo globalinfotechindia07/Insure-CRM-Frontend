@@ -274,10 +274,12 @@ const Policy = () => {
 
       const resData = await post(`policyDetail/import-csv/?financialYear=${financialYear}`, formData);
       if (resData && resData.success) {
-        toast.success(`Inserted ${resData.insertedCount} Records`);
+        const skippedInfo = resData.skippedCount > 0 ? ` (${resData.skippedCount} duplicate(s) skipped)` : '';
+        toast.success(`Inserted ${resData.insertedCount} Records${skippedInfo}`);
         fetchPolicyDetail();
       } else {
-        toast.success(`Upload processed: ${resData?.message || 'completed'}`);
+        const skippedInfo = resData?.skippedCount > 0 ? ` (${resData.skippedCount} duplicate(s) skipped)` : '';
+        toast.info(`Upload processed: ${resData?.insertedCount || 0} inserted${skippedInfo}`);
         fetchPolicyDetail();
       }
     } catch (error) {
