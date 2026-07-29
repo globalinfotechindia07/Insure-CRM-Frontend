@@ -115,7 +115,11 @@ const Policy = () => {
   const fetchPolicyDetail = useCallback(async () => {
     setLoading(true);
     try {
-      const url = financialYear ? `policyDetail?financialYear=${financialYear}` : 'policyDetail';
+      const companyId = localStorage.getItem('companyId');
+      let url = 'policyDetail';
+      if (companyId) {
+        url += `?companyId=${encodeURIComponent(companyId)}`;
+      }
       console.log('Fetching policies with URL:', url);
       const res = await get(url);
       console.log('policyDetail data:', res);
@@ -130,7 +134,7 @@ const Policy = () => {
     } finally {
       setLoading(false);
     }
-  }, [financialYear]);
+  }, []);
 
   useEffect(() => {
     // Listen for ANY localStorage changes (even from other components/tabs)
@@ -247,21 +251,13 @@ const Policy = () => {
       });
     }
 
-    // Deduplicate by _id and by policyNumber
+    // Deduplicate strictly by document _id
     const seenIds = new Set();
-    const seenPolicyNumbers = new Set();
     const uniqueResult = [];
 
     for (const item of result) {
       if (!item || !item._id || seenIds.has(String(item._id))) continue;
       seenIds.add(String(item._id));
-
-      const cleanPolicyNo = item.policyNumber ? String(item.policyNumber).trim().toLowerCase() : '';
-      if (cleanPolicyNo !== '') {
-        if (seenPolicyNumbers.has(cleanPolicyNo)) continue;
-        seenPolicyNumbers.add(cleanPolicyNo);
-      }
-
       uniqueResult.push(item);
     }
 
@@ -642,7 +638,7 @@ const Policy = () => {
             {/* Pagination */}
             <Box sx={{ p: 2, borderTop: 1, borderColor: 'divider' }}>
               <TablePagination
-                rowsPerPageOptions={[10, 25, 50, 100]}
+                rowsPerPageOptions={[10, 25, 50, 100, 250, 500]}
                 component="div"
                 count={filteredData.length || 0}
                 rowsPerPage={rowsPerPage}
