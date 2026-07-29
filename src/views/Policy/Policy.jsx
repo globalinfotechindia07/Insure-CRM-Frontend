@@ -219,15 +219,27 @@ const Policy = () => {
   const filteredData = useMemo(() => {
     let result = customerList;
 
-    if (filter === 'byCompany' && selectedCompany) {
-      result = result.filter((entry) => entry?.insCompany?._id === selectedCompany);
+    if (filter === 'byFinancialYear' && financialYear) {
+      result = result.filter((entry) => {
+        const fyId = entry?.financialYear?._id || entry?.financialYear;
+        return String(fyId) === String(financialYear);
+      });
+    } else if (filter === 'byCompany' && selectedCompany) {
+      result = result.filter((entry) => {
+        const compId = entry?.insCompany?._id || entry?.insCompany;
+        return String(compId) === String(selectedCompany);
+      });
     } else if (filter === 'byDepartment' && selectedDepartment) {
-      result = result.filter((entry) => entry?.insDepartment?._id === selectedDepartment);
+      result = result.filter((entry) => {
+        const deptId = entry?.insDepartment?._id || entry?.insDepartment;
+        return String(deptId) === String(selectedDepartment);
+      });
     } else if (filter === 'byMonth' && selectedMonth) {
       result = result.filter((entry) => {
-        const dateToCheck = entry?.startDate || entry?.createdAt;
+        const dateToCheck = entry?.startDate || entry?.createdAt || entry?.transactionDate;
         if (!dateToCheck) return false;
         const date = new Date(dateToCheck);
+        if (isNaN(date.getTime())) return false;
         const year = date.getFullYear();
         const month = String(date.getMonth() + 1).padStart(2, '0');
         return `${year}-${month}` === selectedMonth;
@@ -262,7 +274,7 @@ const Policy = () => {
     }
 
     return uniqueResult;
-  }, [customerList, searchTerm, filter, selectedCompany, selectedDepartment, selectedMonth]);
+  }, [customerList, searchTerm, filter, financialYear, selectedCompany, selectedDepartment, selectedMonth]);
 
   // Paginate filtered data
   const paginatedData = useMemo(() => {
@@ -272,6 +284,7 @@ const Policy = () => {
 
   const handleFilter = (e) => {
     setFinancialYear(e.target.value);
+    setPage(0);
   };
 
   const resetFilters = () => {
@@ -280,6 +293,7 @@ const Policy = () => {
     setSelectedDepartment('');
     setSelectedMonth('');
     setSearchTerm('');
+    setPage(0);
     const savedFY = localStorage.getItem('selectedFY');
     if (savedFY) {
       setFinancialYear(savedFY);
