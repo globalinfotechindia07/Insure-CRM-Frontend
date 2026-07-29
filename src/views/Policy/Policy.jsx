@@ -113,19 +113,22 @@ const Policy = () => {
   // Fetch all policy Detail
 
   const fetchPolicyDetail = useCallback(async () => {
-    if (!financialYear) return; // Don't call if no FY
-
     setLoading(true);
     try {
-      console.log('Fetching with FY:', financialYear);
-      const res = await get(`policyDetail?financialYear=${financialYear}`);
+      const url = financialYear ? `policyDetail?financialYear=${financialYear}` : 'policyDetail';
+      console.log('Fetching policies with URL:', url);
+      const res = await get(url);
       console.log('policyDetail data:', res);
-      if (res.status) setCustomerList(res.data);
-      else setCustomerList([]);
+      if (res && (res.status === true || res.status === 'true' || Array.isArray(res.data))) {
+        setCustomerList(res.data || []);
+      } else {
+        setCustomerList([]);
+      }
     } catch (error) {
       console.error(error);
+      setCustomerList([]);
     } finally {
-      setLoading(false); // ✅ Stop loading
+      setLoading(false);
     }
   }, [financialYear]);
 
@@ -238,7 +241,25 @@ const Policy = () => {
       );
     }
 
-    return result;
+    // Deduplicate by _id and by policyNumber
+    const seenIds = new Set();
+    const seenPolicyNumbers = new Set();
+    const uniqueResult = [];
+
+    for (const item of result) {
+      if (!item || !item._id || seenIds.has(String(item._id))) continue;
+      seenIds.add(String(item._id));
+
+      const cleanPolicyNo = item.policyNumber ? String(item.policyNumber).trim().toLowerCase() : '';
+      if (cleanPolicyNo !== '') {
+        if (seenPolicyNumbers.has(cleanPolicyNo)) continue;
+        seenPolicyNumbers.add(cleanPolicyNo);
+      }
+
+      uniqueResult.push(item);
+    }
+
+    return uniqueResult;
   }, [customerList, searchTerm, filter, selectedCompany, selectedDepartment, selectedMonth]);
 
   // Paginate filtered data
