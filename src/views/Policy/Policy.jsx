@@ -49,7 +49,8 @@ import Delete from '@mui/icons-material/Delete';
 import SearchIcon from '@mui/icons-material/Search';
 import ClearIcon from '@mui/icons-material/Clear';
 import value from 'assets/scss/_themes-vars.module.scss';
-import REACT_APP_API_URL, { get, post, put, remove } from '../../api/api';
+import axios from 'axios';
+import REACT_APP_API_URL, { get, post, put, remove, retrieveToken } from '../../api/api';
 import { useSelector } from 'react-redux';
 import swal from 'sweetalert';
 import { formatAmountWithCommas } from '../../utils/formValidation';
@@ -78,8 +79,8 @@ const Policy = () => {
   const [rowsPerPage, setRowsPerPage] = useState(100);
   const [searchTerm, setSearchTerm] = useState('');
   const [file, setFile] = useState(null);
-  const [isExporting, setIsExporting] = useState('false');
-  const [isUploading, setIsUploading] = useState('false');
+  const [isExporting, setIsExporting] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
 
   useEffect(() => {}, [filter]);
 
@@ -273,10 +274,12 @@ const Policy = () => {
 
       const resData = await post(`policyDetail/import-csv/?financialYear=${financialYear}`, formData);
       if (resData && resData.success) {
-        toast.success(`Inserted ${resData.insertedCount} Records`);
+        const skippedInfo = resData.skippedCount > 0 ? ` (${resData.skippedCount} duplicate(s) skipped)` : '';
+        toast.success(`Inserted ${resData.insertedCount} Records${skippedInfo}`);
         fetchPolicyDetail();
       } else {
-        toast.success(`Upload processed: ${resData?.message || 'completed'}`);
+        const skippedInfo = resData?.skippedCount > 0 ? ` (${resData.skippedCount} duplicate(s) skipped)` : '';
+        toast.info(`Upload processed: ${resData?.insertedCount || 0} inserted${skippedInfo}`);
         fetchPolicyDetail();
       }
     } catch (error) {
@@ -290,16 +293,23 @@ const Policy = () => {
 
   const handleExportCSV = async () => {
     setIsExporting(true);
-    console.log('FY ', financialYear);
     try {
-      // Append fromYear and toYear as query parameters
-      const response = await axios.get(`${REACT_APP_API_URL}policyDetail/export-csv?financialYear=${financialYear}`, {
+      const token = retrieveToken();
+      const companyId = localStorage.getItem('companyId');
+
+      let url = `${REACT_APP_API_URL}policyDetail/export-csv?financialYear=${financialYear || ''}`;
+      if (companyId) {
+        url += `&companyId=${encodeURIComponent(companyId)}`;
+      }
+
+      const response = await axios.get(url, {
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
+        },
         responseType: 'blob'
       });
 
-      console.log('exporrt Response ', response);
-      const filename = `policyData-${financialYear}.xlsx`;
-      // const filename = `policyData-${fromYear}-${toYear}.csv`;
+      const filename = `policyData-${financialYear || 'all'}.xlsx`;
       const blob = new Blob([response.data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
 
       const link = document.createElement('a');
@@ -308,15 +318,14 @@ const Policy = () => {
 
       document.body.appendChild(link);
       link.click();
-
       document.body.removeChild(link);
+      window.URL.revokeObjectURL(link.href);
 
       toast.success('Policy exported successfully');
-
-      setIsExporting(false);
     } catch (error) {
-      console.log(error);
+      console.error('Error exporting policy data:', error);
       toast.error('Error exporting Policy data');
+    } finally {
       setIsExporting(false);
     }
   };
@@ -369,8 +378,8 @@ const Policy = () => {
               >
                 Add Policy
               </Button>
-              <Button variant="contained" color="secondary" onClick={() => handleExportCSV()} disabled={isExporting === true || localStorage.getItem('loginRole') !== 'admin'}>
-                {isExporting === true ? 'Exporting...' : 'Export'}
+              <Button variant="contained" color="secondary" onClick={handleExportCSV} disabled={isExporting}>
+                {isExporting ? 'Exporting...' : 'Export'}
               </Button>
               <Button variant="contained" component="label" sx={{ backgroundColor: '#4caf50', color: 'white', '&:hover': { backgroundColor: '#388e3c' } }}>
                 Import
