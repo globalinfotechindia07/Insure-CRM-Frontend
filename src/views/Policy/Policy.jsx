@@ -115,7 +115,11 @@ const Policy = () => {
   const fetchPolicyDetail = useCallback(async () => {
     setLoading(true);
     try {
-      const url = financialYear ? `policyDetail?financialYear=${financialYear}` : 'policyDetail';
+      const companyId = localStorage.getItem('companyId');
+      let url = 'policyDetail';
+      if (companyId) {
+        url += `?companyId=${encodeURIComponent(companyId)}`;
+      }
       console.log('Fetching policies with URL:', url);
       const res = await get(url);
       console.log('policyDetail data:', res);
@@ -130,7 +134,7 @@ const Policy = () => {
     } finally {
       setLoading(false);
     }
-  }, [financialYear]);
+  }, []);
 
   useEffect(() => {
     // Listen for ANY localStorage changes (even from other components/tabs)
@@ -237,39 +241,23 @@ const Policy = () => {
         const companyName = (entry?.insCompany?.insCompany || entry?.insCompany?.name || entry?.insurerName || '').toLowerCase();
         const deptName = (entry?.insDepartment?.insDepartment || '').toLowerCase();
         const policyNo = (entry?.policyNumber || '').toLowerCase();
-        const mobile = (entry?.mobile || '').toLowerCase();
-        const email = (entry?.email || '').toLowerCase();
-        const gstNo = (entry?.gstNo || '').toLowerCase();
-        const vehicleNo = (entry?.vehicleNumber || '').toLowerCase();
 
         return (
           custName.includes(lowerSearch) ||
           companyName.includes(lowerSearch) ||
           deptName.includes(lowerSearch) ||
-          policyNo.includes(lowerSearch) ||
-          mobile.includes(lowerSearch) ||
-          email.includes(lowerSearch) ||
-          gstNo.includes(lowerSearch) ||
-          vehicleNo.includes(lowerSearch)
+          policyNo.includes(lowerSearch)
         );
       });
     }
 
-    // Deduplicate by _id and by policyNumber
+    // Deduplicate strictly by document _id
     const seenIds = new Set();
-    const seenPolicyNumbers = new Set();
     const uniqueResult = [];
 
     for (const item of result) {
       if (!item || !item._id || seenIds.has(String(item._id))) continue;
       seenIds.add(String(item._id));
-
-      const cleanPolicyNo = item.policyNumber ? String(item.policyNumber).trim().toLowerCase() : '';
-      if (cleanPolicyNo !== '') {
-        if (seenPolicyNumbers.has(cleanPolicyNo)) continue;
-        seenPolicyNumbers.add(cleanPolicyNo);
-      }
-
       uniqueResult.push(item);
     }
 
@@ -346,15 +334,20 @@ const Policy = () => {
 
       const filename = `policyData-${financialYear || 'all'}.xlsx`;
       const blob = new Blob([response.data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      const objectUrl = window.URL.createObjectURL(blob);
 
       const link = document.createElement('a');
-      link.href = window.URL.createObjectURL(blob);
-      link.download = filename;
+      link.href = objectUrl;
+      link.setAttribute('download', filename);
+      link.style.display = 'none';
 
       document.body.appendChild(link);
-      link.click();
+      link.dispatchEvent(new MouseEvent('click', { bubbles: false, cancelable: true }));
       document.body.removeChild(link);
-      window.URL.revokeObjectURL(link.href);
+
+      setTimeout(() => {
+        window.URL.revokeObjectURL(objectUrl);
+      }, 300);
 
       toast.success('Policy exported successfully');
     } catch (error) {
@@ -645,7 +638,7 @@ const Policy = () => {
             {/* Pagination */}
             <Box sx={{ p: 2, borderTop: 1, borderColor: 'divider' }}>
               <TablePagination
-                rowsPerPageOptions={[10, 25, 50, 100]}
+                rowsPerPageOptions={[10, 25, 50, 100, 250, 500]}
                 component="div"
                 count={filteredData.length || 0}
                 rowsPerPage={rowsPerPage}
