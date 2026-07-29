@@ -20,8 +20,8 @@ import 'react-toastify/dist/ReactToastify.css';
 import { ArrowBack } from '@mui/icons-material';
 import { useSelector } from 'react-redux';
 
- const STATIC_BASE_URL = "http://localhost:5050"; 
-// const STATIC_BASE_URL = "https://insure-crm-backend-1-n420.onrender.com";
+//  const STATIC_BASE_URL = "http://localhost:5050"; 
+const STATIC_BASE_URL = "https://insure-crm-backend-1-n420.onrender.com";
 
 const UpdateBranchSettings = () => {
   const navigate = useNavigate();
@@ -72,8 +72,8 @@ const UpdateBranchSettings = () => {
       setFetchLoading(true);
       try {
         const token = localStorage.getItem('token');
-        const response = await fetch(`http://localhost:5050/api/branchSettings/${id}`, {
-        // const response = await fetch(`https://insure-crm-backend-1-n420.onrender.com/api/branchSettings/${id}`, {
+        // const response = await fetch(`http://localhost:5050/api/branchSettings/${id}`, {
+        const response = await fetch(`https://insure-crm-backend-1-n420.onrender.com/api/branchSettings/${id}`, {
 
           headers: {
             'Authorization': `Bearer ${token}`
@@ -229,14 +229,14 @@ const UpdateBranchSettings = () => {
       
       console.log('🟡 Submitting payload:', payload);
       
-      let url = 'http://localhost:5050/api/branchSettings/';
-      // let url = "https://insure-crm-backend-1-n420.onrender.com/api/branchSettings/";
+      // let url = 'http://localhost:5050/api/branchSettings/';
+      let url = "https://insure-crm-backend-1-n420.onrender.com/api/branchSettings/";
 
       let method = 'POST';
       
       if (!isNewRecord) {
-        url = `http://localhost:5050/api/branchSettings/${id}`;
-        // url = `https://insure-crm-backend-1-n420.onrender.com/api/branchSettings/${id}`;
+        // url = `http://localhost:5050/api/branchSettings/${id}`;
+        url = `https://insure-crm-backend-1-n420.onrender.com/api/branchSettings/${id}`;
 
         method = 'PUT';
       }
@@ -261,8 +261,8 @@ const UpdateBranchSettings = () => {
           const logoFormData = new FormData();
           logoFormData.append('branchLogo', logoFile);
           // 
-          const logoResponse = await fetch(`http://localhost:5050/api/branchSettings/${data.data._id}/logo`, {
-          // const logoResponse = await fetch(`https://insure-crm-backend-1-n420.onrender.com/api/branchSettings/${data.data._id}/logo`, {
+          // const logoResponse = await fetch(`http://localhost:5050/api/branchSettings/${data.data._id}/logo`, {
+          const logoResponse = await fetch(`https://insure-crm-backend-1-n420.onrender.com/api/branchSettings/${data.data._id}/logo`, {
 
             method: 'POST',
             headers: {
