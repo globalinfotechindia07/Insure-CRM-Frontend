@@ -76,7 +76,7 @@ const Policy = () => {
   const [selectedMonth, setSelectedMonth] = useState('');
 
   const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(100);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
   const [searchTerm, setSearchTerm] = useState('');
   const [file, setFile] = useState(null);
   const [isExporting, setIsExporting] = useState(false);
@@ -232,13 +232,27 @@ const Policy = () => {
 
     if (searchTerm.trim()) {
       const lowerSearch = searchTerm.toLowerCase().trim();
-      result = result.filter(
-        (entry) =>
-          entry?.cutomerName?.toLowerCase().includes(lowerSearch) ||
-          entry?.insCompany?.name?.toLowerCase().includes(lowerSearch) ||
-          entry?.insDepartment?.insDepartment?.toLowerCase().includes(lowerSearch) ||
-          entry?.policyNumber?.toLowerCase().includes(lowerSearch)
-      );
+      result = result.filter((entry) => {
+        const custName = (entry?.cutomerName || entry?.retailCustomer?.name || entry?.customerGroup?.customerGroupName || '').toLowerCase();
+        const companyName = (entry?.insCompany?.insCompany || entry?.insCompany?.name || entry?.insurerName || '').toLowerCase();
+        const deptName = (entry?.insDepartment?.insDepartment || '').toLowerCase();
+        const policyNo = (entry?.policyNumber || '').toLowerCase();
+        const mobile = (entry?.mobile || '').toLowerCase();
+        const email = (entry?.email || '').toLowerCase();
+        const gstNo = (entry?.gstNo || '').toLowerCase();
+        const vehicleNo = (entry?.vehicleNumber || '').toLowerCase();
+
+        return (
+          custName.includes(lowerSearch) ||
+          companyName.includes(lowerSearch) ||
+          deptName.includes(lowerSearch) ||
+          policyNo.includes(lowerSearch) ||
+          mobile.includes(lowerSearch) ||
+          email.includes(lowerSearch) ||
+          gstNo.includes(lowerSearch) ||
+          vehicleNo.includes(lowerSearch)
+        );
+      });
     }
 
     // Deduplicate by _id and by policyNumber
@@ -582,14 +596,14 @@ const Policy = () => {
                       >
                         <TableCell sx={{ verticalAlign: 'top', py: 1.5 }}>{page * rowsPerPage + index + 1}</TableCell>
                         <TableCell sx={{ verticalAlign: 'top', py: 1.5, wordBreak: 'break-word' }}>
-                          {truncateText(entry?.cutomerName)}
+                          {truncateText(entry?.cutomerName || entry?.retailCustomer?.name || entry?.customerGroup?.customerGroupName)}
                         </TableCell>
                         <TableCell sx={{ verticalAlign: 'top', py: 1.5, wordBreak: 'break-word', maxHeight: 60 }}>
                           <Typography
                             variant="body2"
                             sx={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}
                           >
-                            {truncateText(entry?.insCompany?.name)}
+                            {truncateText(entry?.insCompany?.insCompany || entry?.insCompany?.name || entry?.insurerName)}
                           </Typography>
                         </TableCell>
                         <TableCell sx={{ verticalAlign: 'top', py: 1.5 }}>{entry?.insDepartment?.insDepartment}</TableCell>
@@ -631,7 +645,7 @@ const Policy = () => {
             {/* Pagination */}
             <Box sx={{ p: 2, borderTop: 1, borderColor: 'divider' }}>
               <TablePagination
-                rowsPerPageOptions={[100]}
+                rowsPerPageOptions={[10, 25, 50, 100]}
                 component="div"
                 count={filteredData.length || 0}
                 rowsPerPage={rowsPerPage}
