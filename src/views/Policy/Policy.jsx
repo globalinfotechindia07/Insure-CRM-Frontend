@@ -237,20 +237,12 @@ const Policy = () => {
         const companyName = (entry?.insCompany?.insCompany || entry?.insCompany?.name || entry?.insurerName || '').toLowerCase();
         const deptName = (entry?.insDepartment?.insDepartment || '').toLowerCase();
         const policyNo = (entry?.policyNumber || '').toLowerCase();
-        const mobile = (entry?.mobile || '').toLowerCase();
-        const email = (entry?.email || '').toLowerCase();
-        const gstNo = (entry?.gstNo || '').toLowerCase();
-        const vehicleNo = (entry?.vehicleNumber || '').toLowerCase();
 
         return (
           custName.includes(lowerSearch) ||
           companyName.includes(lowerSearch) ||
           deptName.includes(lowerSearch) ||
-          policyNo.includes(lowerSearch) ||
-          mobile.includes(lowerSearch) ||
-          email.includes(lowerSearch) ||
-          gstNo.includes(lowerSearch) ||
-          vehicleNo.includes(lowerSearch)
+          policyNo.includes(lowerSearch)
         );
       });
     }
@@ -346,15 +338,20 @@ const Policy = () => {
 
       const filename = `policyData-${financialYear || 'all'}.xlsx`;
       const blob = new Blob([response.data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      const objectUrl = window.URL.createObjectURL(blob);
 
       const link = document.createElement('a');
-      link.href = window.URL.createObjectURL(blob);
-      link.download = filename;
+      link.href = objectUrl;
+      link.setAttribute('download', filename);
+      link.style.display = 'none';
 
       document.body.appendChild(link);
-      link.click();
+      link.dispatchEvent(new MouseEvent('click', { bubbles: false, cancelable: true }));
       document.body.removeChild(link);
-      window.URL.revokeObjectURL(link.href);
+
+      setTimeout(() => {
+        window.URL.revokeObjectURL(objectUrl);
+      }, 300);
 
       toast.success('Policy exported successfully');
     } catch (error) {
