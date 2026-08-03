@@ -96,7 +96,7 @@ const CompanySettings = () => {
       const token = localStorage.getItem('token');
       console.log('🔗 Fetching company settings...');
 
-      // const response = await fetch('http://localhost:5050/api/companySettings/', {
+      //  const response = await fetch('http://localhost:5050/api/companySettings/', {
       const response = await fetch('https://insure-crm-backend-1-n420.onrender.com/api/companySettings/', {
 
         headers: {

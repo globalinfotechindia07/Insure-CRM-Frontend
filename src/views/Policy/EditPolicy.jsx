@@ -42,10 +42,24 @@ const EditPolicy = () => {
   const [departmentValue, setDepartmentValue] = useState('');
   const [insCompanyData, setInsCompanyData] = useState([]);
   const [insDepartmentData, setInsDepartmentData] = useState([]);
+  const [policyData, setPolicyData] = useState(null);
+
   const selectedDeptName = React.useMemo(() => {
-    const selectedDept = insDepartmentData.find((d) => d._id === departmentValue);
-    return selectedDept?.insDepartment?.toLowerCase().trim() || '';
-  }, [insDepartmentData, departmentValue]);
+    if (!departmentValue && policyData?.insDepartment) {
+      const pDept = policyData.insDepartment;
+      if (typeof pDept === 'object') return (pDept.insDepartment || pDept.name || '').toLowerCase().trim();
+      return String(pDept).toLowerCase().trim();
+    }
+    if (!departmentValue) return '';
+    if (typeof departmentValue === 'object') {
+      return (departmentValue.insDepartment || departmentValue.name || '').toLowerCase().trim();
+    }
+    const selectedDept = insDepartmentData.find((d) => String(d._id) === String(departmentValue) || d.insDepartment?.toLowerCase().trim() === String(departmentValue).toLowerCase().trim());
+    if (selectedDept) {
+      return selectedDept.insDepartment?.toLowerCase().trim() || '';
+    }
+    return String(departmentValue).toLowerCase().trim();
+  }, [insDepartmentData, departmentValue, policyData]);
   const [siteLocation, setSiteLocation] = useState('');
   const [brokerageValue, setBrokerageValue] = useState('brokerage');
   const [clientList, setClientList] = useState([]);
@@ -67,7 +81,6 @@ const EditPolicy = () => {
   const [incotermsData, setIncotermsData] = useState([]);
   const [fuelTypeData, setFuelTypeData] = useState([]);
   const [branchNameId, setBranchNameId] = useState('');
-  const [policyData, setPolicyData] = useState([]);
   const [paymentModeData, setPaymentModeData] = useState([]);
 
   const [taxes, setTaxes] = useState({
@@ -191,7 +204,8 @@ const EditPolicy = () => {
         clientList,
         prefixData,
         branchCodeData,
-        insCompanyData,
+        insCompanyDataRes,
+        companyDataRes,
         insDepartmentData,
         productData,
         subProductData,
@@ -207,33 +221,38 @@ const EditPolicy = () => {
         fuelTypeData,
         paymentModeRes
       ] = await Promise.all([
-        get('financialYear'),
-        get('gst-percentage'),
-        get('customerRegistration'),
-        get('prefix'),
-        get('brokerBranch'),
-        get('company'),
-        get('insDepartment'),
-        get('productOrServiceCategory'),
-        get('subproductCategory'),
-        get('riskCode'),
-        get('otherAddon'),
-        get('endorsement'),
-        get('brokerageRate'),
-        get('customerGroup'),
-        get('subCustomerGroup'),
-        get('brokerName'),
-        get('branchBroker'),
-        get('incoterms'),
-        get('fuelType'),
-        get('payment-mode')
+        get('financialYear').catch(() => ({})),
+        get('gst-percentage').catch(() => ({})),
+        get('customerRegistration').catch(() => ({})),
+        get('prefix').catch(() => ({})),
+        get('brokerBranch').catch(() => ({})),
+        get('insCompany').catch(() => ({})),
+        get('company').catch(() => ({})),
+        get('insDepartment').catch(() => ({})),
+        get('productOrServiceCategory').catch(() => ({})),
+        get('subproductCategory').catch(() => ({})),
+        get('riskCode').catch(() => ({})),
+        get('otherAddon').catch(() => ({})),
+        get('endorsement').catch(() => ({})),
+        get('brokerageRate').catch(() => ({})),
+        get('customerGroup').catch(() => ({})),
+        get('subCustomerGroup').catch(() => ({})),
+        get('brokerName').catch(() => ({})),
+        get('branchBroker').catch(() => ({})),
+        get('incoterms').catch(() => ({})),
+        get('fuelType').catch(() => ({})),
+        get('payment-mode').catch(() => ({}))
       ]);
       setFinancialYearData(financialYearData.data || []);
       setGstData(gstData.data || []);
       setClientList(clientList.data || []);
       setPrefixData(prefixData.allPrefix || []);
       setBranchCodeData(branchCodeData.data || []);
-      setInsCompanyData(insCompanyData.data || []);
+      const combinedCompanies = [
+        ...(insCompanyDataRes.data || []),
+        ...(companyDataRes.data || [])
+      ];
+      setInsCompanyData(combinedCompanies);
       setInsDepartmentData(insDepartmentData.data || []);
       setProductData(productData.data || []);
       setSubProductData(subProductData.data || []);
@@ -251,6 +270,41 @@ const EditPolicy = () => {
     } catch (err) {
       console.error('Dropdown load error:', err);
     }
+  };
+
+  const safeFormatDate = (val, fallback = '') => {
+    if (!val) return fallback;
+    const str = String(val).trim();
+    if (!str) return fallback;
+
+    if (str.includes('T')) return str.split('T')[0];
+    if (/^\d{4}-\d{2}-\d{2}$/.test(str)) return str;
+
+    const dmyMatch = str.match(/^(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{4})$/);
+    if (dmyMatch) {
+      const [, d, m, y] = dmyMatch;
+      return `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+    }
+
+    const ymdMatch = str.match(/^(\d{4})[\/\-\.](\d{1,2})[\/\-\.](\d{1,2})$/);
+    if (ymdMatch) {
+      const [, y, m, d] = ymdMatch;
+      return `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+    }
+
+    if (/^\d{5}(\.\d+)?$/.test(str)) {
+      const serial = parseFloat(str);
+      const parsedDate = new Date(Math.round((serial - 25569) * 86400 * 1000));
+      if (!isNaN(parsedDate.getTime())) {
+        return parsedDate.toISOString().split('T')[0];
+      }
+    }
+
+    const dObj = new Date(val);
+    if (!isNaN(dObj.getTime())) {
+      return dObj.toISOString().split('T')[0];
+    }
+    return fallback;
   };
 
   const fetchPolicyDetailById = async () => {
@@ -279,22 +333,22 @@ const EditPolicy = () => {
           livesCover: policyData?.livesCover || '',
           numberOfInstallments: policyData?.numberOfInstallments || '',
           nextInstallmentDate: policyData?.nextInstallmentDate ? policyData?.nextInstallmentDate?.split('T')[0] : '',
-          policyDuration: policyData?.policyDuration || '',
-          startDate: policyData?.startDate ? policyData?.startDate?.split('T')[0] : '',
-          endDate: policyData?.endDate?.split('T')[0] || '',
-          tpPolicyDuration: policyData?.tpPolicyDuration || '',
-          tpStartDate: policyData?.tpStartDate ? policyData?.tpStartDate?.split('T')[0] : '',
-          tpEndDate: policyData?.tpEndDate?.split('T')[0] || '',
+          policyDuration: policyData?.policyDuration || 'YEARLY',
+          startDate: safeFormatDate(policyData?.startDate),
+          endDate: safeFormatDate(policyData?.endDate, safeFormatDate(policyData?.renewalDate)),
+          tpPolicyDuration: policyData?.tpPolicyDuration || 'YEARLY',
+          tpStartDate: safeFormatDate(policyData?.tpStartDate, safeFormatDate(policyData?.startDate)),
+          tpEndDate: safeFormatDate(policyData?.tpEndDate, safeFormatDate(policyData?.endDate, safeFormatDate(policyData?.renewalDate))),
           tpPremium: policyData?.tpPremium || '',
           tpGstAmount: policyData?.tpGstAmount || '',
           tpAmount: policyData?.tpAmount || '',
-          odPolicyDuration: policyData?.odPolicyDuration || '',
-          odStartDate: policyData?.odStartDate ? policyData?.odStartDate?.split('T')[0] : '',
-          odEndDate: policyData?.odEndDate?.split('T')[0] || '',
+          odPolicyDuration: policyData?.odPolicyDuration || 'YEARLY',
+          odStartDate: safeFormatDate(policyData?.odStartDate, safeFormatDate(policyData?.startDate)),
+          odEndDate: safeFormatDate(policyData?.odEndDate, safeFormatDate(policyData?.endDate, safeFormatDate(policyData?.renewalDate))),
           odPremium: policyData?.odPremium || '',
           odGstAmount: policyData?.odGstAmount || '',
           odAmount: policyData?.odAmount || '',
-          renewalDate: policyData?.renewalDate?.split('T')[0] || '',
+          renewalDate: safeFormatDate(policyData?.renewalDate, safeFormatDate(policyData?.endDate)),
           renewable: policyData?.renewable || '',
           SGST: policyData?.SGST || '',
           CGST: policyData?.CGST || '',
@@ -308,7 +362,7 @@ const EditPolicy = () => {
           vehicleSubModel: policyData?.vehicleSubModel || '',
           vehicleNumber: policyData?.vehicleNumber || '',
           chassisNumber: policyData?.chassisNumber || '',
-          insurerName: policyData?.insurerName || '',
+          insurerName: policyData?.insurerName || policyData?.insCompany?.insCompany || policyData?.insCompany?.name || '',
           gstNo: policyData?.gstNo || '',
           sumInsured: formatAmountWithCommas(policyData?.sumInsured),
           occupation: policyData?.occupation || '',
@@ -338,7 +392,7 @@ const EditPolicy = () => {
           odBrokerageAmount: formatAmountWithCommas(policyData?.odBrokerageAmount),
 
           totalBrokerageAmount: formatAmountWithCommas(policyData?.totalBrokerageAmount),
-          totalBrokerageGst: policyData?.totalBrokerageGst || '',
+          totalBrokerageGst: formatAmountWithCommas(policyData?.totalBrokerageGst),
           totalBrokerageAmountincGst: formatAmountWithCommas(policyData?.totalBrokerageAmountincGst),
           totalAmount: formatAmountWithCommas(policyData?.totalAmount),
           sharePercentage: policyData?.sharePercentage || '',
@@ -441,7 +495,11 @@ const EditPolicy = () => {
             ? String(policyData?.otherAddon._id)
             : policyData?.otherAddon
               ? String(policyData?.otherAddon)
-              : ''
+              : '',
+          siteLocation: policyData?.siteLocation || '',
+          retroActive: policyData?.retroActive || '',
+          marineClause: policyData?.marineClause || '',
+          checkSubGroup: policyData?.checkSubGroup || ''
         }));
         if (policyData?.sharePercentage || policyData?.coBrokerageAmount) {
           setShowCoBrokerage(true);
@@ -558,19 +616,20 @@ const EditPolicy = () => {
 
     const startDateObj = new Date(form.tpStartDate);
     startDateObj.setDate(startDateObj.getDate() - 2);
-
     const transactionDate = startDateObj.toISOString().split('T')[0];
 
-    const tpEndDate = calculateEndDate(form.tpStartDate, form.tpPolicyDuration);
+    const computedTpEndDate = calculateEndDate(form.tpStartDate, form.tpPolicyDuration);
+    if (!computedTpEndDate) return;
 
-    if (!tpEndDate) return;
-
-    setForm((prev) => ({
-      ...prev,
-      tpEndDate,
-      transactionDate,
-      renewalDate: tpEndDate
-    }));
+    setForm((prev) => {
+      if (prev.tpEndDate && prev.tpEndDate === computedTpEndDate) return prev;
+      return {
+        ...prev,
+        tpEndDate: prev.tpEndDate || computedTpEndDate,
+        transactionDate: prev.transactionDate || transactionDate,
+        renewalDate: prev.renewalDate || computedTpEndDate
+      };
+    });
   }, [form.tpStartDate, form.tpPolicyDuration]);
 
   useEffect(() => {
@@ -578,19 +637,20 @@ const EditPolicy = () => {
 
     const startDateObj = new Date(form.odStartDate);
     startDateObj.setDate(startDateObj.getDate() - 2);
-
     const transactionDate = startDateObj.toISOString().split('T')[0];
 
-    const odEndDate = calculateEndDate(form.odStartDate, form.odPolicyDuration);
+    const computedOdEndDate = calculateEndDate(form.odStartDate, form.odPolicyDuration);
+    if (!computedOdEndDate) return;
 
-    if (!odEndDate) return;
-
-    setForm((prev) => ({
-      ...prev,
-      odEndDate,
-      transactionDate,
-      renewalDate: odEndDate
-    }));
+    setForm((prev) => {
+      if (prev.odEndDate && prev.odEndDate === computedOdEndDate) return prev;
+      return {
+        ...prev,
+        odEndDate: prev.odEndDate || computedOdEndDate,
+        transactionDate: prev.transactionDate || transactionDate,
+        renewalDate: prev.renewalDate || computedOdEndDate
+      };
+    });
   }, [form.odStartDate, form.odPolicyDuration]);
 
   const selectedProductName = useMemo(() => {
@@ -640,7 +700,7 @@ const EditPolicy = () => {
   }, [form.tpPremium, form.odPremium, form.tpGst, form.odGst, gstData]);
 
   useEffect(() => {
-    if (selectedDeptName !== 'motor') {
+    if (!selectedDeptName.includes('motor')) {
       if (form.netPremium === '') {
         setForm((prev) => ({
           ...prev,
@@ -724,15 +784,36 @@ const EditPolicy = () => {
         }
       }
       if (name === 'insurerName') {
-        const selectedCompanyObj = insCompanyData.find((c) => c.name === value);
+        const selectedCompanyObj = insCompanyData.find((c) => (c.insCompany || c.name || c.companyName) === value);
         if (selectedCompanyObj) {
           nextForm.insCompany = selectedCompanyObj._id;
         }
       }
       if (name === 'insCompany') {
-        const selectedCompanyObj = insCompanyData.find((c) => c._id === value);
+        const selectedCompanyObj = insCompanyData.find((c) => String(c._id) === String(value));
         if (selectedCompanyObj) {
-          nextForm.insurerName = selectedCompanyObj.name;
+          nextForm.insurerName = selectedCompanyObj.insCompany || selectedCompanyObj.name || selectedCompanyObj.companyName || '';
+        }
+      }
+      if (name === 'startDate') {
+        if (!nextForm.tpStartDate || nextForm.tpStartDate === prev.startDate) nextForm.tpStartDate = value;
+        if (!nextForm.odStartDate || nextForm.odStartDate === prev.startDate) nextForm.odStartDate = value;
+      }
+      if (name === 'endDate' || name === 'renewalDate') {
+        if (!nextForm.tpEndDate || nextForm.tpEndDate === prev.endDate || nextForm.tpEndDate === prev.renewalDate) nextForm.tpEndDate = value;
+        if (!nextForm.odEndDate || nextForm.odEndDate === prev.endDate || nextForm.odEndDate === prev.renewalDate) nextForm.odEndDate = value;
+        if (name === 'endDate') nextForm.renewalDate = value;
+        if (name === 'renewalDate') nextForm.endDate = value;
+      }
+      if (name === 'tpStartDate' || name === 'odStartDate') {
+        if (!nextForm.startDate || nextForm.startDate === prev.tpStartDate || nextForm.startDate === prev.odStartDate) {
+          nextForm.startDate = value;
+        }
+      }
+      if (name === 'tpEndDate' || name === 'odEndDate') {
+        if (!nextForm.endDate || nextForm.endDate === prev.tpEndDate || nextForm.endDate === prev.odEndDate) {
+          nextForm.endDate = value;
+          nextForm.renewalDate = value;
         }
       }
 
@@ -1391,11 +1472,14 @@ const EditPolicy = () => {
                   label="Insurer Company"
                 >
                   {insCompanyData.length > 0 &&
-                    insCompanyData.map((type) => (
-                      <MenuItem key={type._id} value={type.name}>
-                        {type.name}
-                      </MenuItem>
-                    ))}
+                    insCompanyData.map((type) => {
+                      const compName = type.insCompany || type.name || type.companyName || '';
+                      return (
+                        <MenuItem key={type._id} value={compName}>
+                          {compName}
+                        </MenuItem>
+                      );
+                    })}
                 </Select>
                 {errors.insurerName && <FormHelperText>{errors.insurerName}</FormHelperText>}
               </FormControl>
@@ -1526,7 +1610,7 @@ const EditPolicy = () => {
                   {insCompanyData.length > 0 &&
                     insCompanyData.map((type) => (
                       <MenuItem key={type._id} value={type._id}>
-                        {type.name}
+                        {type.insCompany || type.name || type.companyName}
                       </MenuItem>
                     ))}
                 </Select>
@@ -1565,7 +1649,7 @@ const EditPolicy = () => {
               </FormControl>
             </Grid>
             {/* MOTOR */}
-            {selectedDeptName === 'motor' ? (
+            {selectedDeptName.includes('motor') ? (
               <>
                 <Typography variant="h5" sx={{ my: 2 }}>
                   TP Details
@@ -1849,7 +1933,7 @@ const EditPolicy = () => {
               />
             </Grid>
             {/* MOTOR */}
-            {selectedDeptName === 'motor' && (
+            {selectedDeptName.includes('motor') && (
               <>
                 <Grid item xs={12} sm={9}></Grid>
               </>

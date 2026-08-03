@@ -138,7 +138,7 @@ const CompanyPage = () => {
   const handleEdit = (item) => {
     setFormData({
       _id: item._id,
-      name: item.name,
+      name: item.insCompany || item.name || "",
       description: item.description || "",
       status: item.status || "active",
     });
@@ -414,7 +414,7 @@ const CompanyPage = () => {
                 data.map((item, index) => (
                   <TableRow key={item._id || index}>
                     <TableCell>{index + 1}</TableCell>
-                    <TableCell>{item.name}</TableCell>
+                    <TableCell>{item.insCompany || item.name}</TableCell>
                     <TableCell>{item.description || "-"}</TableCell>
                     <TableCell>
                       <Chip

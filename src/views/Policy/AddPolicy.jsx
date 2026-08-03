@@ -169,8 +169,15 @@ const AddPolicy = () => {
   const [branchBrokerData, setBranchBrokerData] = useState([]);
   const [insDepartmentData, setInsDepartmentData] = useState([]);
   const selectedDeptName = useMemo(() => {
-    const selectedDept = insDepartmentData.find((d) => d._id === departmentValue);
-    return selectedDept?.insDepartment?.toLowerCase().trim() || '';
+    if (!departmentValue) return '';
+    if (typeof departmentValue === 'object') {
+      return (departmentValue.insDepartment || departmentValue.name || '').toLowerCase().trim();
+    }
+    const selectedDept = insDepartmentData.find((d) => String(d._id) === String(departmentValue) || d.insDepartment?.toLowerCase().trim() === String(departmentValue).toLowerCase().trim());
+    if (selectedDept) {
+      return selectedDept.insDepartment?.toLowerCase().trim() || '';
+    }
+    return String(departmentValue).toLowerCase().trim();
   }, [insDepartmentData, departmentValue]);
   const [productData, setProductData] = useState([]);
   const [subProductData, setSubProductData] = useState([]);
@@ -282,7 +289,7 @@ const AddPolicy = () => {
   useEffect(() => {
     const netPremium = round2(parseAmount(form.netPremium));
 
-    if (selectedDeptName !== 'motor') {
+    if (!selectedDeptName.includes('motor')) {
       const isTaxApplicable = taxes.IGST || taxes.UGST || taxes.CGST || taxes.SGST;
 
       const gstId = form?.gst;
@@ -381,10 +388,15 @@ const AddPolicy = () => {
   };
 
   const fetchInsCompany = async () => {
-    const res = await get('company');
-    // console.log('insurance Company', res.data);
-    if (res.data) setInsCompanyData(res.data);
-    else setInsCompanyData([]);
+    const [res1, res2] = await Promise.all([
+      get('insCompany'),
+      get('company')
+    ]);
+    const combined = [
+      ...(res1?.data || []),
+      ...(res2?.data || [])
+    ];
+    setInsCompanyData(combined);
   };
   const fetchInsDepartment = async () => {
     const res = await get('insDepartment');
@@ -691,15 +703,15 @@ const AddPolicy = () => {
         }
       }
       if (name === 'insurerName') {
-        const selectedCompanyObj = insCompanyData.find((c) => c.name === value);
+        const selectedCompanyObj = insCompanyData.find((c) => (c.insCompany || c.name || c.companyName) === value);
         if (selectedCompanyObj) {
           nextForm.insCompany = selectedCompanyObj._id;
         }
       }
       if (name === 'insCompany') {
-        const selectedCompanyObj = insCompanyData.find((c) => c._id === value);
+        const selectedCompanyObj = insCompanyData.find((c) => String(c._id) === String(value));
         if (selectedCompanyObj) {
-          nextForm.insurerName = selectedCompanyObj.name;
+          nextForm.insurerName = selectedCompanyObj.insCompany || selectedCompanyObj.name || selectedCompanyObj.companyName || '';
         }
       }
 
@@ -1266,11 +1278,14 @@ const AddPolicy = () => {
                       label="Insurer Company"
                     >
                       {insCompanyData.length > 0 &&
-                        insCompanyData.map((type) => (
-                          <MenuItem key={type._id} value={type.name}>
-                            {type.name}
-                          </MenuItem>
-                        ))}
+                        insCompanyData.map((type) => {
+                          const compName = type.insCompany || type.name || type.companyName || '';
+                          return (
+                            <MenuItem key={type._id} value={compName}>
+                              {compName}
+                            </MenuItem>
+                          );
+                        })}
                     </Select>
                     {errors.insurerName && <FormHelperText>{errors.insurerName}</FormHelperText>}
                   </FormControl>
@@ -1426,7 +1441,7 @@ const AddPolicy = () => {
                       {insCompanyData.length > 0 &&
                         insCompanyData.map((type) => (
                           <MenuItem key={type._id} value={type._id}>
-                            {type.name}
+                            {type.insCompany || type.name || type.companyName}
                           </MenuItem>
                         ))}
                     </Select>
@@ -1471,7 +1486,7 @@ const AddPolicy = () => {
                   </FormControl>
                 </Grid>
                 {/* MOTOR */}
-                {selectedDeptName === 'motor' ? (
+                {selectedDeptName.includes('motor') ? (
                   <>
                     <Typography variant="h5" sx={{ my: 2 }}>
                       TP Details
@@ -1755,7 +1770,7 @@ const AddPolicy = () => {
                   />
                 </Grid>
                 {/* MOTOR */}
-                {selectedDeptName === 'motor' && (
+                {selectedDeptName.includes('motor') && (
                   <>
                     <Grid item xs={12} sm={9}></Grid>
                   </>
