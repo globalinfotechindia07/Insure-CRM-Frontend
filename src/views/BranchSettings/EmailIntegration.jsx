@@ -20,8 +20,8 @@ const EmailIntegration = ({ onSave }) => {
   const [loadingConfig, setLoadingConfig] = useState(false);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
 
-   const API_BASE = 'http://localhost:5050/api/email';
-  // const API_BASE = "https://insure-crm-backend-1-n420.onrender.com/api/email";
+  //  const API_BASE = 'http://localhost:5050/api/email';
+  const API_BASE = "https://insure-crm-backend-1-n420.onrender.com/api/email";
 
 
   useEffect(() => {
