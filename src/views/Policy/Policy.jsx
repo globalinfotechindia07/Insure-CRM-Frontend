@@ -92,12 +92,17 @@ const Policy = () => {
   console.log('Selected FY in Policy', financialYear);
   const fetchDropdownData = async () => {
     try {
-      const [insCompanyData, insDepartmentData, financialYearData] = await Promise.all([
+      const [insCompRes, compRes, insDepartmentData, financialYearData] = await Promise.all([
+        get('insCompany'),
         get('company'),
         get('insDepartment'),
         get('financialYear')
       ]);
-      setInsCompanyData(insCompanyData.data || []);
+      const combinedComps = [
+        ...(insCompRes.data || []),
+        ...(compRes.data || [])
+      ];
+      setInsCompanyData(combinedComps);
       setInsDepartmentData(insDepartmentData.data || []);
       setFinancialYearData(financialYearData.data || []);
       // console.log('Prefix List data', incotermsData);
@@ -188,10 +193,12 @@ const Policy = () => {
     });
   };
 
-  // Truncate text to max 2 lines (approx 100 chars)
+  // Truncate text safely
   const truncateText = (text, maxLength = 25) => {
-    if (!text || text.length <= maxLength) return text;
-    return text.substring(0, maxLength).trim() + '...';
+    if (text === null || text === undefined || text === '') return '';
+    const str = typeof text === 'string' ? text : typeof text === 'object' ? (text.name || text.customerGroupName || text.insCompany || text.insDepartment || text.prefix || '') : String(text);
+    if (!str || str.length <= maxLength) return str;
+    return str.substring(0, maxLength).trim() + '...';
   };
 
   // Search handler
@@ -501,7 +508,7 @@ const Policy = () => {
                   {insCompanyData.length > 0 &&
                     insCompanyData.map((type) => (
                       <MenuItem key={type._id} value={type._id}>
-                        {type.name}
+                        {type.insCompany || type.name || type.companyName}
                       </MenuItem>
                     ))}
                 </Select>
@@ -584,6 +591,8 @@ const Policy = () => {
                       <TableCell sx={{ width: 300, px: 1, py: 0.2 }}>Insurance Company</TableCell>
                       <TableCell sx={{ width: 150, px: 1, py: 0.2 }}>Department</TableCell>
                       <TableCell sx={{ width: 150, px: 1, py: 0.2 }}>Policy No</TableCell>
+                      <TableCell sx={{ width: 120, px: 1, py: 0.2 }}>Start Date</TableCell>
+                      <TableCell sx={{ width: 120, px: 1, py: 0.2 }}>Expiry Date</TableCell>
                       <TableCell sx={{ width: 80, px: 1, py: 0.2 }}>Net Premium</TableCell>
                       <TableCell sx={{ width: 80, px: 1, py: 0.2 }}>Total GST</TableCell>
                       <TableCell sx={{ width: 80, px: 1, py: 0.2 }}>Total Amount</TableCell>
@@ -603,18 +612,36 @@ const Policy = () => {
                       >
                         <TableCell sx={{ verticalAlign: 'top', py: 1.5 }}>{page * rowsPerPage + index + 1}</TableCell>
                         <TableCell sx={{ verticalAlign: 'top', py: 1.5, wordBreak: 'break-word' }}>
-                          {truncateText(entry?.cutomerName || entry?.retailCustomer?.name || entry?.customerGroup?.customerGroupName)}
+                          {truncateText(
+                            (typeof entry?.cutomerName === 'string' && entry?.cutomerName) ||
+                            entry?.retailCustomer?.name ||
+                            entry?.customerGroup?.customerGroupName ||
+                            (typeof entry?.cutomerName === 'object' ? entry?.cutomerName?.name : '') ||
+                            ''
+                          )}
                         </TableCell>
                         <TableCell sx={{ verticalAlign: 'top', py: 1.5, wordBreak: 'break-word', maxHeight: 60 }}>
                           <Typography
                             variant="body2"
                             sx={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}
                           >
-                            {truncateText(entry?.insCompany?.insCompany || entry?.insCompany?.name || entry?.insurerName)}
+                            {truncateText(
+                              (typeof entry?.insCompany === 'object' ? (entry?.insCompany?.insCompany || entry?.insCompany?.name) : entry?.insCompany) ||
+                              entry?.insurerName ||
+                              ''
+                            )}
                           </Typography>
                         </TableCell>
-                        <TableCell sx={{ verticalAlign: 'top', py: 1.5 }}>{entry?.insDepartment?.insDepartment}</TableCell>
+                        <TableCell sx={{ verticalAlign: 'top', py: 1.5 }}>
+                          {truncateText(typeof entry?.insDepartment === 'object' ? entry?.insDepartment?.insDepartment : (entry?.insDepartment || ''))}
+                        </TableCell>
                         <TableCell sx={{ verticalAlign: 'top', py: 1.5 }}>{entry?.policyNumber}</TableCell>
+                        <TableCell sx={{ verticalAlign: 'top', py: 1.5 }}>
+                          {entry?.startDate ? String(entry.startDate).split('T')[0] : (entry?.tpStartDate ? String(entry.tpStartDate).split('T')[0] : '-')}
+                        </TableCell>
+                        <TableCell sx={{ verticalAlign: 'top', py: 1.5 }}>
+                          {entry?.endDate ? String(entry.endDate).split('T')[0] : (entry?.renewalDate ? String(entry.renewalDate).split('T')[0] : (entry?.tpEndDate ? String(entry.tpEndDate).split('T')[0] : '-'))}
+                        </TableCell>
                         <TableCell sx={{ verticalAlign: 'top', py: 1.5 }}>{formatAmountWithCommas(entry?.netPremium)}</TableCell>
                         <TableCell sx={{ verticalAlign: 'top', py: 1.5 }}>{formatAmountWithCommas(entry?.gstAmount)}</TableCell>
                         <TableCell sx={{ verticalAlign: 'top', py: 1.5 }}>{formatAmountWithCommas(entry?.totalAmount)}</TableCell>
