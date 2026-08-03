@@ -82,7 +82,7 @@ const Policy = () => {
   const [isExporting, setIsExporting] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
 
-  useEffect(() => {}, [filter]);
+  useEffect(() => { }, [filter]);
 
   useEffect(() => {
     const selectedFY = localStorage.getItem('selectedFY');
@@ -592,7 +592,7 @@ const Policy = () => {
                       <TableCell sx={{ width: 150, px: 1, py: 0.2 }}>Department</TableCell>
                       <TableCell sx={{ width: 150, px: 1, py: 0.2 }}>Policy No</TableCell>
                       <TableCell sx={{ width: 120, px: 1, py: 0.2 }}>Start Date</TableCell>
-                      <TableCell sx={{ width: 120, px: 1, py: 0.2 }}>Expiry Date</TableCell>
+                      <TableCell sx={{ width: 120, px: 1, py: 0.2 }}>Renewal Date</TableCell>
                       <TableCell sx={{ width: 80, px: 1, py: 0.2 }}>Net Premium</TableCell>
                       <TableCell sx={{ width: 80, px: 1, py: 0.2 }}>Total GST</TableCell>
                       <TableCell sx={{ width: 80, px: 1, py: 0.2 }}>Total Amount</TableCell>
