@@ -351,12 +351,14 @@ const Policy = () => {
 
       const resData = await post(`policyDetail/import-csv/?financialYear=${financialYear}`, formData);
       if (resData && resData.success) {
-        const skippedInfo = resData.skippedCount > 0 ? ` (${resData.skippedCount} duplicate(s) skipped)` : '';
-        toast.success(`Inserted ${resData.insertedCount} Records${skippedInfo}`);
+        const inserted = resData.insertedCount || 0;
+        const dupes = resData.duplicateCount !== undefined ? resData.duplicateCount : (resData.skippedCount || 0);
+        toast.success(`Upload Successful: ${inserted} Record(s) Inserted | ${dupes} Duplicate(s) Found`);
         fetchPolicyDetail();
       } else {
-        const skippedInfo = resData?.skippedCount > 0 ? ` (${resData.skippedCount} duplicate(s) skipped)` : '';
-        toast.info(`Upload processed: ${resData?.insertedCount || 0} inserted${skippedInfo}`);
+        const inserted = resData?.insertedCount || 0;
+        const dupes = resData?.duplicateCount !== undefined ? resData.duplicateCount : (resData?.skippedCount || 0);
+        toast.info(`Upload Processed: ${inserted} Inserted | ${dupes} Duplicate(s) Found`);
         fetchPolicyDetail();
       }
     } catch (error) {
