@@ -242,11 +242,44 @@ const Policy = () => {
         return String(deptId) === String(selectedDepartment);
       });
     } else if (filter === 'byMonth' && selectedMonth) {
+      const parseDateValue = (rawVal) => {
+        if (!rawVal) return null;
+        const str = String(rawVal).trim();
+        if (!str) return null;
+
+        if (str.includes('T') || /^\d{4}-\d{2}-\d{2}/.test(str)) {
+          const d = new Date(str);
+          return isNaN(d.getTime()) ? null : d;
+        }
+
+        const dmyMatch = str.match(/^(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{4})/);
+        if (dmyMatch) {
+          const [, d, m, y] = dmyMatch;
+          const dateObj = new Date(Number(y), Number(m) - 1, Number(d));
+          return isNaN(dateObj.getTime()) ? null : dateObj;
+        }
+
+        const ymdMatch = str.match(/^(\d{4})[\/\-\.](\d{1,2})[\/\-\.](\d{1,2})/);
+        if (ymdMatch) {
+          const [, y, m, d] = ymdMatch;
+          const dateObj = new Date(Number(y), Number(m) - 1, Number(d));
+          return isNaN(dateObj.getTime()) ? null : dateObj;
+        }
+
+        if (/^\d{5}(\.\d+)?$/.test(str)) {
+          const serial = parseFloat(str);
+          const parsedDate = new Date(Math.round((serial - 25569) * 86400 * 1000));
+          return isNaN(parsedDate.getTime()) ? null : parsedDate;
+        }
+
+        const fallbackDate = new Date(rawVal);
+        return isNaN(fallbackDate.getTime()) ? null : fallbackDate;
+      };
+
       result = result.filter((entry) => {
-        const dateToCheck = entry?.startDate || entry?.createdAt || entry?.transactionDate;
-        if (!dateToCheck) return false;
-        const date = new Date(dateToCheck);
-        if (isNaN(date.getTime())) return false;
+        const rawDate = entry?.startDate || entry?.tpStartDate || entry?.odStartDate || entry?.endorStartDate || entry?.transactionDate;
+        const date = parseDateValue(rawDate);
+        if (!date) return false;
         const year = date.getFullYear();
         const month = String(date.getMonth() + 1).padStart(2, '0');
         return `${year}-${month}` === selectedMonth;

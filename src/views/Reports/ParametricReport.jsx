@@ -349,9 +349,10 @@ const ParametricReport = () => {
     const filtered = customerList.filter((row) => {
       // --- DATE CHECK ---
       if (start && end) {
-        if (!row.startDate) return false;
-        const rowDate = normalizeDate(row.startDate);
-        if (rowDate < start || rowDate > end) return false;
+        const rawDate = row.startDate || row.tpStartDate || row.odStartDate || row.endorStartDate || row.transactionDate;
+        if (!rawDate) return false;
+        const rowDate = normalizeDate(rawDate);
+        if (!rowDate || rowDate < start || rowDate > end) return false;
       }
 
       // --- DEPARTMENT CHECK ---
