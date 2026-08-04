@@ -293,7 +293,7 @@ const RenewPolicy = () => {
           odPremium: policyData?.odPremium || '',
           odGstAmount: policyData?.odGstAmount || '',
           odAmount: policyData?.odAmount || '',
-          renewalDate: policyData?.renewalDate?.split('T')[0] || '',
+          renewalDate: policyData?.renewalDate?.split('T')[0] || policyData?.endDate?.split('T')[0] || policyData?.odEndDate?.split('T')[0] || policyData?.tpEndDate?.split('T')[0] || '',
           renewable: policyData?.renewable || '',
           SGST: policyData?.SGST || '',
           CGST: policyData?.CGST || '',
