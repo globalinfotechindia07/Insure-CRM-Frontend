@@ -29,6 +29,39 @@ import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { get, put } from 'api/api';
 import { Details } from '@mui/icons-material';
 
+const resolveSelectValue = (options, savedVal, labelKeys = []) => {
+  if (savedVal === null || savedVal === undefined || savedVal === '') return '';
+  if (typeof savedVal === 'object' && savedVal._id) return String(savedVal._id);
+
+  const targetStr = String(savedVal).trim();
+  if (!targetStr) return '';
+
+  if (!options || !Array.isArray(options) || options.length === 0) {
+    return targetStr;
+  }
+
+  // 1. Direct _id / value / code match
+  const directMatch = options.find((opt) => {
+    if (!opt) return false;
+    const optId = String(opt._id || opt.id || opt.value || opt.code || '').trim();
+    return optId.toLowerCase() === targetStr.toLowerCase();
+  });
+  if (directMatch) return directMatch._id || directMatch.id || directMatch.value || directMatch.code;
+
+  // 2. Name / Label fields match
+  const labelMatch = options.find((opt) => {
+    if (!opt) return false;
+    const keysToCheck = labelKeys.length > 0 ? labelKeys : Object.keys(opt);
+    return keysToCheck.some((key) => {
+      const v = opt[key];
+      return v !== undefined && v !== null && String(v).trim().toLowerCase() === targetStr.toLowerCase();
+    });
+  });
+  if (labelMatch) return labelMatch._id || labelMatch.id || labelMatch.value || labelMatch.code;
+
+  return targetStr;
+};
+
 const EditPolicy = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -380,7 +413,9 @@ const EditPolicy = () => {
           etotalAmount: formatAmountWithCommas(policyData?.etotalAmount),
           endorStartDate: policyData?.endorStartDate ? policyData?.endorStartDate?.split('T')[0] : '',
           endorEndDate: policyData?.endorEndDate ? policyData?.endorEndDate?.split('T')[0] : '',
-          paymentMode: policyData?.paymentMode || '',
+          paymentMode: typeof policyData?.paymentMode === 'object'
+            ? (policyData?.paymentMode?.paymentMode || policyData?.paymentMode?.name || '').toUpperCase().trim()
+            : String(policyData?.paymentMode || '').toUpperCase().trim(),
           paidAmount: formatAmountWithCommas(policyData?.paidAmount),
           chequeNo: policyData?.chequeNo || '',
           transactionDate: policyData?.transactionDate ? policyData?.transactionDate?.split('T')[0] : '',
@@ -392,7 +427,7 @@ const EditPolicy = () => {
           odBrokerageAmount: formatAmountWithCommas(policyData?.odBrokerageAmount),
 
           totalBrokerageAmount: formatAmountWithCommas(policyData?.totalBrokerageAmount),
-          totalBrokerageGst: formatAmountWithCommas(policyData?.totalBrokerageGst),
+          totalBrokerageGst: policyData?.totalBrokerageGst !== undefined && policyData?.totalBrokerageGst !== null ? Number(policyData?.totalBrokerageGst) : '',
           totalBrokerageAmountincGst: formatAmountWithCommas(policyData?.totalBrokerageAmountincGst),
           totalAmount: formatAmountWithCommas(policyData?.totalAmount),
           sharePercentage: policyData?.sharePercentage || '',
@@ -501,8 +536,32 @@ const EditPolicy = () => {
           marineClause: policyData?.marineClause || '',
           checkSubGroup: policyData?.checkSubGroup || ''
         }));
+
+        setBrokerageRateData((prev) => {
+          const list = [...prev];
+          [policyData?.tpBrokerageRate, policyData?.odBrokerageRate, policyData?.rateOnTerr, policyData?.rateOnOtherTerr].forEach((item) => {
+            if (item && typeof item === 'object' && item._id && !list.some((x) => String(x._id) === String(item._id))) {
+              list.push(item);
+            }
+          });
+          return list;
+        });
+
+        setEndorsementData((prev) => {
+          const list = [...prev];
+          if (policyData?.endorsementReason && typeof policyData?.endorsementReason === 'object' && policyData?.endorsementReason._id && !list.some((x) => String(x._id) === String(policyData.endorsementReason._id))) {
+            list.push(policyData.endorsementReason);
+          }
+          return list;
+        });
+
         if (policyData?.sharePercentage || policyData?.coBrokerageAmount) {
           setShowCoBrokerage(true);
+        }
+        if (policyData?.endorsementName || policyData?.endorsementPolicyNumber || policyData?.endorsementNetPremium || policyData?.etotalAmount) {
+          if (!policyData?.totalBrokerageAmount && !policyData?.tpBrokerageAmount && !policyData?.odBrokerageAmount) {
+            setBrokerageValue('endorsement');
+          }
         }
       }
     } catch (err) {
@@ -1047,38 +1106,6 @@ const EditPolicy = () => {
     fetchSubProductsByProduct();
   }, [form.product, productData]);
 
-  useEffect(() => {
-    if (brokerNameData.length > 0) {
-      const exists = brokerNameData.some((b) => b._id === form.brokerName);
-      if (!exists || !form.brokerName) {
-        setForm((prev) => ({
-          ...prev,
-          brokerName: brokerNameData[0]._id
-        }));
-      }
-    }
-  }, [brokerNameData, form.brokerName]);
-
-  useEffect(() => {
-    if (branchBrokerData.length > 0) {
-      const exists = branchBrokerData.some((b) => b._id === form.branchBroker);
-      if (!exists || !form.branchBroker) {
-        setForm((prev) => ({
-          ...prev,
-          branchBroker: branchBrokerData[0]._id
-        }));
-      }
-    } else if (branchCodeData.length > 0) {
-      const exists = branchCodeData.some((b) => b._id === form.branchBroker);
-      if (!exists || !form.branchBroker) {
-        setForm((prev) => ({
-          ...prev,
-          branchBroker: branchCodeData[0]._id
-        }));
-      }
-    }
-  }, [branchBrokerData, branchCodeData, form.branchBroker]);
-
   const isEditMode = Boolean(policyData?._id);
 
   useEffect(() => {
@@ -1280,15 +1307,20 @@ const EditPolicy = () => {
                   labelId="financialYear"
                   label="financialYear"
                   name="financialYear"
-                  value={form.financialYear}
+                  value={resolveSelectValue(financialYearData, form.financialYear, ['financialYear', 'name', 'year'])}
                   onChange={handleChange}
                 >
                   {financialYearData.length > 0 &&
                     financialYearData.map((type) => (
                       <MenuItem key={type._id} value={type._id}>
-                        {new Date(type.fromDate).getFullYear()} - {new Date(type.toDate).getFullYear()}
+                        {type.financialYear || `${new Date(type.fromDate).getFullYear()} - ${new Date(type.toDate).getFullYear()}`}
                       </MenuItem>
                     ))}
+                  {form.financialYear && !financialYearData.some((t) => String(t._id) === String(resolveSelectValue(financialYearData, form.financialYear))) && (
+                    <MenuItem key={String(form.financialYear)} value={String(form.financialYear)}>
+                      {String(form.financialYear)}
+                    </MenuItem>
+                  )}
                 </Select>
               </FormControl>
             </Grid>
@@ -1297,7 +1329,7 @@ const EditPolicy = () => {
             <Grid item xs={12} sm={4}>
               <FormControl fullWidth error={!!errors.clientType}>
                 <InputLabel id="clientType">Customer Type</InputLabel>
-                <Select labelId="clientType" label="clientType" name="clientType" value={form.clientType} onChange={handleChange}>
+                <Select labelId="clientType" label="clientType" name="clientType" value={form.clientType || 'retail'} onChange={handleChange}>
                   <MenuItem value="retail">Retail</MenuItem>
                   <MenuItem value="corporate">Corporate</MenuItem>
                 </Select>
@@ -1312,7 +1344,7 @@ const EditPolicy = () => {
                     labelId="retailCustomer"
                     label="retailCustomer"
                     name="retailCustomer"
-                    value={form.retailCustomer}
+                    value={resolveSelectValue(clientList, form.retailCustomer, ['name', 'customerName', 'insuredName'])}
                     onChange={handleChange}
                   >
                     <MenuItem value="other">Other (Create New)</MenuItem>
@@ -1322,6 +1354,11 @@ const EditPolicy = () => {
                           {type.name}
                         </MenuItem>
                       ))}
+                    {form.retailCustomer && form.retailCustomer !== 'other' && !clientList.some((t) => String(t._id) === String(resolveSelectValue(clientList, form.retailCustomer))) && (
+                      <MenuItem key={String(form.retailCustomer)} value={String(form.retailCustomer)}>
+                        {String(form.retailCustomer)}
+                      </MenuItem>
+                    )}
                   </Select>
                   {errors.retailCustomer && <FormHelperText>{errors.retailCustomer}</FormHelperText>}
                 </FormControl>
@@ -1335,7 +1372,7 @@ const EditPolicy = () => {
                       labelId="customerGroup"
                       label="customerGroup"
                       name="customerGroup"
-                      value={form.customerGroup}
+                      value={resolveSelectValue(customerGroupData, form.customerGroup, ['customerGroupName', 'name', 'groupName'])}
                       onChange={handleChange}
                     >
                       <MenuItem value="other">Other (Create New)</MenuItem>
@@ -1345,6 +1382,11 @@ const EditPolicy = () => {
                             {type.customerGroupName}
                           </MenuItem>
                         ))}
+                      {form.customerGroup && form.customerGroup !== 'other' && !customerGroupData.some((t) => String(t._id) === String(resolveSelectValue(customerGroupData, form.customerGroup))) && (
+                        <MenuItem key={String(form.customerGroup)} value={String(form.customerGroup)}>
+                          {String(form.customerGroup)}
+                        </MenuItem>
+                      )}
                     </Select>
                     {errors.customerGroup && <FormHelperText>{errors.customerGroup}</FormHelperText>}
                   </FormControl>
@@ -1356,7 +1398,7 @@ const EditPolicy = () => {
                       labelId="subCustomerGroup"
                       label="subCustomerGroup"
                       name="subCustomerGroup"
-                      value={form.subCustomerGroup}
+                      value={resolveSelectValue(subCustomerGroupData, form.subCustomerGroup, ['subCustomerGroup', 'name'])}
                       onChange={handleChange}
                     >
                       {subCustomerGroupData.length > 0 &&
@@ -1365,6 +1407,11 @@ const EditPolicy = () => {
                             {type.subCustomerGroup}
                           </MenuItem>
                         ))}
+                      {form.subCustomerGroup && !subCustomerGroupData.some((t) => String(t._id) === String(resolveSelectValue(subCustomerGroupData, form.subCustomerGroup))) && (
+                        <MenuItem key={String(form.subCustomerGroup)} value={String(form.subCustomerGroup)}>
+                          {String(form.subCustomerGroup)}
+                        </MenuItem>
+                      )}
                     </Select>
                   </FormControl>
                 </Grid>
@@ -1408,13 +1455,24 @@ const EditPolicy = () => {
             <Grid item xs={12} sm={3}>
               <FormControl fullWidth error={!!errors.branchCode}>
                 <InputLabel id="branchCode">Branch Code</InputLabel>
-                <Select labelId="branchCode" label="branchCode" name="branchCode" value={form.branchCode} onChange={handleChange}>
+                <Select
+                  labelId="branchCode"
+                  label="branchCode"
+                  name="branchCode"
+                  value={resolveSelectValue(branchCodeData, form.branchCode, ['branchCode', 'branchName', 'name'])}
+                  onChange={handleChange}
+                >
                   {branchCodeData.length > 0 &&
                     branchCodeData.map((type) => (
                       <MenuItem key={type._id} value={type._id}>
-                        {type.branchCode}
+                        {type.branchCode} - {type.branchName}
                       </MenuItem>
                     ))}
+                  {form.branchCode && !branchCodeData.some((t) => String(t._id) === String(resolveSelectValue(branchCodeData, form.branchCode))) && (
+                    <MenuItem key={String(form.branchCode)} value={String(form.branchCode)}>
+                      {String(form.branchCode)}
+                    </MenuItem>
+                  )}
                 </Select>
                 {errors.branchCode && <FormHelperText>{errors.branchCode}</FormHelperText>}
               </FormControl>
@@ -1431,13 +1489,24 @@ const EditPolicy = () => {
             <Grid item xs={12} sm={3}>
               <FormControl fullWidth error={!!errors.prefix}>
                 <InputLabel id="prefix">Title</InputLabel>
-                <Select labelId="prefix" label="prefix" name="prefix" value={form.prefix} onChange={handleChange}>
+                <Select
+                  labelId="prefix"
+                  label="prefix"
+                  name="prefix"
+                  value={resolveSelectValue(prefixData, form.prefix, ['prefix', 'name'])}
+                  onChange={handleChange}
+                >
                   {prefixData.length > 0 &&
                     prefixData.map((type) => (
                       <MenuItem key={type._id} value={type._id}>
                         {type.prefix}
                       </MenuItem>
                     ))}
+                  {form.prefix && !prefixData.some((t) => String(t._id) === String(resolveSelectValue(prefixData, form.prefix))) && (
+                    <MenuItem key={String(form.prefix)} value={String(form.prefix)}>
+                      {String(form.prefix)}
+                    </MenuItem>
+                  )}
                 </Select>
                 {errors.prefix && <FormHelperText>{errors.prefix}</FormHelperText>}
               </FormControl>
@@ -1467,7 +1536,7 @@ const EditPolicy = () => {
                 <Select
                   labelId="insurerName-label"
                   name="insurerName"
-                  value={form.insurerName}
+                  value={form.insurerName || ''}
                   onChange={handleChange}
                   label="Insurer Company"
                 >
@@ -1480,6 +1549,11 @@ const EditPolicy = () => {
                         </MenuItem>
                       );
                     })}
+                  {form.insurerName && !insCompanyData.some((t) => (t.insCompany || t.name || t.companyName) === form.insurerName) && (
+                    <MenuItem key={String(form.insurerName)} value={String(form.insurerName)}>
+                      {String(form.insurerName)}
+                    </MenuItem>
+                  )}
                 </Select>
                 {errors.insurerName && <FormHelperText>{errors.insurerName}</FormHelperText>}
               </FormControl>
@@ -1559,7 +1633,7 @@ const EditPolicy = () => {
                   labelId="insDepartment-label"
                   id="insDepartment"
                   name="insDepartment"
-                  value={form.insDepartment}
+                  value={resolveSelectValue(insDepartmentData, form.insDepartment, ['insDepartment', 'name', 'departmentName'])}
                   label="Department"
                   onChange={handleChange}
                 >
@@ -1569,6 +1643,11 @@ const EditPolicy = () => {
                         {type.insDepartment}
                       </MenuItem>
                     ))}
+                  {form.insDepartment && !insDepartmentData.some((t) => String(t._id) === String(resolveSelectValue(insDepartmentData, form.insDepartment))) && (
+                    <MenuItem key={String(form.insDepartment)} value={String(form.insDepartment)}>
+                      {String(form.insDepartment)}
+                    </MenuItem>
+                  )}
                 </Select>
 
                 {errors.insDepartment && <FormHelperText>{errors.insDepartment}</FormHelperText>}
@@ -1579,13 +1658,24 @@ const EditPolicy = () => {
                 <InputLabel id="product" required>
                   Product
                 </InputLabel>
-                <Select labelId="product" label="product" name="product" key={form?.product} value={form?.product} onChange={handleChange}>
-                  {filteredProducts.length > 0 &&
-                    filteredProducts.map((type) => (
+                <Select
+                  labelId="product"
+                  label="product"
+                  name="product"
+                  value={resolveSelectValue(productData, form.product, ['productName', 'name'])}
+                  onChange={handleChange}
+                >
+                  {productData.length > 0 &&
+                    productData.map((type) => (
                       <MenuItem key={type._id} value={type._id}>
                         {type.productName}
                       </MenuItem>
                     ))}
+                  {form.product && !productData.some((t) => String(t._id) === String(resolveSelectValue(productData, form.product))) && (
+                    <MenuItem key={String(form.product)} value={String(form.product)}>
+                      {String(form.product)}
+                    </MenuItem>
+                  )}
                 </Select>
                 {errors.product && <FormHelperText>{errors.product}</FormHelperText>}
               </FormControl>
@@ -1593,44 +1683,86 @@ const EditPolicy = () => {
             <Grid item xs={12} sm={4}>
               <FormControl fullWidth>
                 <InputLabel id="subProduct">Sub Product</InputLabel>
-                <Select labelId="subProduct" label="subProduct" name="subProduct" value={form.subProduct} onChange={handleChange}>
-                  {filteredSubProducts?.length > 0 &&
-                    filteredSubProducts?.map((type) => (
+                <Select
+                  labelId="subProduct"
+                  label="subProduct"
+                  name="subProduct"
+                  value={resolveSelectValue(subProductData, form.subProduct, ['subproductName', 'subProductName', 'name'])}
+                  onChange={handleChange}
+                >
+                  {subProductData?.length > 0 &&
+                    subProductData?.map((type) => (
                       <MenuItem key={type._id} value={type._id}>
-                        {type.subProductName}
+                        {type.subproductName || type.subProductName}
                       </MenuItem>
                     ))}
+                  {form.subProduct && !subProductData.some((t) => String(t._id) === String(resolveSelectValue(subProductData, form.subProduct))) && (
+                    <MenuItem key={String(form.subProduct)} value={String(form.subProduct)}>
+                      {String(form.subProduct)}
+                    </MenuItem>
+                  )}
                 </Select>
               </FormControl>
             </Grid>
             <Grid item xs={12} sm={4}>
               <FormControl fullWidth error={!!errors.insCompany}>
                 <InputLabel id="insCompany">Insurance Company</InputLabel>
-                <Select labelId="insCompany" label="insCompany" name="insCompany" value={form.insCompany} onChange={handleChange}>
+                <Select
+                  labelId="insCompany"
+                  label="insCompany"
+                  name="insCompany"
+                  value={resolveSelectValue(insCompanyData, form.insCompany, ['insCompany', 'name', 'companyName'])}
+                  onChange={handleChange}
+                >
                   {insCompanyData.length > 0 &&
                     insCompanyData.map((type) => (
                       <MenuItem key={type._id} value={type._id}>
                         {type.insCompany || type.name || type.companyName}
                       </MenuItem>
                     ))}
+                  {form.insCompany && !insCompanyData.some((t) => String(t._id) === String(resolveSelectValue(insCompanyData, form.insCompany))) && (
+                    <MenuItem key={String(form.insCompany)} value={String(form.insCompany)}>
+                      {String(form.insCompany)}
+                    </MenuItem>
+                  )}
                 </Select>
                 {errors.insCompany && <FormHelperText>{errors.insCompany}</FormHelperText>}
               </FormControl>
             </Grid>
             <Grid item xs={12} sm={4}>
-              <TextField select label="Broker Name" name="brokerName" onChange={handleChange} value={form.brokerName} fullWidth>
-                {brokerNameData.length > 0 &&
-                  brokerNameData.map((type) => (
-                    <MenuItem key={type._id} value={type._id}>
-                      {type.brokerName}
+              <FormControl fullWidth>
+                <InputLabel id="brokerName">Broker Name</InputLabel>
+                <Select
+                  labelId="brokerName"
+                  label="Broker Name"
+                  name="brokerName"
+                  value={resolveSelectValue(brokerNameData, form.brokerName, ['brokerName', 'name'])}
+                  onChange={handleChange}
+                >
+                  {brokerNameData.length > 0 &&
+                    brokerNameData.map((type) => (
+                      <MenuItem key={type._id} value={type._id}>
+                        {type.brokerName}
+                      </MenuItem>
+                    ))}
+                  {form.brokerName && !brokerNameData.some((t) => String(t._id) === String(resolveSelectValue(brokerNameData, form.brokerName))) && (
+                    <MenuItem key={String(form.brokerName)} value={String(form.brokerName)}>
+                      {String(form.brokerName)}
                     </MenuItem>
-                  ))}
-              </TextField>
+                  )}
+                </Select>
+              </FormControl>
             </Grid>
             <Grid item xs={12} sm={4}>
               <FormControl fullWidth>
                 <InputLabel id="branchBroker">Broker Branch</InputLabel>
-                <Select labelId="branchBroker" label="branchBroker" name="branchBroker" value={form.branchBroker} onChange={handleChange}>
+                <Select
+                  labelId="branchBroker"
+                  label="branchBroker"
+                  name="branchBroker"
+                  value={resolveSelectValue(branchBrokerData?.length > 0 ? branchBrokerData : branchCodeData, form.branchBroker, ['branchBroker', 'branchCode', 'branchName', 'name'])}
+                  onChange={handleChange}
+                >
                   {branchBrokerData?.length > 0 ? (
                     branchBrokerData.map((type) => (
                       <MenuItem key={type._id} value={type._id}>
@@ -1644,6 +1776,11 @@ const EditPolicy = () => {
                         {type.address ? `${type.address} (${type.branchName || type.branchCode})` : (type.branchName || type.branchCode)}
                       </MenuItem>
                     ))
+                  )}
+                  {form.branchBroker && !(branchBrokerData?.length > 0 ? branchBrokerData : branchCodeData).some((t) => String(t._id) === String(resolveSelectValue(branchBrokerData?.length > 0 ? branchBrokerData : branchCodeData, form.branchBroker))) && (
+                    <MenuItem key={String(form.branchBroker)} value={String(form.branchBroker)}>
+                      {String(form.branchBroker)}
+                    </MenuItem>
                   )}
                 </Select>
               </FormControl>
@@ -1712,13 +1849,24 @@ const EditPolicy = () => {
                   <Grid item xs={12} sm={1}>
                     <FormControl fullWidth>
                       <InputLabel id="tpGst">GST</InputLabel>
-                      <Select labelId="tpGst" label="tpGst" name="tpGst" value={form.tpGst} onChange={handleChange}>
+                      <Select
+                        labelId="tpGst"
+                        label="tpGst"
+                        name="tpGst"
+                        value={resolveSelectValue(gstData, form.tpGst, ['value'])}
+                        onChange={handleChange}
+                      >
                         {gstData.length > 0 &&
                           gstData.map((type) => (
                             <MenuItem key={type._id} value={type._id}>
                               {type.value}
                             </MenuItem>
                           ))}
+                        {form.tpGst && !gstData.some((t) => String(t._id) === String(resolveSelectValue(gstData, form.tpGst))) && (
+                          <MenuItem key={String(form.tpGst)} value={String(form.tpGst)}>
+                            {String(form.tpGst)}
+                          </MenuItem>
+                        )}
                       </Select>
                     </FormControl>
                   </Grid>
@@ -1756,7 +1904,7 @@ const EditPolicy = () => {
                         labelId="odPolicyDuration"
                         label="odPolicyDuration"
                         name="odPolicyDuration"
-                        value={form.odPolicyDuration}
+                        value={form.odPolicyDuration || 'YEARLY'}
                         onChange={handleChange}
                       >
                         <MenuItem value="YEARLY">YEARLY</MenuItem>
@@ -1806,13 +1954,24 @@ const EditPolicy = () => {
                   <Grid item xs={12} sm={1}>
                     <FormControl fullWidth>
                       <InputLabel id="odGst">GST</InputLabel>
-                      <Select labelId="odGst" label="odGst" name="odGst" value={form.odGst} onChange={handleChange}>
+                      <Select
+                        labelId="odGst"
+                        label="odGst"
+                        name="odGst"
+                        value={resolveSelectValue(gstData, form.odGst, ['value'])}
+                        onChange={handleChange}
+                      >
                         {gstData.length > 0 &&
                           gstData.map((type) => (
                             <MenuItem key={type._id} value={type._id}>
                               {type.value}
                             </MenuItem>
                           ))}
+                        {form.odGst && !gstData.some((t) => String(t._id) === String(resolveSelectValue(gstData, form.odGst))) && (
+                          <MenuItem key={String(form.odGst)} value={String(form.odGst)}>
+                            {String(form.odGst)}
+                          </MenuItem>
+                        )}
                       </Select>
                     </FormControl>
                   </Grid>
@@ -1964,13 +2123,24 @@ const EditPolicy = () => {
             <Grid item xs={12} sm={3}>
               <FormControl fullWidth>
                 <InputLabel id="riskCode">Risk Code</InputLabel>
-                <Select labelId="riskCode" label="riskCode" name="riskCode" value={form.riskCode} onChange={handleChange}>
+                <Select
+                  labelId="riskCode"
+                  label="riskCode"
+                  name="riskCode"
+                  value={resolveSelectValue(riskCodeData, form.riskCode, ['riskCode', 'code'])}
+                  onChange={handleChange}
+                >
                   {riskCodeData.length > 0 &&
                     riskCodeData.map((type) => (
                       <MenuItem key={type._id} value={type._id}>
                         {type.riskCode}
                       </MenuItem>
                     ))}
+                  {form.riskCode && !riskCodeData.some((t) => String(t._id) === String(resolveSelectValue(riskCodeData, form.riskCode))) && (
+                    <MenuItem key={String(form.riskCode)} value={String(form.riskCode)}>
+                      {String(form.riskCode)}
+                    </MenuItem>
+                  )}
                 </Select>
               </FormControl>
             </Grid>
@@ -1986,15 +2156,6 @@ const EditPolicy = () => {
                 InputLabelProps={{ shrink: true }}
               />
             </Grid>
-            {/* ['engineering','fire',health]
-                            motor = 69539cdef88ccbb626abc903
-            engineeting = 695374b412bb6dd679ffa0f6
-            health = 694b9c19d0c701ae30685141
-            fire = 69539cbff88ccbb626abc8fa
-            liability = 69539cccf88ccbb626abc8fd
-            misc = 69539cd6f88ccbb626abc900
-            finance = 69522c7b583c668bdda53af5
-                            */}
             {(selectedDeptName === 'engineering' ||
               selectedDeptName === 'fire' ||
               selectedDeptName === 'health') && (
@@ -2075,13 +2236,24 @@ const EditPolicy = () => {
               <Grid item xs={12} sm={3}>
                 <FormControl fullWidth>
                   <InputLabel id="incoterms">Incoterms</InputLabel>
-                  <Select labelId="incoterms" label="incoterms" name="incoterms" value={form.incoterms} onChange={handleChange}>
+                  <Select
+                    labelId="incoterms"
+                    label="incoterms"
+                    name="incoterms"
+                    value={resolveSelectValue(incotermsData, form.incoterms, ['incoterms', 'name'])}
+                    onChange={handleChange}
+                  >
                     {incotermsData.length > 0 &&
                       incotermsData.map((type) => (
                         <MenuItem key={type._id} value={type._id}>
                           {type.incoterms}
                         </MenuItem>
                       ))}
+                    {form.incoterms && !incotermsData.some((t) => String(t._id) === String(resolveSelectValue(incotermsData, form.incoterms))) && (
+                      <MenuItem key={String(form.incoterms)} value={String(form.incoterms)}>
+                        {String(form.incoterms)}
+                      </MenuItem>
+                    )}
                   </Select>
                 </FormControl>
               </Grid>
@@ -2090,7 +2262,7 @@ const EditPolicy = () => {
               <Grid item xs={12} sm={3}>
                 <FormControl fullWidth>
                   <InputLabel id="marineClause">Marine Cargo Clause</InputLabel>
-                  <Select labelId="marineClause" label="marineClause" name="marineClause" value={form.marineClause} onChange={handleChange}>
+                  <Select labelId="marineClause" label="marineClause" name="marineClause" value={form.marineClause || ''} onChange={handleChange}>
                     <MenuItem value="Mr">INSTITITE CARGO CLAUSE A</MenuItem>
                     <MenuItem value="Mrs">INSTITITE CARGO CLAUSE B</MenuItem>
                     <MenuItem value="Mrs">INSTITITE CARGO CLAUSE C</MenuItem>
@@ -2121,13 +2293,24 @@ const EditPolicy = () => {
             <Grid item xs={12} sm={2}>
               <FormControl fullWidth>
                 <InputLabel id="otherAddon">Other Addon</InputLabel>
-                <Select labelId="otherAddon" label="otherAddon" name="otherAddon" value={form.otherAddon} onChange={handleChange}>
+                <Select
+                  labelId="otherAddon"
+                  label="otherAddon"
+                  name="otherAddon"
+                  value={resolveSelectValue(addonData, form.otherAddon, ['otherAddon', 'name'])}
+                  onChange={handleChange}
+                >
                   {addonData.length > 0 &&
                     addonData.map((type) => (
                       <MenuItem key={type._id} value={type._id}>
                         {type.otherAddon}
                       </MenuItem>
                     ))}
+                  {form.otherAddon && !addonData.some((t) => String(t._id) === String(resolveSelectValue(addonData, form.otherAddon))) && (
+                    <MenuItem key={String(form.otherAddon)} value={String(form.otherAddon)}>
+                      {String(form.otherAddon)}
+                    </MenuItem>
+                  )}
                 </Select>
               </FormControl>
             </Grid>
@@ -2208,13 +2391,24 @@ const EditPolicy = () => {
                 <Grid item xs={12} sm={3}>
                   <FormControl fullWidth>
                     <InputLabel id="fuelType">Fuel Type</InputLabel>
-                    <Select labelId="fuelType" label="fuelType" name="fuelType" value={form.fuelType} onChange={handleChange}>
+                    <Select
+                      labelId="fuelType"
+                      label="fuelType"
+                      name="fuelType"
+                      value={resolveSelectValue(fuelTypeData, form.fuelType, ['fuelType', 'name'])}
+                      onChange={handleChange}
+                    >
                       {fuelTypeData.length > 0 &&
                         fuelTypeData.map((type) => (
                           <MenuItem key={type._id} value={type._id}>
                             {type.fuelType}
                           </MenuItem>
                         ))}
+                      {form.fuelType && !fuelTypeData.some((t) => String(t._id) === String(resolveSelectValue(fuelTypeData, form.fuelType))) && (
+                        <MenuItem key={String(form.fuelType)} value={String(form.fuelType)}>
+                          {String(form.fuelType)}
+                        </MenuItem>
+                      )}
                     </Select>
                   </FormControl>
                 </Grid>
@@ -2225,7 +2419,7 @@ const EditPolicy = () => {
                       labelId="yearOfManufacturing"
                       label="yearOfManufacturing"
                       name="yearOfManufacturing"
-                      value={form.yearOfManufacturing}
+                      value={form.yearOfManufacturing || ''}
                       onChange={handleChange}
                     >
                       <MenuItem value="2009">2009</MenuItem>
@@ -2247,6 +2441,11 @@ const EditPolicy = () => {
                       <MenuItem value="2025">2025</MenuItem>
                       <MenuItem value="2026">2026</MenuItem>
                       <MenuItem value="2027">2027</MenuItem>
+                      {form.yearOfManufacturing && !['2009','2010','2011','2012','2013','2014','2015','2016','2017','2018','2019','2020','2021','2022','2023','2024','2025','2026','2027'].includes(String(form.yearOfManufacturing)) && (
+                        <MenuItem key={String(form.yearOfManufacturing)} value={String(form.yearOfManufacturing)}>
+                          {String(form.yearOfManufacturing)}
+                        </MenuItem>
+                      )}
                     </Select>
                   </FormControl>
                 </Grid>
@@ -2291,7 +2490,7 @@ const EditPolicy = () => {
                   labelId="endorsementReason"
                   label="endorsementReason"
                   name="endorsementReason"
-                  value={form?.endorsementReason || ''}
+                  value={resolveSelectValue(endorsementData, form.endorsementReason, ['endorsement', 'reason'])}
                   onChange={handleChange}
                 >
                   {endorsementData.length > 0 &&
@@ -2300,6 +2499,11 @@ const EditPolicy = () => {
                         {type.endorsement}
                       </MenuItem>
                     ))}
+                  {form.endorsementReason && !endorsementData.some((t) => String(t._id) === String(resolveSelectValue(endorsementData, form.endorsementReason))) && (
+                    <MenuItem key={String(form.endorsementReason)} value={String(form.endorsementReason)}>
+                      {String(form.endorsementReason)}
+                    </MenuItem>
+                  )}
                 </Select>
               </FormControl>
             </Grid>
@@ -2373,7 +2577,7 @@ const EditPolicy = () => {
                   labelId="endorsementGst"
                   label="Endorsement GST"
                   name="endorsementGst"
-                  value={form.endorsementGst}
+                  value={resolveSelectValue(gstData, form.endorsementGst, ['value'])}
                   onChange={handleChange}
                 >
                   {gstData.length > 0 &&
@@ -2382,6 +2586,11 @@ const EditPolicy = () => {
                         {type.value}
                       </MenuItem>
                     ))}
+                  {form.endorsementGst && !gstData.some((t) => String(t._id) === String(resolveSelectValue(gstData, form.endorsementGst))) && (
+                    <MenuItem key={String(form.endorsementGst)} value={String(form.endorsementGst)}>
+                      {String(form.endorsementGst)}
+                    </MenuItem>
+                  )}
                 </Select>
               </FormControl>
             </Grid>
@@ -2418,11 +2627,17 @@ const EditPolicy = () => {
             <Grid item xs={12} sm={3}>
               <FormControl fullWidth error={!!errors.paymentMode}>
                 <InputLabel id="paymentMode">Payment Mode</InputLabel>
-                <Select labelId="paymentMode" label="paymentMode" name="paymentMode" value={form.paymentMode} onChange={handleChange}>
-                  {paymentModeData.length > 0 ? (
+                <Select
+                  labelId="paymentMode"
+                  label="paymentMode"
+                  name="paymentMode"
+                  value={form.paymentMode ? String(form.paymentMode).toUpperCase().trim() : ''}
+                  onChange={handleChange}
+                >
+                  {paymentModeData && paymentModeData.length > 0 ? (
                     paymentModeData.map((type) => (
-                      <MenuItem key={type._id} value={type.paymentMode}>
-                        {type.paymentMode}
+                      <MenuItem key={type._id || type.paymentMode} value={String(type.paymentMode).toUpperCase().trim()}>
+                        {String(type.paymentMode).toUpperCase().trim()}
                       </MenuItem>
                     ))
                   ) : (
@@ -2540,15 +2755,27 @@ const EditPolicy = () => {
                       labelId="tpBrokerageRate"
                       label="TP Brokerage Rate"
                       name="tpBrokerageRate"
-                      value={form.tpBrokerageRate}
+                      value={resolveSelectValue(brokerageRateData, form.tpBrokerageRate, ['brokerageRate'])}
                       onChange={handleChange}
                     >
-                      {brokerageRateData.length > 0 &&
+                      {brokerageRateData && brokerageRateData.length > 0 ? (
                         brokerageRateData.map((type) => (
                           <MenuItem key={type._id} value={type._id}>
-                            {type.brokerageRate}
+                            {type.brokerageRate}%
                           </MenuItem>
-                        ))}
+                        ))
+                      ) : (
+                        [0, 2.5, 5, 7.5, 10, 12.5, 15, 17.5, 20, 22.5, 25].map((rate) => (
+                          <MenuItem key={rate} value={String(rate)}>
+                            {rate}%
+                          </MenuItem>
+                        ))
+                      )}
+                      {form.tpBrokerageRate && !brokerageRateData.some((t) => String(t._id) === String(resolveSelectValue(brokerageRateData, form.tpBrokerageRate))) && (
+                        <MenuItem key={String(form.tpBrokerageRate)} value={String(form.tpBrokerageRate)}>
+                          {String(form.tpBrokerageRate)}%
+                        </MenuItem>
+                      )}
                     </Select>
                     {errors.tpBrokerageRate && <FormHelperText>{errors.tpBrokerageRate}</FormHelperText>}
                   </FormControl>
@@ -2570,15 +2797,27 @@ const EditPolicy = () => {
                       labelId="odBrokerageRate"
                       label="OD Brokerage Rate"
                       name="odBrokerageRate"
-                      value={form.odBrokerageRate}
+                      value={resolveSelectValue(brokerageRateData, form.odBrokerageRate, ['brokerageRate'])}
                       onChange={handleChange}
                     >
-                      {brokerageRateData.length > 0 &&
+                      {brokerageRateData && brokerageRateData.length > 0 ? (
                         brokerageRateData.map((type) => (
                           <MenuItem key={type._id} value={type._id}>
-                            {type.brokerageRate}
+                            {type.brokerageRate}%
                           </MenuItem>
-                        ))}
+                        ))
+                      ) : (
+                        [0, 2.5, 5, 7.5, 10, 12.5, 15, 17.5, 20, 22.5, 25].map((rate) => (
+                          <MenuItem key={rate} value={String(rate)}>
+                            {rate}%
+                          </MenuItem>
+                        ))
+                      )}
+                      {form.odBrokerageRate && !brokerageRateData.some((t) => String(t._id) === String(resolveSelectValue(brokerageRateData, form.odBrokerageRate))) && (
+                        <MenuItem key={String(form.odBrokerageRate)} value={String(form.odBrokerageRate)}>
+                          {String(form.odBrokerageRate)}%
+                        </MenuItem>
+                      )}
                     </Select>
                     {errors.odBrokerageRate && <FormHelperText>{errors.odBrokerageRate}</FormHelperText>}
                   </FormControl>
@@ -2601,13 +2840,31 @@ const EditPolicy = () => {
                     <InputLabel id="rateOnTerr">
                       {brokerageValue === 'brokerage' ? 'Rate on Terrorism' : 'Endorsement Rate on Terrorism'}
                     </InputLabel>
-                    <Select labelId="rateOnTerr" label="rateOnTerr" name="rateOnTerr" value={form.rateOnTerr} onChange={handleChange}>
-                      {brokerageRateData.length > 0 &&
+                    <Select
+                      labelId="rateOnTerr"
+                      label="rateOnTerr"
+                      name="rateOnTerr"
+                      value={resolveSelectValue(brokerageRateData, form.rateOnTerr, ['brokerageRate'])}
+                      onChange={handleChange}
+                    >
+                      {brokerageRateData && brokerageRateData.length > 0 ? (
                         brokerageRateData.map((type) => (
                           <MenuItem key={type._id} value={type._id}>
-                            {type.brokerageRate}
+                            {type.brokerageRate}%
                           </MenuItem>
-                        ))}
+                        ))
+                      ) : (
+                        [0, 2.5, 5, 7.5, 10, 12.5, 15, 17.5, 20, 22.5, 25].map((rate) => (
+                          <MenuItem key={rate} value={String(rate)}>
+                            {rate}%
+                          </MenuItem>
+                        ))
+                      )}
+                      {form.rateOnTerr && !brokerageRateData.some((t) => String(t._id) === String(resolveSelectValue(brokerageRateData, form.rateOnTerr))) && (
+                        <MenuItem key={String(form.rateOnTerr)} value={String(form.rateOnTerr)}>
+                          {String(form.rateOnTerr)}%
+                        </MenuItem>
+                      )}
                     </Select>
                     {errors.rateOnTerr && <FormHelperText>{errors.rateOnTerr}</FormHelperText>}
                   </FormControl>
@@ -2631,15 +2888,27 @@ const EditPolicy = () => {
                       labelId="rateOnOtherTerr"
                       label="rateOnOtherTerr"
                       name="rateOnOtherTerr"
-                      value={form.rateOnOtherTerr}
+                      value={resolveSelectValue(brokerageRateData, form.rateOnOtherTerr, ['brokerageRate'])}
                       onChange={handleChange}
                     >
-                      {brokerageRateData.length > 0 &&
+                      {brokerageRateData && brokerageRateData.length > 0 ? (
                         brokerageRateData.map((type) => (
                           <MenuItem key={type._id} value={type._id}>
-                            {type.brokerageRate}
+                            {type.brokerageRate}%
                           </MenuItem>
-                        ))}
+                        ))
+                      ) : (
+                        [0, 2.5, 5, 7.5, 10, 12.5, 15, 17.5, 20, 22.5, 25].map((rate) => (
+                          <MenuItem key={rate} value={String(rate)}>
+                            {rate}%
+                          </MenuItem>
+                        ))
+                      )}
+                      {form.rateOnOtherTerr && !brokerageRateData.some((t) => String(t._id) === String(resolveSelectValue(brokerageRateData, form.rateOnOtherTerr))) && (
+                        <MenuItem key={String(form.rateOnOtherTerr)} value={String(form.rateOnOtherTerr)}>
+                          {String(form.rateOnOtherTerr)}%
+                        </MenuItem>
+                      )}
                     </Select>
                     {errors.rateOnOtherTerr && <FormHelperText>{errors.rateOnOtherTerr}</FormHelperText>}
                   </FormControl>
@@ -2685,6 +2954,11 @@ const EditPolicy = () => {
                         {type.value}
                       </MenuItem>
                     ))}
+                  {form.totalBrokerageGst && !gstData.some((t) => String(t.value) === String(form.totalBrokerageGst)) && (
+                    <MenuItem key={String(form.totalBrokerageGst)} value={form.totalBrokerageGst}>
+                      {String(form.totalBrokerageGst)}
+                    </MenuItem>
+                  )}
                 </Select>
               </FormControl>
             </Grid>
@@ -2767,13 +3041,24 @@ const EditPolicy = () => {
               <Grid item xs={12} sm={3}>
                 <FormControl fullWidth>
                   <InputLabel id="gst">GST</InputLabel>
-                  <Select labelId="gst" label="gst" name="gst" value={form.gst} onChange={handleChange}>
+                  <Select
+                    labelId="gst"
+                    label="gst"
+                    name="gst"
+                    value={resolveSelectValue(gstData, form.gst, ['value'])}
+                    onChange={handleChange}
+                  >
                     {gstData.length > 0 &&
                       gstData.map((type) => (
                         <MenuItem key={type._id} value={type._id}>
                           {type.value}
                         </MenuItem>
                       ))}
+                    {form.gst && !gstData.some((t) => String(t._id) === String(resolveSelectValue(gstData, form.gst))) && (
+                      <MenuItem key={String(form.gst)} value={String(form.gst)}>
+                        {String(form.gst)}
+                      </MenuItem>
+                    )}
                   </Select>
                 </FormControl>
               </Grid>

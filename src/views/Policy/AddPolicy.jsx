@@ -2267,11 +2267,17 @@ finance = 69522c7b583c668bdda53af5
                 <Grid item xs={12} sm={3}>
                   <FormControl fullWidth error={!!errors.paymentMode}>
                     <InputLabel id="paymentMode">Payment Mode</InputLabel>
-                    <Select labelId="paymentMode" label="paymentMode" name="paymentMode" value={form.paymentMode} onChange={handleChange}>
-                      {paymentModeData.length > 0 ? (
+                    <Select
+                      labelId="paymentMode"
+                      label="paymentMode"
+                      name="paymentMode"
+                      value={form.paymentMode ? String(form.paymentMode).toUpperCase().trim() : ''}
+                      onChange={handleChange}
+                    >
+                      {paymentModeData && paymentModeData.length > 0 ? (
                         paymentModeData.map((type) => (
-                          <MenuItem key={type._id} value={type.paymentMode}>
-                            {type.paymentMode}
+                          <MenuItem key={type._id || type.paymentMode} value={String(type.paymentMode).toUpperCase().trim()}>
+                            {String(type.paymentMode).toUpperCase().trim()}
                           </MenuItem>
                         ))
                       ) : (
