@@ -27,39 +27,46 @@ import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { get, put } from 'api/api';
-import { Details } from '@mui/icons-material';
+const normalizeValStr = (val) => {
+  if (val === null || val === undefined) return '';
+  let str = String(val).trim();
+  if (str.endsWith('%')) str = str.slice(0, -1).trim();
+  return str.toLowerCase();
+};
 
 const resolveSelectValue = (options, savedVal, labelKeys = []) => {
   if (savedVal === null || savedVal === undefined || savedVal === '') return '';
   if (typeof savedVal === 'object' && savedVal._id) return String(savedVal._id);
 
-  const targetStr = String(savedVal).trim();
+  const targetStr = normalizeValStr(savedVal);
   if (!targetStr) return '';
 
   if (!options || !Array.isArray(options) || options.length === 0) {
-    return targetStr;
+    return String(savedVal);
   }
 
-  // 1. Direct _id / value / code match
-  const directMatch = options.find((opt) => {
+  // 1. Direct _id / id / code match (strict ID match)
+  const directIdMatch = options.find((opt) => {
     if (!opt) return false;
-    const optId = String(opt._id || opt.id || opt.value || opt.code || '').trim();
-    return optId.toLowerCase() === targetStr.toLowerCase();
+    const optId = String(opt._id || opt.id || opt.code || '').trim().toLowerCase();
+    return optId && optId === targetStr;
   });
-  if (directMatch) return directMatch._id || directMatch.id || directMatch.value || directMatch.code;
+  if (directIdMatch) return directIdMatch._id || directIdMatch.id || directIdMatch.code;
 
-  // 2. Name / Label fields match
+  // 2. Label / Value field match (e.g. value, name, rate)
   const labelMatch = options.find((opt) => {
     if (!opt) return false;
     const keysToCheck = labelKeys.length > 0 ? labelKeys : Object.keys(opt);
     return keysToCheck.some((key) => {
       const v = opt[key];
-      return v !== undefined && v !== null && String(v).trim().toLowerCase() === targetStr.toLowerCase();
+      if (v === undefined || v === null) return false;
+      const normOptVal = normalizeValStr(v);
+      return normOptVal && normOptVal === targetStr;
     });
   });
   if (labelMatch) return labelMatch._id || labelMatch.id || labelMatch.value || labelMatch.code;
 
-  return targetStr;
+  return String(savedVal);
 };
 
 const EditPolicy = () => {
