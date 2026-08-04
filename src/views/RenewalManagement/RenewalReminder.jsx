@@ -218,6 +218,8 @@ const RenewalReminder = () => {
           customerName = item.customerGroup.groupName || item.customerGroup.name;
         }
 
+        const effectiveEndDate = item.endDate || item.renewalDate || item.odEndDate || item.tpEndDate || "";
+
         return {
           _id: item._id,
           insuredName: customerName,
@@ -225,7 +227,8 @@ const RenewalReminder = () => {
           policyNo: item.policyNumber || "",
           premium: item.netPremium || 0,
           totalAmount: item.totalAmount || 0,
-          endDate: item.endDate,
+          endDate: effectiveEndDate,
+          renewalDate: effectiveEndDate,
           vehicleNumber: item.vehicleNumber || "",
           mobile: item.mobile || "",
           messageCount: item.messageCount || 0
@@ -811,6 +814,8 @@ const RenewalReminder = () => {
                                 <TableCell>{entry?.premium?.toLocaleString() || '-'}</TableCell>
                                 <TableCell>{entry?.totalAmount?.toLocaleString() || '-'}</TableCell>
                                 <TableCell>
+                                  {entry?.endDate ? String(entry.endDate).split('T')[0] : (entry?.renewalDate ? String(entry.renewalDate).split('T')[0] : '-')}
+                                  {' '}
                                   {daysLeft >= 0 ? `(${daysLeft} days)` : '(Expired)'}
                                 </TableCell>
                                 <TableCell align="center" style={{ display: 'table-cell', verticalAlign: 'middle', textAlign: 'center' }}>
