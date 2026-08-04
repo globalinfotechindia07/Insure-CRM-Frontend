@@ -497,8 +497,16 @@ const EditPolicy = () => {
               ? String(policyData?.insCompany)
               : '',
 
-          tpGst: policyData?.tpGst?._id ? String(policyData?.tpGst._id) : policyData?.tpGst ? String(policyData?.tpGst) : '',
-          odGst: policyData?.odGst?._id ? String(policyData?.odGst._id) : policyData?.odGst ? String(policyData?.odGst) : '',
+          tpGst: policyData?.tpGst?._id
+            ? String(policyData?.tpGst._id)
+            : policyData?.tpGst
+              ? String(policyData?.tpGst)
+              : (policyData?.gst?._id ? String(policyData?.gst._id) : policyData?.gst ? String(policyData?.gst) : ''),
+          odGst: policyData?.odGst?._id
+            ? String(policyData?.odGst._id)
+            : policyData?.odGst
+              ? String(policyData?.odGst)
+              : (policyData?.gst?._id ? String(policyData?.gst._id) : policyData?.gst ? String(policyData?.gst) : ''),
           gst: policyData?.gst?._id ? String(policyData?.gst._id) : policyData?.gst ? String(policyData?.gst) : '',
           tpBrokerageRate: policyData?.tpBrokerageRate?._id
             ? String(policyData?.tpBrokerageRate._id)
@@ -543,6 +551,16 @@ const EditPolicy = () => {
           marineClause: policyData?.marineClause || '',
           checkSubGroup: policyData?.checkSubGroup || ''
         }));
+
+        setGstData((prev) => {
+          const list = [...prev];
+          [policyData?.gst, policyData?.tpGst, policyData?.odGst, policyData?.endorsementGst].forEach((item) => {
+            if (item && typeof item === 'object' && item._id && !list.some((x) => String(x._id) === String(item._id))) {
+              list.push(item);
+            }
+          });
+          return list;
+        });
 
         setBrokerageRateData((prev) => {
           const list = [...prev];
@@ -1860,7 +1878,7 @@ const EditPolicy = () => {
                         labelId="tpGst"
                         label="tpGst"
                         name="tpGst"
-                        value={resolveSelectValue(gstData, form.tpGst, ['value'])}
+                        value={resolveSelectValue(gstData, form.tpGst || form.gst, ['value'])}
                         onChange={handleChange}
                       >
                         {gstData.length > 0 &&
@@ -1869,9 +1887,9 @@ const EditPolicy = () => {
                               {type.value}
                             </MenuItem>
                           ))}
-                        {form.tpGst && !gstData.some((t) => String(t._id) === String(resolveSelectValue(gstData, form.tpGst))) && (
-                          <MenuItem key={String(form.tpGst)} value={String(form.tpGst)}>
-                            {String(form.tpGst)}
+                        {(form.tpGst || form.gst) && !gstData.some((t) => String(t._id) === String(resolveSelectValue(gstData, form.tpGst || form.gst))) && (
+                          <MenuItem key={String(form.tpGst || form.gst)} value={String(form.tpGst || form.gst)}>
+                            {String(form.tpGst || form.gst)}
                           </MenuItem>
                         )}
                       </Select>
@@ -1965,7 +1983,7 @@ const EditPolicy = () => {
                         labelId="odGst"
                         label="odGst"
                         name="odGst"
-                        value={resolveSelectValue(gstData, form.odGst, ['value'])}
+                        value={resolveSelectValue(gstData, form.odGst || form.gst, ['value'])}
                         onChange={handleChange}
                       >
                         {gstData.length > 0 &&
@@ -1974,9 +1992,9 @@ const EditPolicy = () => {
                               {type.value}
                             </MenuItem>
                           ))}
-                        {form.odGst && !gstData.some((t) => String(t._id) === String(resolveSelectValue(gstData, form.odGst))) && (
-                          <MenuItem key={String(form.odGst)} value={String(form.odGst)}>
-                            {String(form.odGst)}
+                        {(form.odGst || form.gst) && !gstData.some((t) => String(t._id) === String(resolveSelectValue(gstData, form.odGst || form.gst))) && (
+                          <MenuItem key={String(form.odGst || form.gst)} value={String(form.odGst || form.gst)}>
+                            {String(form.odGst || form.gst)}
                           </MenuItem>
                         )}
                       </Select>
