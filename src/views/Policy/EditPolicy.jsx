@@ -375,20 +375,20 @@ const EditPolicy = () => {
           nextInstallmentDate: policyData?.nextInstallmentDate ? policyData?.nextInstallmentDate?.split('T')[0] : '',
           policyDuration: policyData?.policyDuration || 'YEARLY',
           startDate: safeFormatDate(policyData?.startDate),
-          endDate: safeFormatDate(policyData?.endDate, safeFormatDate(policyData?.renewalDate)),
+          endDate: safeFormatDate(policyData?.endDate, safeFormatDate(policyData?.renewalDate, safeFormatDate(policyData?.odEndDate, safeFormatDate(policyData?.tpEndDate)))),
           tpPolicyDuration: policyData?.tpPolicyDuration || 'YEARLY',
           tpStartDate: safeFormatDate(policyData?.tpStartDate, safeFormatDate(policyData?.startDate)),
-          tpEndDate: safeFormatDate(policyData?.tpEndDate, safeFormatDate(policyData?.endDate, safeFormatDate(policyData?.renewalDate))),
+          tpEndDate: safeFormatDate(policyData?.tpEndDate, safeFormatDate(policyData?.endDate, safeFormatDate(policyData?.renewalDate, safeFormatDate(policyData?.odEndDate)))),
           tpPremium: policyData?.tpPremium || '',
           tpGstAmount: policyData?.tpGstAmount || '',
           tpAmount: policyData?.tpAmount || '',
           odPolicyDuration: policyData?.odPolicyDuration || 'YEARLY',
           odStartDate: safeFormatDate(policyData?.odStartDate, safeFormatDate(policyData?.startDate)),
-          odEndDate: safeFormatDate(policyData?.odEndDate, safeFormatDate(policyData?.endDate, safeFormatDate(policyData?.renewalDate))),
+          odEndDate: safeFormatDate(policyData?.odEndDate, safeFormatDate(policyData?.endDate, safeFormatDate(policyData?.renewalDate, safeFormatDate(policyData?.tpEndDate)))),
           odPremium: policyData?.odPremium || '',
           odGstAmount: policyData?.odGstAmount || '',
           odAmount: policyData?.odAmount || '',
-          renewalDate: safeFormatDate(policyData?.renewalDate, safeFormatDate(policyData?.endDate)),
+          renewalDate: safeFormatDate(policyData?.renewalDate, safeFormatDate(policyData?.endDate, safeFormatDate(policyData?.odEndDate, safeFormatDate(policyData?.tpEndDate)))),
           renewable: policyData?.renewable || '',
           SGST: policyData?.SGST || '',
           CGST: policyData?.CGST || '',
@@ -706,12 +706,14 @@ const EditPolicy = () => {
     if (!computedTpEndDate) return;
 
     setForm((prev) => {
-      if (prev.tpEndDate && prev.tpEndDate === computedTpEndDate) return prev;
+      const tpEndDate = prev.tpEndDate || computedTpEndDate;
+      const renewalDate = prev.renewalDate || prev.odEndDate || tpEndDate;
+      if (prev.tpEndDate === tpEndDate && prev.renewalDate === renewalDate) return prev;
       return {
         ...prev,
-        tpEndDate: prev.tpEndDate || computedTpEndDate,
+        tpEndDate,
         transactionDate: prev.transactionDate || transactionDate,
-        renewalDate: prev.renewalDate || computedTpEndDate
+        renewalDate
       };
     });
   }, [form.tpStartDate, form.tpPolicyDuration]);
@@ -727,12 +729,14 @@ const EditPolicy = () => {
     if (!computedOdEndDate) return;
 
     setForm((prev) => {
-      if (prev.odEndDate && prev.odEndDate === computedOdEndDate) return prev;
+      const odEndDate = prev.odEndDate || computedOdEndDate;
+      const renewalDate = prev.renewalDate || odEndDate || prev.tpEndDate;
+      if (prev.odEndDate === odEndDate && prev.renewalDate === renewalDate) return prev;
       return {
         ...prev,
-        odEndDate: prev.odEndDate || computedOdEndDate,
+        odEndDate,
         transactionDate: prev.transactionDate || transactionDate,
-        renewalDate: prev.renewalDate || computedOdEndDate
+        renewalDate
       };
     });
   }, [form.odStartDate, form.odPolicyDuration]);
