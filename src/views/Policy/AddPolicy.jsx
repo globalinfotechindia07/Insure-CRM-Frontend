@@ -559,6 +559,11 @@ const AddPolicy = () => {
         end.setMonth(end.getMonth() + 1);
         break;
 
+      case 'DAYS':
+        return null;
+      case 'TILL END OF VOYAGE':
+        return 'TILL END OF VOYAGE';
+
       default:
         return '';
     }
@@ -579,14 +584,16 @@ const AddPolicy = () => {
 
     const calculatedEndDate = calculateEndDate(form.startDate, form.policyDuration);
 
-    if (!calculatedEndDate) return;
+    if (calculatedEndDate === '') return;
 
-    setForm((prev) => ({
-      ...prev,
-      endDate: calculatedEndDate,
-      renewalDate: calculatedEndDate,
-      transactionDate
-    }));
+    setForm((prev) => {
+      const nextForm = { ...prev, transactionDate };
+      if (calculatedEndDate !== null) {
+        nextForm.endDate = calculatedEndDate;
+        nextForm.renewalDate = calculatedEndDate;
+      }
+      return nextForm;
+    });
   }, [form.startDate, form.policyDuration]);
 
   const filteredProducts = useMemo(() => {
@@ -603,14 +610,16 @@ const AddPolicy = () => {
 
     const tpEndDate = calculateEndDate(form.tpStartDate, form.tpPolicyDuration);
 
-    if (!tpEndDate) return;
+    if (tpEndDate === '') return;
 
-    setForm((prev) => ({
-      ...prev,
-      tpEndDate,
-      transactionDate,
-      renewalDate: tpEndDate
-    }));
+    setForm((prev) => {
+      const nextForm = { ...prev, transactionDate };
+      if (tpEndDate !== null) {
+        nextForm.tpEndDate = tpEndDate;
+        nextForm.renewalDate = tpEndDate;
+      }
+      return nextForm;
+    });
   }, [form.tpStartDate, form.tpPolicyDuration]);
 
   useEffect(() => {
@@ -623,14 +632,16 @@ const AddPolicy = () => {
 
     const odEndDate = calculateEndDate(form.odStartDate, form.odPolicyDuration);
 
-    if (!odEndDate) return;
+    if (odEndDate === '') return;
 
-    setForm((prev) => ({
-      ...prev,
-      odEndDate,
-      transactionDate,
-      renewalDate: odEndDate
-    }));
+    setForm((prev) => {
+      const nextForm = { ...prev, transactionDate };
+      if (odEndDate !== null) {
+        nextForm.odEndDate = odEndDate;
+        nextForm.renewalDate = odEndDate;
+      }
+      return nextForm;
+    });
   }, [form.odStartDate, form.odPolicyDuration]);
 
   const selectedProductName = useMemo(() => {
@@ -676,7 +687,7 @@ const AddPolicy = () => {
           const selectedCustomer = clientList.find((customer) => customer._id === selectedId);
           if (selectedCustomer) {
             nextForm.retailCustomer = selectedId;
-            nextForm.cutomerName = selectedCustomer.name || '';
+            nextForm.cutomerName = selectedCustomer.customerName || selectedCustomer.name || '';
             nextForm.mobile = selectedCustomer.mobile || '';
             nextForm.email = selectedCustomer.email || '';
             nextForm.gstNo = selectedCustomer.gstNo || '';
@@ -712,6 +723,34 @@ const AddPolicy = () => {
         const selectedCompanyObj = insCompanyData.find((c) => String(c._id) === String(value));
         if (selectedCompanyObj) {
           nextForm.insurerName = selectedCompanyObj.insCompany || selectedCompanyObj.name || selectedCompanyObj.companyName || '';
+        }
+      }
+
+      if (name === 'product') {
+        const selectedProductObj = productData.find((p) => p._id === value);
+        if (selectedProductObj) {
+          const prodName = selectedProductObj.productName || '';
+          if (prodName === 'Commercial Vehicle OD') {
+            const gst18 = gstData.find((g) => Math.round(g.value) === 18);
+            if (gst18) {
+              nextForm.tpGst = gst18._id;
+              nextForm.odGst = gst18._id;
+              nextForm.gst = gst18._id;
+            }
+          }
+        }
+      }
+      
+      if (name === 'insDepartment') {
+        const selectedDept = insDepartmentData.find((d) => String(d._id) === String(value));
+        const deptName = selectedDept?.insDepartment || selectedDept?.name || '';
+        if (deptName.toLowerCase().includes('travel')) {
+          const gst0 = gstData.find(g => Math.round(g.value) === 0);
+          if (gst0) {
+            nextForm.gst = gst0._id;
+            nextForm.tpGst = gst0._id;
+            nextForm.odGst = gst0._id;
+          }
         }
       }
 
@@ -1506,6 +1545,7 @@ const AddPolicy = () => {
                             <MenuItem value="QUARTERLY">QUARTERLY</MenuItem>
                             <MenuItem value="MONTHLY">MONTHLY</MenuItem>
                             <MenuItem value="DAYS">DAYS</MenuItem>
+                            <MenuItem value="TILL END OF VOYAGE">TILL END OF VOYAGE</MenuItem>
                           </Select>
                           {errors.tpPolicyDuration && <FormHelperText>{errors.tpPolicyDuration}</FormHelperText>}
                         </FormControl>
@@ -1525,7 +1565,7 @@ const AddPolicy = () => {
                       </Grid>
                       <Grid item xs={12} sm={2}>
                         <TextField
-                          type="date"
+                          type={form.tpEndDate === 'TILL END OF VOYAGE' ? 'text' : 'date'}
                           label="End Date"
                           onChange={handleChange}
                           value={form.tpEndDate}
@@ -1549,7 +1589,7 @@ const AddPolicy = () => {
                       <Grid item xs={12} sm={1}>
                         <FormControl fullWidth>
                           <InputLabel id="tpGst">GST</InputLabel>
-                          <Select labelId="tpGst" label="tpGst" name="tpGst" value={form.tpGst} onChange={handleChange}>
+                          <Select labelId="tpGst" label="tpGst" name="tpGst" value={form.tpGst} onChange={handleChange} disabled={selectedDeptName.toLowerCase().includes('travel')}>
                             {gstData.length > 0 &&
                               gstData.map((type) => (
                                 <MenuItem key={type._id} value={type._id}>
@@ -1564,7 +1604,7 @@ const AddPolicy = () => {
                           label="TP GST"
                           onChange={handleChange}
                           value={form.tpGstAmount}
-                          disabled
+                          
                           name="tpGstAmount"
                           fullWidth
                           InputLabelProps={{ shrink: true }}
@@ -1576,7 +1616,7 @@ const AddPolicy = () => {
                           onChange={handleChange}
                           value={form.tpAmount}
                           name="tpAmount"
-                          disabled
+                          
                           fullWidth
                           InputLabelProps={{ shrink: true }}
                         />
@@ -1600,6 +1640,7 @@ const AddPolicy = () => {
                             <MenuItem value="QUARTERLY">QUARTERLY</MenuItem>
                             <MenuItem value="MONTHLY">MONTHLY</MenuItem>
                             <MenuItem value="DAYS">DAYS</MenuItem>
+                            <MenuItem value="TILL END OF VOYAGE">TILL END OF VOYAGE</MenuItem>
                           </Select>
                           {errors.odPolicyDuration && <FormHelperText>{errors.odPolicyDuration}</FormHelperText>}
                         </FormControl>
@@ -1619,7 +1660,7 @@ const AddPolicy = () => {
                       </Grid>
                       <Grid item xs={12} sm={2}>
                         <TextField
-                          type="date"
+                          type={form.odEndDate === 'TILL END OF VOYAGE' ? 'text' : 'date'}
                           label="End Date"
                           value={form.odEndDate}
                           onChange={handleChange}
@@ -1643,7 +1684,7 @@ const AddPolicy = () => {
                       <Grid item xs={12} sm={1}>
                         <FormControl fullWidth>
                           <InputLabel id="odGst">GST</InputLabel>
-                          <Select labelId="odGst" label="odGst" name="odGst" value={form.odGst} onChange={handleChange}>
+                          <Select labelId="odGst" label="odGst" name="odGst" value={form.odGst} onChange={handleChange} disabled={selectedDeptName.toLowerCase().includes('travel')}>
                             {gstData.length > 0 &&
                               gstData.map((type) => (
                                 <MenuItem key={type._id} value={type._id}>
@@ -1659,7 +1700,7 @@ const AddPolicy = () => {
                           onChange={handleChange}
                           value={form.odGstAmount}
                           name="odGstAmount"
-                          disabled
+                          
                           fullWidth
                           InputLabelProps={{ shrink: true }}
                         />
@@ -1670,7 +1711,7 @@ const AddPolicy = () => {
                           onChange={handleChange}
                           value={form.odAmount}
                           name="odAmount"
-                          disabled
+                          
                           fullWidth
                           InputLabelProps={{ shrink: true }}
                         />
@@ -1683,8 +1724,9 @@ const AddPolicy = () => {
                       <Grid item xs={12} sm={4}>
                         <TextField
                           label="TP + OD Net Premium"
-                          value={form.netPremium}
-                          disabled
+                          value={form.netPremium || ''}
+                          name="netPremium"
+                          onChange={handleChange}
                           fullWidth
                           InputLabelProps={{ shrink: true }}
                         />
@@ -1693,7 +1735,8 @@ const AddPolicy = () => {
                         <TextField
                           label="TP + OD GST Amount"
                           value={Number(form?.gstAmount).toFixed(2) || 0}
-                          disabled
+                          name="gstAmount"
+                          onChange={handleChange}
                           fullWidth
                           InputLabelProps={{ shrink: true }}
                         />
@@ -1702,7 +1745,8 @@ const AddPolicy = () => {
                         <TextField
                           label="TP + OD Total Amount"
                           value={form.totalAmount || ''}
-                          disabled
+                          name="totalAmount"
+                          onChange={handleChange}
                           fullWidth
                           InputLabelProps={{ shrink: true }}
                         />
@@ -1725,6 +1769,7 @@ const AddPolicy = () => {
                           <MenuItem value="QUARTERLY">QUARTERLY</MenuItem>
                           <MenuItem value="MONTHLY">MONTHLY</MenuItem>
                           <MenuItem value="DAYS">DAYS</MenuItem>
+                          <MenuItem value="TILL END OF VOYAGE">TILL END OF VOYAGE</MenuItem>
                         </Select>
                         {errors.policyDuration && <FormHelperText>{errors.policyDuration}</FormHelperText>}
                       </FormControl>
@@ -1744,7 +1789,7 @@ const AddPolicy = () => {
                     </Grid>
                     <Grid item xs={12} sm={3}>
                       <TextField
-                        type="date"
+                        type={form.endDate === 'TILL END OF VOYAGE' ? 'text' : 'date'}
                         label="End Date"
                         onChange={handleChange}
                         value={form.endDate}
@@ -1758,7 +1803,7 @@ const AddPolicy = () => {
 
                 <Grid item xs={12} sm={3}>
                   <TextField
-                    type="date"
+                    type={form.renewalDate === 'TILL END OF VOYAGE' ? 'text' : 'date'}
                     label="Renewal Date"
                     name="renewalDate"
                     fullWidth
@@ -1796,6 +1841,8 @@ const AddPolicy = () => {
                       <MenuItem value="NEW BUSINESS">NEW BUSINESS</MenuItem>
                       <MenuItem value="PORTABILITY">PORTABILITY</MenuItem>
                       <MenuItem value="ROLLOVER">ROLLOVER</MenuItem>
+                      <MenuItem value="ENDORSEMENT">ENDORSEMENT</MenuItem>
+                      <MenuItem value="NEW">NEW</MenuItem>
                     </Select>
                   </FormControl>
                 </Grid>
@@ -2239,7 +2286,7 @@ finance = 69522c7b583c668bdda53af5
                     label="Endorsement GST Amt"
                     value={form.endorsementGstAmount}
                     name="endorsementGstAmount"
-                    disabled
+                    onChange={handleChange}
                     fullWidth
                     InputLabelProps={{ shrink: true }}
                   />
@@ -2249,7 +2296,7 @@ finance = 69522c7b583c668bdda53af5
                     label="Endorsement Total Amount"
                     name="etotalAmount"
                     value={form.etotalAmount}
-                    disabled
+                    onChange={handleChange}
                     fullWidth
                     InputLabelProps={{ shrink: true }}
                   />
@@ -2611,7 +2658,7 @@ finance = 69522c7b583c668bdda53af5
                     name="netPremium"
                     onChange={handleChange}
                     value={form.netPremium}
-                    disabled
+                    
                     fullWidth
                     error={!!errors.netPremium}
                     helperText={errors.netPremium}
@@ -2622,7 +2669,7 @@ finance = 69522c7b583c668bdda53af5
                   <Grid item xs={12} sm={3}>
                     <FormControl fullWidth>
                       <InputLabel id="gst">GST</InputLabel>
-                      <Select labelId="gst" label="gst" name="gst" value={form.gst} onChange={handleChange}>
+                      <Select labelId="gst" label="gst" name="gst" value={form.gst} onChange={handleChange} disabled={selectedDeptName.toLowerCase().includes('travel')}>
                         {gstData.length > 0 &&
                           gstData.map((type) => (
                             <MenuItem key={type._id} value={type._id}>
@@ -2639,7 +2686,7 @@ finance = 69522c7b583c668bdda53af5
                     onChange={handleChange}
                     value={form.gstAmount}
                     name="gstAmount"
-                    disabled
+                    
                     fullWidth
                     InputLabelProps={{ shrink: true }}
                   />
@@ -2650,7 +2697,7 @@ finance = 69522c7b583c668bdda53af5
                     name="totalAmount"
                     value={form.totalAmount || ''}
                     onChange={handleChange}
-                    disabled
+                    
                     fullWidth
                     InputLabelProps={{ shrink: true }}
                   />

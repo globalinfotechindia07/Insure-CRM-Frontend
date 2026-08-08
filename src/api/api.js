@@ -1,6 +1,33 @@
 import axios from 'axios';
 import { toUppercasePayload } from 'utils/uppercaseUtils';
 
+const convertBsonObjectIdToString = (obj) => {
+  if (!obj || typeof obj !== 'object') return obj;
+  if (Array.isArray(obj)) return obj.map(convertBsonObjectIdToString);
+  if (obj.type === 'Buffer' && Array.isArray(obj.data) && obj.data.length === 12) {
+    return obj.data.map(b => b.toString(16).padStart(2, '0')).join('');
+  }
+  if (obj.buffer && typeof obj.buffer === 'object') {
+    const bufKeys = Object.keys(obj.buffer);
+    if (bufKeys.length === 12) {
+      let isBuffer = true, hexString = '';
+      for (let i = 0; i < 12; i++) {
+        const val = obj.buffer[String(i)];
+        if (typeof val !== 'number') { isBuffer = false; break; }
+        hexString += val.toString(16).padStart(2, '0');
+      }
+      if (isBuffer) return hexString;
+    }
+  }
+  const newObj = {};
+  for (const key in obj) {
+    if (Object.prototype.hasOwnProperty.call(obj, key)) {
+      newObj[key] = convertBsonObjectIdToString(obj[key]);
+    }
+  }
+  return newObj;
+};
+
 // const REACT_APP_API_URL = 'https://miraicrm.com/api/';
 // const REACT_APP_API_URL = 'https://insure.isyncerp.com/api/';
 // const REACT_APP_API_URL = 'https://jpinsurancebroker.co.in/api/'; 
@@ -37,7 +64,8 @@ export const get = async (url) => {
       'Content-Type': 'application/json'
     }
   });
-  return response.json();
+  const json = await response.json();
+  return convertBsonObjectIdToString(json);
 };
 
 // Post request API
@@ -69,14 +97,15 @@ export const post = async (url, data) => {
   const response = await fetch(`${REACT_APP_API_URL}${url}${url.includes('?') ? '&' : '?'}companyId=${encodeURIComponent(companyId)}`, {
     method: 'POST',
     headers,
-    body: isFormData ? data : JSON.stringify(data)
+    body: isFormData ? data : JSON.stringify(convertBsonObjectIdToString(data))
   });
 
   if (response.status === 401) {
     throw new Error('Unauthorized');
   }
 
-  return response.json();
+  const json = await response.json();
+  return convertBsonObjectIdToString(json);
 };
 
 export const put = async (url, data) => {
@@ -91,11 +120,12 @@ export const put = async (url, data) => {
   const response = await fetch(`${REACT_APP_API_URL}${url}${url.includes('?') ? '&' : '?'}companyId=${encodeURIComponent(companyId)}`, {
     method: 'PUT',
     headers,
-    body: isFormData ? data : JSON.stringify(data)
+    body: isFormData ? data : JSON.stringify(convertBsonObjectIdToString(data))
   });
 
   if (response.status === 401) throw new Error('Unauthorized');
-  return response.json();
+  const json = await response.json();
+  return convertBsonObjectIdToString(json);
 };
 
 // Remove request API
