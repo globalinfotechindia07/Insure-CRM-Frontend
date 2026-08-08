@@ -54,8 +54,8 @@ const BranchSettings = () => {
     if (window.confirm(`Are you sure you want to delete "${branchName}"?`)) {
       try {
         const token = localStorage.getItem('token');
-        const response = await fetch(`http://localhost:5050/api/branchSettings/${branchId}`, {
-        // const response = await fetch(`https://insure-crm-backend-1-n420.onrender.com/api/branchSettings/${branchId}`, {
+        // const response = await fetch(`http://localhost:5050/api/branchSettings/${branchId}`, {
+        const response = await fetch(`https://insure-crm-backend-1-n420.onrender.com/api/branchSettings/${branchId}`, {
 
           method: 'DELETE',
           headers: {
@@ -96,9 +96,9 @@ const BranchSettings = () => {
       const token = localStorage.getItem('token');
       console.log('🔗 Fetching branch settings...');
 
-      const response = await fetch('http://localhost:5050/api/branchSettings/', {
+      // const response = await fetch('http://localhost:5050/api/branchSettings/', {
 
-        // const response = await fetch('https://insure-crm-backend-1-n420.onrender.com/api/branchSettings/', {
+        const response = await fetch('https://insure-crm-backend-1-n420.onrender.com/api/branchSettings/', {
 
 
         headers: {

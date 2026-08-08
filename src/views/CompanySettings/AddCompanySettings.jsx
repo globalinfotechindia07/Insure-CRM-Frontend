@@ -50,8 +50,8 @@ const CompanySettings = () => {
     if (window.confirm(`Are you sure you want to delete "${companyName}"?`)) {
       try {
         const token = localStorage.getItem('token');
-        const response = await fetch(`http://localhost:5050/api/companySettings/${companyId}`, {
-          // const response = await fetch(`https://insure-crm-backend-1-n420.onrender.com/api/companySettings/${companyId}`, {
+        // const response = await fetch(`http://localhost:5050/api/companySettings/${companyId}`, {
+          const response = await fetch(`https://insure-crm-backend-1-n420.onrender.com/api/companySettings/${companyId}`, {
 
           method: 'DELETE',
           headers: {
@@ -97,16 +97,16 @@ const CompanySettings = () => {
 
     // If starts with /uploads, add base URL
     if (logoPath.startsWith('/uploads')) {
-      const fullUrl = `http://localhost:5050${logoPath}`;
-      // const fullUrl = `https://insure-crm-backend-1-n420.onrender.com${logoPath}`;
+      // const fullUrl = `http://localhost:5050${logoPath}`;
+      const fullUrl = `https://insure-crm-backend-1-n420.onrender.com${logoPath}`;
 
       console.log('Full logo URL:', fullUrl);
       return fullUrl;
     }
 
     // Fallback
-    return `http://localhost:5050/uploads/company-logo/${logoPath}`;
-    // return `https://insure-crm-backend-1-n420.onrender.com/uploads/company-logo/${logoPath}`;
+    // return `http://localhost:5050/uploads/company-logo/${logoPath}`;
+    return `https://insure-crm-backend-1-n420.onrender.com/uploads/company-logo/${logoPath}`;
 
   };
 
@@ -114,8 +114,8 @@ const CompanySettings = () => {
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:5050/api/companySettings/', {
-      // const response = await fetch('https://insure-crm-backend-1-n420.onrender.com/api/companySettings/', {
+      // const response = await fetch('http://localhost:5050/api/companySettings/', {
+      const response = await fetch('https://insure-crm-backend-1-n420.onrender.com/api/companySettings/', {
         headers: {
           'Authorization': `Bearer ${token}`
         }
