@@ -134,7 +134,16 @@ export const formatApiErrorMessage = (rawError, defaultMsg = 'Unable to save det
   if (str.includes('Cast to') && str.includes('at path')) {
     const matchPath = str.match(/at path "([^"]+)"/);
     const fieldName = matchPath ? formatFieldLabel(matchPath[1]) : 'one of the form fields';
-    return `Invalid number format for "${fieldName}". Please enter a valid number.`;
+    
+    if (str.includes('Cast to ObjectId')) {
+      return `Invalid selection or reference for "${fieldName}". Please ensure you have selected a valid option.`;
+    } else if (str.includes('Cast to Number')) {
+      return `Invalid number format for "${fieldName}". Please enter a valid number.`;
+    } else if (str.includes('Cast to date')) {
+      return `Invalid date format for "${fieldName}". Please enter a valid date.`;
+    }
+    
+    return `Invalid value provided for "${fieldName}". Please check your input.`;
   }
 
   // Handle Duplicate key error

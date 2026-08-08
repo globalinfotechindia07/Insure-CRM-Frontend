@@ -518,6 +518,11 @@ const RenewPolicy = () => {
         end.setMonth(end.getMonth() + 1);
         break;
 
+      case 'DAYS':
+        return null;
+      case 'TILL END OF VOYAGE':
+        return 'TILL END OF VOYAGE';
+
       default:
         return '';
     }
@@ -696,7 +701,7 @@ const RenewPolicy = () => {
           const selectedCustomer = clientList.find((customer) => customer._id === selectedId);
           if (selectedCustomer) {
             nextForm.retailCustomer = selectedId;
-            nextForm.cutomerName = selectedCustomer.name || '';
+            nextForm.cutomerName = selectedCustomer.customerName || selectedCustomer.name || '';
             nextForm.mobile = selectedCustomer.mobile || '';
             nextForm.email = selectedCustomer.email || '';
             nextForm.gstNo = selectedCustomer.gstNo || '';
@@ -732,6 +737,19 @@ const RenewPolicy = () => {
         const selectedCompanyObj = insCompanyData.find((c) => c._id === value);
         if (selectedCompanyObj) {
           nextForm.insurerName = selectedCompanyObj.insCompany;
+        }
+      }
+
+      if (name === 'insDepartment') {
+        const selectedDept = insDepartmentData.find((d) => String(d._id) === String(value));
+        const deptName = selectedDept?.insDepartment || selectedDept?.name || '';
+        if (deptName.toLowerCase().includes('travel')) {
+          const gst0 = gstData.find(g => Math.round(g.value) === 0);
+          if (gst0) {
+            nextForm.gst = gst0._id;
+            nextForm.tpGst = gst0._id;
+            nextForm.odGst = gst0._id;
+          }
         }
       }
 
@@ -1582,7 +1600,7 @@ const RenewPolicy = () => {
                   </Grid>
                   <Grid item xs={12} sm={2}>
                     <TextField
-                      type="date"
+                      type={form.tpEndDate === 'TILL END OF VOYAGE' ? 'text' : 'date'}
                       label="End Date"
                       value={form.tpEndDate}
                       name="tpEndDate"
@@ -1622,7 +1640,7 @@ const RenewPolicy = () => {
                       onChange={handleChange}
                       value={form.tpGstAmount || ''}
                       name="tpGstAmount"
-                      disabled
+                      
                       fullWidth
                       InputLabelProps={{ shrink: true }}
                     />
@@ -1633,7 +1651,7 @@ const RenewPolicy = () => {
                       onChange={handleChange}
                       value={form.tpAmount || ''}
                       name="tpAmount"
-                      disabled
+                      
                       fullWidth
                       InputLabelProps={{ shrink: true }}
                     />
@@ -1676,7 +1694,7 @@ const RenewPolicy = () => {
                   </Grid>
                   <Grid item xs={12} sm={2}>
                     <TextField
-                      type="date"
+                      type={form.odEndDate === 'TILL END OF VOYAGE' ? 'text' : 'date'}
                       label="End Date"
                       value={form.odEndDate}
                       onChange={handleChange}
@@ -1716,7 +1734,7 @@ const RenewPolicy = () => {
                       onChange={handleChange}
                       value={form.odGstAmount || ''}
                       name="odGstAmount"
-                      disabled
+                      
                       fullWidth
                       InputLabelProps={{ shrink: true }}
                     />
@@ -1727,7 +1745,7 @@ const RenewPolicy = () => {
                       onChange={handleChange}
                       value={form.odAmount || ''}
                       name="odAmount"
-                      disabled
+                      
                       fullWidth
                       InputLabelProps={{ shrink: true }}
                     />
@@ -1741,7 +1759,7 @@ const RenewPolicy = () => {
                     <TextField
                       label="TP + OD Net Premium"
                       value={form.netPremium || ''}
-                      disabled
+                      
                       fullWidth
                       InputLabelProps={{ shrink: true }}
                     />
@@ -1750,7 +1768,7 @@ const RenewPolicy = () => {
                     <TextField
                       label="TP + OD GST Amount"
                       value={form.gstAmount || ''}
-                      disabled
+                      
                       fullWidth
                       InputLabelProps={{ shrink: true }}
                     />
@@ -1759,7 +1777,7 @@ const RenewPolicy = () => {
                     <TextField
                       label="TP + OD Total Amount"
                       value={form.totalAmount || ''}
-                      disabled
+                      
                       fullWidth
                       InputLabelProps={{ shrink: true }}
                     />
@@ -1782,6 +1800,7 @@ const RenewPolicy = () => {
                       <MenuItem value="QUARTERLY">QUARTERLY</MenuItem>
                       <MenuItem value="MONTHLY">MONTHLY</MenuItem>
                       <MenuItem value="DAYS">DAYS</MenuItem>
+                      <MenuItem value="TILL END OF VOYAGE">TILL END OF VOYAGE</MenuItem>
                     </Select>
                     {errors.policyDuration && <FormHelperText>{errors.policyDuration}</FormHelperText>}
                   </FormControl>
@@ -1801,7 +1820,7 @@ const RenewPolicy = () => {
                 </Grid>
                 <Grid item xs={12} sm={3}>
                   <TextField
-                    type="date"
+                    type={form.endDate === 'TILL END OF VOYAGE' ? 'text' : 'date'}
                     label="End Date"
                     value={form.endDate}
                     onChange={handleChange}
@@ -1815,7 +1834,7 @@ const RenewPolicy = () => {
 
             <Grid item xs={12} sm={3}>
               <TextField
-                type="date"
+                type={form.renewalDate === 'TILL END OF VOYAGE' ? 'text' : 'date'}
                 label="Renewal Date"
                 name="renewalDate"
                 fullWidth
@@ -1852,6 +1871,8 @@ const RenewPolicy = () => {
                   <MenuItem value="NEW BUSINESS">NEW BUSINESS</MenuItem>
                   <MenuItem value="PORTABILITY">PORTABILITY</MenuItem>
                   <MenuItem value="ROLLOVER">ROLLOVER</MenuItem>
+                  <MenuItem value="ENDORSEMENT">ENDORSEMENT</MenuItem>
+                  <MenuItem value="NEW">NEW</MenuItem>
                 </Select>
               </FormControl>
             </Grid>
@@ -2284,7 +2305,7 @@ const RenewPolicy = () => {
                 label="Endorsement GST Amt"
                 value={form.endorsementGstAmount}
                 name="endorsementGstAmount"
-                disabled
+                
                 fullWidth
                 InputLabelProps={{ shrink: true }}
               />
@@ -2294,7 +2315,7 @@ const RenewPolicy = () => {
                 label="Endorsement Total Amount"
                 name="etotalAmount"
                 value={form.etotalAmount}
-                disabled
+                
                 fullWidth
                 InputLabelProps={{ shrink: true }}
               />
@@ -2650,7 +2671,7 @@ const RenewPolicy = () => {
                 name="netPremium"
                 onChange={handleChange}
                 value={form.netPremium}
-                disabled
+                
                 fullWidth
                 error={!!errors.netPremium}
                 helperText={errors.netPremium}
@@ -2678,7 +2699,7 @@ const RenewPolicy = () => {
                 onChange={handleChange}
                 value={form.gstAmount || ''}
                 name="gstAmount"
-                disabled
+                
                 fullWidth
                 InputLabelProps={{ shrink: true }}
               />
@@ -2688,7 +2709,7 @@ const RenewPolicy = () => {
                 label={selectedDeptName === 'motor' ? "TP + OD Total Amount" : "Total Amount"}
                 name="totalAmount"
                 value={form.totalAmount || ''}
-                disabled
+                
                 onChange={handleChange}
                 fullWidth
                 InputLabelProps={{ shrink: true }}
