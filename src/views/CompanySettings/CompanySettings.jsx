@@ -55,7 +55,7 @@ const CompanySettings = () => {
       try {
         const token = localStorage.getItem('token');
         // const response = await fetch(`http://localhost:5050/api/companySettings/${companyId}`, {
-        const response = await fetch(`api.jpinsurancebrokers.co.in/api/companySettings/${companyId}`, {
+        const response = await fetch(`https://api.jpinsurancebrokers.co.in/api/companySettings/${companyId}`, {
 
           method: 'DELETE',
           headers: {
@@ -97,7 +97,7 @@ const CompanySettings = () => {
       console.log('🔗 Fetching company settings...');
 
       //  const response = await fetch('http://localhost:5050/api/companySettings/', {
-      const response = await fetch('api.jpinsurancebrokers.co.in/api/companySettings/', {
+      const response = await fetch('https://api.jpinsurancebrokers.co.in/api/companySettings/', {
 
         headers: {
           'Authorization': `Bearer ${token}`

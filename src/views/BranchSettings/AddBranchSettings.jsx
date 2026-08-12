@@ -51,7 +51,7 @@ const AddBranchSettings = () => {
       try {
         const token = localStorage.getItem('token');
         // const response = await fetch(`http://localhost:5050/api/branchSettings/${branchId}`, {
-        const response = await fetch(`api.jpinsurancebrokers.co.in/api/branchSettings/${branchId}`, {
+        const response = await fetch(`https://api.jpinsurancebrokers.co.in/api/branchSettings/${branchId}`, {
           method: 'DELETE',
           headers: {
             'Authorization': `Bearer ${token}`
@@ -88,13 +88,13 @@ const AddBranchSettings = () => {
     if (logoPath.startsWith('http')) return logoPath;
     if (logoPath.startsWith('/uploads')) {
       // return `http://localhost:5050${logoPath}`;
-      return 'api.jpinsurancebrokers.co.in${logoPath}';
+      return 'https://api.jpinsurancebrokers.co.in${logoPath}';
 
-      const STATIC_BASE_URL = "api.jpinsurancebrokers.co.in";
+      const STATIC_BASE_URL = "https://api.jpinsurancebrokers.co.in";
 
     }
     // return `http://localhost:5050/uploads/company-logo/${logoPath}`;
-      const STATIC_BASE_URL = "api.jpinsurancebrokers.co.in";
+      const STATIC_BASE_URL = "https://api.jpinsurancebrokers.co.in";
 
   };
 
@@ -104,7 +104,7 @@ const AddBranchSettings = () => {
       const token = localStorage.getItem('token');
       // const response = await fetch('http://localhost:5050/api/branchSettings/', {
 
-      const response = await fetch('api.jpinsurancebrokers.co.in/api/branchSettings/', {
+      const response = await fetch('https://api.jpinsurancebrokers.co.in/api/branchSettings/', {
 
         headers: {
           'Authorization': `Bearer ${token}`

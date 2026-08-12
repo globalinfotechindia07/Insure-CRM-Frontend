@@ -21,7 +21,7 @@ import { ArrowBack } from '@mui/icons-material';
 import { useSelector } from 'react-redux';
 
 //  const STATIC_BASE_URL = "http://localhost:5050"; 
-const STATIC_BASE_URL = "api.jpinsurancebrokers.co.in";
+const STATIC_BASE_URL = "https://api.jpinsurancebrokers.co.in";
 
 const UpdateBranchSettings = () => {
   const navigate = useNavigate();
@@ -73,7 +73,7 @@ const UpdateBranchSettings = () => {
       try {
         const token = localStorage.getItem('token');
         // const response = await fetch(`http://localhost:5050/api/branchSettings/${id}`, {
-        const response = await fetch(`api.jpinsurancebrokers.co.in/api/branchSettings/${id}`, {
+        const response = await fetch(`https://api.jpinsurancebrokers.co.in/api/branchSettings/${id}`, {
 
           headers: {
             'Authorization': `Bearer ${token}`
@@ -230,13 +230,13 @@ const UpdateBranchSettings = () => {
       console.log('🟡 Submitting payload:', payload);
       
       // let url = 'http://localhost:5050/api/branchSettings/';
-      let url = 'api.jpinsurancebrokers.co.in/api/branchSettings/';
+      let url = 'https://api.jpinsurancebrokers.co.in/api/branchSettings/';
 
       let method = 'POST';
       
       if (!isNewRecord) {
         // url = `http://localhost:5050/api/branchSettings/${id}`;
-        url = `api.jpinsurancebrokers.co.in/api/branchSettings/${id}`;
+        url = `https://api.jpinsurancebrokers.co.in/api/branchSettings/${id}`;
 
         method = 'PUT';
       }
@@ -262,7 +262,7 @@ const UpdateBranchSettings = () => {
           logoFormData.append('branchLogo', logoFile);
           // 
           // const logoResponse = await fetch(`http://localhost:5050/api/branchSettings/${data.data._id}/logo`, {
-          const logoResponse = await fetch(`api.jpinsurancebrokers.co.in/api/branchSettings/${data.data._id}/logo`, {
+          const logoResponse = await fetch(`https://api.jpinsurancebrokers.co.in/api/branchSettings/${data.data._id}/logo`, {
 
             method: 'POST',
             headers: {
