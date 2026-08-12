@@ -88,6 +88,7 @@ const AddBranchSettings = () => {
     if (logoPath.startsWith('http')) return logoPath;
     if (logoPath.startsWith('/uploads')) {
       // return `http://localhost:5050${logoPath}`;
+      return 'api.jpinsurancebrokers.co.in${logoPath}';
 
       const STATIC_BASE_URL = "api.jpinsurancebrokers.co.in";
 

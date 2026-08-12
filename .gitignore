@@ -4,6 +4,6 @@
 /.pnp
 .env
 .env.*
-/dist
+# /dist
 /.vscode
 /node_modules/*
