@@ -2,7 +2,7 @@ import axios from "axios";
 
 const API = axios.create({
   // baseURL: "http://localhost:5050/api",
-  baseURL: "https://api.jpinsurancebrokers.co.in",
+  baseURL: "http://api.jpinsurancebrokers.co.in",
   // baseURL: "https://insure-crm-backend-1-n420.onrender.com/api",
 });
 

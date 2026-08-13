@@ -55,7 +55,7 @@ const BranchSettings = () => {
       try {
         const token = localStorage.getItem('token');
         // const response = await fetch(`http://localhost:5050/api/branchSettings/${branchId}`, {
-        const response = await fetch(`https://api.jpinsurancebrokers.co.in/api/branchSettings/${branchId}`, {
+        const response = await fetch(`http://api.jpinsurancebrokers.co.in/api/branchSettings/${branchId}`, {
 
           method: 'DELETE',
           headers: {
@@ -98,7 +98,7 @@ const BranchSettings = () => {
 
       // const response = await fetch('http://localhost:5050/api/branchSettings/', {
 
-        const response = await fetch('https://api.jpinsurancebrokers.co.in/api/branchSettings/', {
+        const response = await fetch('http://api.jpinsurancebrokers.co.in/api/branchSettings/', {
 
 
         headers: {

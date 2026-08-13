@@ -4,7 +4,7 @@ import { toast } from "react-toastify";
 
 const API = axios.create({
   // baseURL: "http://localhost:5050/api",
-  baseURL: "https://api.jpinsurancebrokers.co.in/api",
+  baseURL: "http://api.jpinsurancebrokers.co.in/api",
   // baseURL: "https://insure-crm-backend-1-n420.onrender.com/api",
 });
 

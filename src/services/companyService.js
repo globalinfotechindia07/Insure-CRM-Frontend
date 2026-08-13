@@ -1,6 +1,6 @@
 // const API_BASE_URL = 'http://localhost:5050/api'; 
 // const API_BASE_URL = 'https://insure-crm-backend-1-n420.onrender.com/api';
-const API_BASE_URL = 'https://api.jpinsurancebrokers.co.in';
+const API_BASE_URL = 'http://api.jpinsurancebrokers.co.in';
 
 // ==================== COMPANY API FUNCTIONS (INS COMPANY MASTER) ====================
 
