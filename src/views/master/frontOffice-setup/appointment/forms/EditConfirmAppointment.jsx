@@ -1019,7 +1019,7 @@ const EditConfirmAppointment = ({ patientDetail, close, getData }) => {
   ]);
 
   const handleAddFingerPrint = async () => {
-    const uri = 'https://localhost:8000/SGIFPCapture';
+    const uri = import.meta.env.VITE_FINGERPRINT_URL;
     
 
     fetch(uri, {
