@@ -25,7 +25,8 @@ import {
   DialogActions,
   FormControl,
   InputLabel,
-  Select
+  Select,
+  TablePagination
 } from '@mui/material';
 import { Link } from 'react-router-dom';
 import Breadcrumb from 'component/Breadcrumb';
@@ -98,9 +99,16 @@ const RenewalReminder = () => {
   const [filterValue, setFilterValue] = useState('');
   const [dateTo, setDateTo] = useState(null);
   const [customerList, setCustomerList] = useState([]);
-  const [filteredData, setFilteredData] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(false);
+  
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [totalCount, setTotalCount] = useState(0);
+
+  const [historyPage, setHistoryPage] = useState(0);
+  const [historyRowsPerPage, setHistoryRowsPerPage] = useState(10);
+  const [historyTotalCount, setHistoryTotalCount] = useState(0);
   const [activeTab, setActiveTab] = useState(0);
   const [remindersHistory, setRemindersHistory] = useState([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
@@ -186,14 +194,29 @@ const RenewalReminder = () => {
     return text;
   };
 
-  const handleFilterValue = (e) => setFilterValue(e.target.value);
-  const handleSearchChange = (e) => setSearchTerm(e.target.value);
+  const handleFilterValue = (e) => {
+    setFilterValue(e.target.value);
+    setPage(0);
+    setHistoryPage(0);
+  };
+  const handleSearchChange = (e) => {
+    setSearchTerm(e.target.value);
+    setPage(0);
+    setHistoryPage(0);
+  };
 
   // Fetch policies from API
   const fetchPolicyDetail = async () => {
     setLoading(true);
     try {
-      const res = await get('policyDetail');
+      let url = `policyDetail?page=${page + 1}&limit=${rowsPerPage}`;
+      if (searchTerm) url += `&search=${encodeURIComponent(searchTerm.trim())}`;
+      if (filterValue === 'renew') url += `&expireWithin60Days=true`;
+      if (filterValue === 'byDateRange' && dateFrom && dateTo) {
+        url += `&fromDate=${dateFrom.toISOString()}&toDate=${dateTo.toISOString()}`;
+      }
+
+      const res = await get(url);
       console.log('Policy API Response:', res);
 
       let rawData = [];
@@ -237,9 +260,15 @@ const RenewalReminder = () => {
 
       console.log('Total policies:', policies.length);
       setCustomerList(policies);
-      setFilteredData(policies);
+      if (res.pagination) {
+        setTotalCount(res.pagination.totalItems || 0);
+      } else if (res.data?.pagination) {
+        setTotalCount(res.data.pagination.totalItems || 0);
+      } else {
+        setTotalCount(policies.length);
+      }
 
-      if (policies.length === 0) {
+      if (policies.length === 0 && page === 0 && !searchTerm && !filterValue) {
         Swal.fire({
           icon: "info",
           title: "No Policies Found",
@@ -314,14 +343,27 @@ const RenewalReminder = () => {
   const fetchRemindersHistory = async () => {
     setLoadingHistory(true);
     try {
-      const res = await get('renewal-reminder');
+      let url = `renewal-reminder?page=${historyPage + 1}&limit=${historyRowsPerPage}`;
+      if (searchTerm) url += `&search=${encodeURIComponent(searchTerm.trim())}`;
+      if (filterValue === 'byDateRange' && dateFrom && dateTo) {
+        url += `&fromDate=${dateFrom.toISOString()}&toDate=${dateTo.toISOString()}`;
+      }
+
+      const res = await get(url);
       console.log('Reminders History API Response:', res);
       if (res?.success && Array.isArray(res.data)) {
         setRemindersHistory(res.data);
+        if (res.pagination) {
+          setHistoryTotalCount(res.pagination.totalItems || 0);
+        } else {
+          setHistoryTotalCount(res.count || res.data.length);
+        }
       } else if (Array.isArray(res)) {
         setRemindersHistory(res);
+        setHistoryTotalCount(res.length);
       } else {
         setRemindersHistory([]);
+        setHistoryTotalCount(0);
       }
     } catch (error) {
       console.error('Error fetching reminders history:', error);
@@ -423,8 +465,11 @@ const RenewalReminder = () => {
 
   useEffect(() => {
     fetchPolicyDetail();
+  }, [page, rowsPerPage, filterValue, dateFrom, dateTo, searchTerm]);
+
+  useEffect(() => {
     fetchRemindersHistory();
-  }, []);
+  }, [historyPage, historyRowsPerPage, filterValue, dateFrom, dateTo, searchTerm]);
 
   // Calculate remaining days until end date
   const calculateRemainingDays = (endDateString) => {
@@ -437,44 +482,6 @@ const RenewalReminder = () => {
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     return diffDays > 0 ? diffDays : 0;
   };
-
-  // Filter data based on search, date range, and renewal filter
-  useEffect(() => {
-    let filtered = [...customerList];
-
-    // Search filter
-    if (searchTerm) {
-      filtered = filtered.filter(item =>
-        item.insuredName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.policyNo?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.vehicleNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.department?.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-    }
-
-    // Filter by renewal within 60 days
-    if (filterValue === 'renew') {
-      filtered = filtered.filter(item => {
-        const days = calculateRemainingDays(item.endDate);
-        return days <= 60 && days >= 0;
-      });
-    }
-
-    // Filter by date range
-    if (filterValue === 'byDateRange' && dateFrom && dateTo) {
-      filtered = filtered.filter(item => {
-        if (!item.endDate) return false;
-        const endDate = new Date(item.endDate);
-        const fromDate = new Date(dateFrom);
-        const toDate = new Date(dateTo);
-        fromDate.setHours(0, 0, 0, 0);
-        toDate.setHours(23, 59, 59, 999);
-        return endDate >= fromDate && endDate <= toDate;
-      });
-    }
-
-    setFilteredData(filtered);
-  }, [searchTerm, filterValue, dateFrom, dateTo, customerList]);
 
   const handleDateFilterChange = (field, value) => {
     if (field === 'dateFrom') {
@@ -489,7 +496,8 @@ const RenewalReminder = () => {
     setDateFrom(null);
     setDateTo(null);
     setSearchTerm('');
-    setFilteredData(customerList);
+    setPage(0);
+    setHistoryPage(0);
     Swal.fire({
       icon: "success",
       title: "Reset!",
@@ -519,37 +527,7 @@ const RenewalReminder = () => {
     });
   };
 
-  const [filteredHistory, setFilteredHistory] = useState([]);
 
-  // Filter history data based on search and date range
-  useEffect(() => {
-    let filtered = [...remindersHistory];
-
-    // Search filter for history
-    if (searchTerm) {
-      filtered = filtered.filter(item =>
-        item.customerName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.policyNo?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.contactNo?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.email?.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-    }
-
-    // Filter by date range for history
-    if (filterValue === 'byDateRange' && dateFrom && dateTo) {
-      filtered = filtered.filter(item => {
-        if (!item.reminderDate) return false;
-        const reminderDate = new Date(item.reminderDate);
-        const fromDate = new Date(dateFrom);
-        const toDate = new Date(dateTo);
-        fromDate.setHours(0, 0, 0, 0);
-        toDate.setHours(23, 59, 59, 999);
-        return reminderDate >= fromDate && reminderDate <= toDate;
-      });
-    }
-
-    setFilteredHistory(filtered);
-  }, [searchTerm, filterValue, dateFrom, dateTo, remindersHistory]);
 
   const handleRenewWithin30Days = () => {
     setFilterValue('renew');
@@ -644,7 +622,7 @@ const RenewalReminder = () => {
             color="secondary"
             size="small"
             onClick={() => {
-              const dataToExport = activeTab === 0 ? filteredData : filteredHistory;
+              const dataToExport = activeTab === 0 ? customerList : remindersHistory;
               const filename = activeTab === 0 ? 'policies_renewals.csv' : 'sent_reminders_history.csv';
               exportToCSV(dataToExport, filename);
             }}
@@ -780,7 +758,8 @@ const RenewalReminder = () => {
                     <CircularProgress />
                   </Box>
                 ) : (
-                  <TableContainer>
+                  <Box>
+                    <TableContainer>
                     <Table size="small" stickyHeader>
                       <TableHead>
                         <TableRow sx={{ backgroundColor: '#f5f5f5' }}>
@@ -795,8 +774,8 @@ const RenewalReminder = () => {
                         </TableRow>
                       </TableHead>
                       <TableBody>
-                        {filteredData.length > 0 ? (
-                          filteredData.map((entry, index) => {
+                        {customerList.length > 0 ? (
+                          customerList.map((entry, index) => {
                             const daysLeft = calculateRemainingDays(entry?.endDate);
                             const isExpiringSoon = daysLeft <= 7 && daysLeft >= 0;
 
@@ -885,6 +864,20 @@ const RenewalReminder = () => {
                       </TableBody>
                     </Table>
                   </TableContainer>
+                  <TablePagination
+                    rowsPerPageOptions={[10, 25, 50, 100]}
+                    component="div"
+                    count={totalCount || 0}
+                    rowsPerPage={rowsPerPage}
+                    page={page}
+                    onPageChange={(e, newPage) => setPage(newPage)}
+                    onRowsPerPageChange={(e) => {
+                      setRowsPerPage(parseInt(e.target.value, 10));
+                      setPage(0);
+                    }}
+                    labelRowsPerPage="Rows per page:"
+                  />
+                </Box>
                 )
               ) : (
                 loadingHistory ? (
@@ -892,7 +885,8 @@ const RenewalReminder = () => {
                     <CircularProgress />
                   </Box>
                 ) : (
-                  <TableContainer>
+                  <Box>
+                    <TableContainer>
                     <Table size="small" stickyHeader>
                       <TableHead>
                         <TableRow sx={{ backgroundColor: '#f5f5f5' }}>
@@ -908,8 +902,8 @@ const RenewalReminder = () => {
                         </TableRow>
                       </TableHead>
                       <TableBody>
-                        {filteredHistory.length > 0 ? (
-                          filteredHistory.map((historyEntry, index) => (
+                        {remindersHistory.length > 0 ? (
+                          remindersHistory.map((historyEntry, index) => (
                             <TableRow
                               key={historyEntry?._id || index}
                               sx={{ '&:hover': { backgroundColor: '#f5f5f5' } }}
@@ -961,6 +955,20 @@ const RenewalReminder = () => {
                       </TableBody>
                     </Table>
                   </TableContainer>
+                  <TablePagination
+                    rowsPerPageOptions={[10, 25, 50, 100]}
+                    component="div"
+                    count={historyTotalCount || 0}
+                    rowsPerPage={historyRowsPerPage}
+                    page={historyPage}
+                    onPageChange={(e, newPage) => setHistoryPage(newPage)}
+                    onRowsPerPageChange={(e) => {
+                      setHistoryRowsPerPage(parseInt(e.target.value, 10));
+                      setHistoryPage(0);
+                    }}
+                    labelRowsPerPage="Rows per page:"
+                  />
+                </Box>
                 )
               )}
             </CardContent>
