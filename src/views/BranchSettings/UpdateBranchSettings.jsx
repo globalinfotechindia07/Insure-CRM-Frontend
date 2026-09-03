@@ -20,8 +20,8 @@ import 'react-toastify/dist/ReactToastify.css';
 import { ArrowBack } from '@mui/icons-material';
 import { useSelector } from 'react-redux';
 
-//  const STATIC_BASE_URL = "http://localhost:5050"; 
-const STATIC_BASE_URL = "https://insure-crm-backend-1-n420.onrender.com";
+ const STATIC_BASE_URL = import.meta.env.VITE_APP_STATIC_BASE_URL; 
+// const STATIC_BASE_URL = "https://api.jpinsurancebrokers.co.in";
 
 const UpdateBranchSettings = () => {
   const navigate = useNavigate();
@@ -72,8 +72,9 @@ const UpdateBranchSettings = () => {
       setFetchLoading(true);
       try {
         const token = localStorage.getItem('token');
-        // const response = await fetch(`http://localhost:5050/api/branchSettings/${id}`, {
-        const response = await fetch(`https://insure-crm-backend-1-n420.onrender.com/api/branchSettings/${id}`, {
+        const API_URL = import.meta.env.VITE_APP_API_URL;
+        const response = await fetch(`${API_URL}branchSettings/${id}`, {
+        // const response = await fetch(`https://api.jpinsurancebrokers.co.in/api/branchSettings/${id}`, {
 
           headers: {
             'Authorization': `Bearer ${token}`
@@ -229,14 +230,16 @@ const UpdateBranchSettings = () => {
       
       console.log('🟡 Submitting payload:', payload);
       
-      // let url = 'http://localhost:5050/api/branchSettings/';
-      let url = "https://insure-crm-backend-1-n420.onrender.com/api/branchSettings/";
+      const API_URL = import.meta.env.VITE_APP_API_URL;
+      let url = `${API_URL}branchSettings/`;
+      // let url = 'https://api.jpinsurancebrokers.co.in/api/branchSettings/';
 
       let method = 'POST';
       
       if (!isNewRecord) {
-        // url = `http://localhost:5050/api/branchSettings/${id}`;
-        url = `https://insure-crm-backend-1-n420.onrender.com/api/branchSettings/${id}`;
+        const API_URL = import.meta.env.VITE_APP_API_URL;
+        url = `${API_URL}branchSettings/${id}`;
+        // url = `https://api.jpinsurancebrokers.co.in/api/branchSettings/${id}`;
 
         method = 'PUT';
       }
@@ -261,8 +264,9 @@ const UpdateBranchSettings = () => {
           const logoFormData = new FormData();
           logoFormData.append('branchLogo', logoFile);
           // 
-          // const logoResponse = await fetch(`http://localhost:5050/api/branchSettings/${data.data._id}/logo`, {
-          const logoResponse = await fetch(`https://insure-crm-backend-1-n420.onrender.com/api/branchSettings/${data.data._id}/logo`, {
+          const API_URL = import.meta.env.VITE_APP_API_URL;
+          const logoResponse = await fetch(`${API_URL}branchSettings/${data.data._id}/logo`, {
+          // const logoResponse = await fetch(`https://api.jpinsurancebrokers.co.in/api/branchSettings/${data.data._id}/logo`, {
 
             method: 'POST',
             headers: {

@@ -3,15 +3,16 @@ import { retrieveToken } from "./api";
 import { toast } from "react-toastify";
 
 const API = axios.create({
-  // baseURL: "http://localhost:5050/api",
-  baseURL: "https://insure-crm-backend-1-n420.onrender.com/api",
+  baseURL: import.meta.env.VITE_APP_API_URL,
+  // baseURL: "https://api.jpinsurancebrokers.co.in/api",
+  // baseURL: "https://insure-crm-backend-1-n420.onrender.com/api",
 });
 
 API.interceptors.request.use(
   (config) => {
     const token = retrieveToken();
     if (token) {
-      config.headers['Authorization'] = `Bearer ${token}`;
+      config.headers['Authorization'] = `Bearer ${token}`;  
     }
     if (config.data && !(config.data instanceof FormData)) {
       config.data = convertBsonObjectIdToString(config.data);
