@@ -1190,8 +1190,8 @@ const EditPolicy = () => {
     // ⛔ if both premiums are empty, don’t calculate
     if (!tpPremium && !odPremium) return;
 
-    const tpGstValue = parseAmount(gstData.find((i) => i._id === form.tpGst)?.value);
-    const odGstValue = parseAmount(gstData.find((i) => i._id === form.odGst)?.value);
+    const tpGstValue = parseAmount(gstData.find((i) => i._id === (form.tpGst || form.gst))?.value);
+    const odGstValue = parseAmount(gstData.find((i) => i._id === (form.odGst || form.gst))?.value);
 
     // ⛔ in edit mode, don’t override existing values
     if (isEditMode && !tpGstValue && !odGstValue) return;
