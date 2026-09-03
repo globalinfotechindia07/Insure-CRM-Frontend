@@ -77,6 +77,7 @@ const Policy = () => {
 
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [totalCount, setTotalCount] = useState(0);
   const [searchTerm, setSearchTerm] = useState('');
   const [file, setFile] = useState(null);
   const [isExporting, setIsExporting] = useState(false);
@@ -121,25 +122,40 @@ const Policy = () => {
     setLoading(true);
     try {
       const companyId = localStorage.getItem('companyId');
-      let url = 'policyDetail';
+      let url = `policyDetail?page=${page + 1}&limit=${rowsPerPage}`;
+      
       if (companyId) {
-        url += `?companyId=${encodeURIComponent(companyId)}`;
+        url += `&companyId=${encodeURIComponent(companyId)}`;
       }
+      if (financialYear && filter === 'byFinancialYear') url += `&financialYear=${financialYear}`;
+      if (selectedCompany && filter === 'byCompany') url += `&company=${selectedCompany}`;
+      if (selectedDepartment && filter === 'byDepartment') url += `&department=${selectedDepartment}`;
+      if (selectedMonth && filter === 'byMonth') url += `&month=${selectedMonth}`;
+      if (searchTerm) url += `&search=${encodeURIComponent(searchTerm.trim())}`;
+
       console.log('Fetching policies with URL:', url);
       const res = await get(url);
       console.log('policyDetail data:', res);
+      
       if (res && (res.status === true || res.status === 'true' || Array.isArray(res.data))) {
         setCustomerList(res.data || []);
+        if (res.pagination) {
+          setTotalCount(res.pagination.totalItems || 0);
+        } else {
+          setTotalCount((res.data || []).length);
+        }
       } else {
         setCustomerList([]);
+        setTotalCount(0);
       }
     } catch (error) {
       console.error(error);
       setCustomerList([]);
+      setTotalCount(0);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [page, rowsPerPage, filter, financialYear, selectedCompany, selectedDepartment, selectedMonth, searchTerm]);
 
   useEffect(() => {
     // Listen for ANY localStorage changes (even from other components/tabs)
@@ -163,10 +179,9 @@ const Policy = () => {
     return () => window.removeEventListener('storage', handleStorageChange);
   }, []); // Empty deps - runs once
 
-  // Todo:
   useEffect(() => {
     fetchPolicyDetail();
-  }, [financialYear]);
+  }, [fetchPolicyDetail]);
 
   const handleDelete = (index) => {
     const id = index;
@@ -222,105 +237,7 @@ const Policy = () => {
     setPage(0);
   };
 
-  // Filter data based on search term and active dropdown filters
-  const filteredData = useMemo(() => {
-    let result = customerList;
 
-    if (filter === 'byFinancialYear' && financialYear) {
-      result = result.filter((entry) => {
-        const fyId = entry?.financialYear?._id || entry?.financialYear;
-        return String(fyId) === String(financialYear);
-      });
-    } else if (filter === 'byCompany' && selectedCompany) {
-      result = result.filter((entry) => {
-        const compId = entry?.insCompany?._id || entry?.insCompany;
-        return String(compId) === String(selectedCompany);
-      });
-    } else if (filter === 'byDepartment' && selectedDepartment) {
-      result = result.filter((entry) => {
-        const deptId = entry?.insDepartment?._id || entry?.insDepartment;
-        return String(deptId) === String(selectedDepartment);
-      });
-    } else if (filter === 'byMonth' && selectedMonth) {
-      const parseDateValue = (rawVal) => {
-        if (!rawVal) return null;
-        const str = String(rawVal).trim();
-        if (!str) return null;
-
-        if (str.includes('T') || /^\d{4}-\d{2}-\d{2}/.test(str)) {
-          const d = new Date(str);
-          return isNaN(d.getTime()) ? null : d;
-        }
-
-        const dmyMatch = str.match(/^(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{4})/);
-        if (dmyMatch) {
-          const [, d, m, y] = dmyMatch;
-          const dateObj = new Date(Number(y), Number(m) - 1, Number(d));
-          return isNaN(dateObj.getTime()) ? null : dateObj;
-        }
-
-        const ymdMatch = str.match(/^(\d{4})[\/\-\.](\d{1,2})[\/\-\.](\d{1,2})/);
-        if (ymdMatch) {
-          const [, y, m, d] = ymdMatch;
-          const dateObj = new Date(Number(y), Number(m) - 1, Number(d));
-          return isNaN(dateObj.getTime()) ? null : dateObj;
-        }
-
-        if (/^\d{5}(\.\d+)?$/.test(str)) {
-          const serial = parseFloat(str);
-          const parsedDate = new Date(Math.round((serial - 25569) * 86400 * 1000));
-          return isNaN(parsedDate.getTime()) ? null : parsedDate;
-        }
-
-        const fallbackDate = new Date(rawVal);
-        return isNaN(fallbackDate.getTime()) ? null : fallbackDate;
-      };
-
-      result = result.filter((entry) => {
-        const rawDate = entry?.startDate || entry?.tpStartDate || entry?.odStartDate || entry?.endorStartDate || entry?.transactionDate;
-        const date = parseDateValue(rawDate);
-        if (!date) return false;
-        const year = date.getFullYear();
-        const month = String(date.getMonth() + 1).padStart(2, '0');
-        return `${year}-${month}` === selectedMonth;
-      });
-    }
-
-    if (searchTerm.trim()) {
-      const lowerSearch = searchTerm.toLowerCase().trim();
-      result = result.filter((entry) => {
-        const custName = (entry?.cutomerName || entry?.retailCustomer?.name || entry?.customerGroup?.customerGroupName || '').toLowerCase();
-        const companyName = (entry?.insCompany?.insCompany || entry?.insCompany?.name || entry?.insurerName || '').toLowerCase();
-        const deptName = (entry?.insDepartment?.insDepartment || '').toLowerCase();
-        const policyNo = (entry?.policyNumber || '').toLowerCase();
-
-        return (
-          custName.includes(lowerSearch) ||
-          companyName.includes(lowerSearch) ||
-          deptName.includes(lowerSearch) ||
-          policyNo.includes(lowerSearch)
-        );
-      });
-    }
-
-    // Deduplicate strictly by document _id
-    const seenIds = new Set();
-    const uniqueResult = [];
-
-    for (const item of result) {
-      if (!item || !item._id || seenIds.has(String(item._id))) continue;
-      seenIds.add(String(item._id));
-      uniqueResult.push(item);
-    }
-
-    return uniqueResult;
-  }, [customerList, searchTerm, filter, financialYear, selectedCompany, selectedDepartment, selectedMonth]);
-
-  // Paginate filtered data
-  const paginatedData = useMemo(() => {
-    const startIndex = page * rowsPerPage;
-    return filteredData.slice(startIndex, startIndex + rowsPerPage);
-  }, [filteredData, page, rowsPerPage]);
 
   const handleFilter = (e) => {
     setFinancialYear(e.target.value);
@@ -636,7 +553,7 @@ const Policy = () => {
                   </TableHead>
 
                   <TableBody>
-                    {paginatedData.map((entry, index) => (
+                    {customerList.map((entry, index) => (
                       <TableRow
                         key={entry?._id || index}
                         hover
@@ -699,7 +616,7 @@ const Policy = () => {
                         </TableCell>
                       </TableRow>
                     ))}
-                    {paginatedData.length === 0 && (
+                    {customerList.length === 0 && (
                       <TableRow>
                         <TableCell colSpan={9} align="center" sx={{ py: 4 }}>
                           <Typography variant="body1">No data found</Typography>
@@ -716,7 +633,7 @@ const Policy = () => {
               <TablePagination
                 rowsPerPageOptions={[10, 25, 50, 100, 250, 500]}
                 component="div"
-                count={filteredData.length || 0}
+                count={totalCount || 0}
                 rowsPerPage={rowsPerPage}
                 page={page}
                 onPageChange={handleChangePage}
