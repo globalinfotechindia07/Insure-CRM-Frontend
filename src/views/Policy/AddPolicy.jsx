@@ -256,14 +256,14 @@ const AddPolicy = () => {
     // const totalAmount = tpAmount + odAmount;
 
     const tpPremium = parseAmount(form?.tpPremium);
-    const tpGstId = form?.tpGst;
+    const tpGstId = form?.tpGst || form?.gst;
     const tpGstValue = parseAmount(gstData?.find((i) => i._id === tpGstId)?.value);
 
     const tpGstAmount = round2(tpPremium * (tpGstValue / 100));
     const tpAmount = round2(tpPremium + tpGstAmount);
 
     const odPremium = parseAmount(form?.odPremium);
-    const odGstId = form?.odGst;
+    const odGstId = form?.odGst || form?.gst;
     const odGstValue = parseAmount(gstData?.find((i) => i._id === odGstId)?.value);
 
     const odGstAmount = round2(odPremium * (odGstValue / 100));
