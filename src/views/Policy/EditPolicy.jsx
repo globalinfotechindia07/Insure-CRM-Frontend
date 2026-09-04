@@ -1304,8 +1304,8 @@ const EditPolicy = () => {
   useEffect(() => {
     const net = parseAmount(form.endorsementNetPremium);
     const gstId = form.endorsementGst;
-    const gstValue = parseAmount(gstData?.find((g) => g._id === gstId)?.value || 0);
-    const gstAmount = round2(net * (gstValue / 100));
+    const gstValue = parseAmount(gstData?.find((g) => g._id === gstId)?.value);
+      const gstAmount = gstValue ? round2(net * (gstValue / 100)) : parseAmount(form.endorsementGstAmount);
     const total = round2(net + gstAmount);
     setForm((prev) => ({
       ...prev,
@@ -2678,10 +2678,7 @@ const EditPolicy = () => {
                     ))}
                   {form.endorsementGst && !gstData.some((t) => String(t._id) === String(resolveSelectValue(gstData, form.endorsementGst))) && (
                     <MenuItem key={String(form.endorsementGst)} value={String(form.endorsementGst)}>
-                      {policyData?.endorsementGst?.value || 
-                        (parseAmount(form.endorsementNetPremium) > 0 && parseAmount(form.endorsementGstAmount) > 0 
-                          ? String(Math.round((parseAmount(form.endorsementGstAmount) / parseAmount(form.endorsementNetPremium)) * 100)) 
-                          : String(form.endorsementGst))}
+                      {policyData?.endorsementGst?.value || (parseAmount(form.endorsementNetPremium) > 0 ? String(Math.round((parseAmount(form.endorsementGstAmount) / parseAmount(form.endorsementNetPremium)) * 100)) : "0")}
                     </MenuItem>
                   )}
                 </Select>
