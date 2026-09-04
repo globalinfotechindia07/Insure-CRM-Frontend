@@ -1,0 +1,31 @@
+import sys
+import re
+
+file_path = r'c:\GII Projects\Insure CRM\Insure-CRM-Frontend\src\views\Policy\RenewPolicy.jsx'
+
+with open(file_path, 'r', encoding='utf-8') as f:
+    content = f.read()
+
+pattern = re.compile(r'(<Select\s+labelId="endorsementGst"\s+label="Endorsement GST"\s+name="endorsementGst"\s+value=\{form\.endorsementGst\}\s+onChange=\{handleChange\}\s*>\s*\{gstData\.length > 0 &&\s*gstData\.map\(\(type\) => \(\s*<MenuItem key=\{type\._id\} value=\{type\._id\}>\s*\{type\.value\}\s*</MenuItem>\s*\)\)\}\s*)(</Select>)', re.MULTILINE)
+
+replacement = r'''\1  {form.endorsementGst && !gstData.some((t) => String(t._id) === String(form.endorsementGst)) && (
+                      <MenuItem key={String(form.endorsementGst)} value={String(form.endorsementGst)}>
+                        {policyData?.endorsementGst?.value || 
+                          (parseAmount(form.endorsementNetPremium) > 0 && parseAmount(form.endorsementGstAmount) > 0 
+                            ? String(Math.round((parseAmount(form.endorsementGstAmount) / parseAmount(form.endorsementNetPremium)) * 100)) 
+                            : String(form.endorsementGst))}
+                      </MenuItem>
+                    )}
+                  \2'''
+
+if pattern.search(content):
+    content = pattern.sub(replacement, content)
+    
+    # Also fix round2
+    content = content.replace('const round2 = (num) => Math.round((Number(num) + Number.EPSILON) * 100) / 100;', 'const round2 = (num) => Math.round(Number(num));')
+    
+    with open(file_path, 'w', encoding='utf-8') as f:
+        f.write(content)
+    print('Success')
+else:
+    print('Target not found again')

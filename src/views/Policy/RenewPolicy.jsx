@@ -1029,7 +1029,7 @@ const RenewPolicy = () => {
     }));
   }, [form.tpPremium, form.odPremium, form.tpGst, form.odGst, gstData]);
 
-  const round2 = (num) => Math.round((Number(num) + Number.EPSILON) * 100) / 100;
+  const round2 = (num) => Math.round(Number(num));
 
   const getRateValue = (rateId) => {
     return Number(brokerageRateData?.find((r) => r._id === rateId)?.brokerageRate || 0);
@@ -2297,7 +2297,15 @@ const RenewPolicy = () => {
                         {type.value}
                       </MenuItem>
                     ))}
-                </Select>
+                  {form.endorsementGst && !gstData.some((t) => String(t._id) === String(form.endorsementGst)) && (
+                      <MenuItem key={String(form.endorsementGst)} value={String(form.endorsementGst)}>
+                        {policyData?.endorsementGst?.value || 
+                          (parseAmount(form.endorsementNetPremium) > 0 && parseAmount(form.endorsementGstAmount) > 0 
+                            ? String(Math.round((parseAmount(form.endorsementGstAmount) / parseAmount(form.endorsementNetPremium)) * 100)) 
+                            : String(form.endorsementGst))}
+                      </MenuItem>
+                    )}
+                  </Select>
               </FormControl>
             </Grid>
             <Grid item xs={12} sm={3}>

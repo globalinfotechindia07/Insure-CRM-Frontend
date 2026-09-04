@@ -41,25 +41,22 @@ export const formatAmountWithCommas = (val) => {
   const str = String(val).replace(/,/g, '').trim();
   if (str === '' || str === '-') return str;
 
-  const parts = str.split('.');
-  const intPart = parts[0];
-  const decPart = parts.length > 1 ? '.' + parts[1] : '';
+  const num = Number(str);
+  if (isNaN(num)) return val;
 
-  if (isNaN(Number(intPart)) && intPart !== '') return val;
-  if (!intPart) return decPart ? '0' + decPart : '';
-
-  const isNegative = intPart.startsWith('-');
-  const absInt = isNegative ? intPart.slice(1) : intPart;
+  const roundedStr = String(Math.round(num));
+  const isNegative = roundedStr.startsWith('-');
+  const absInt = isNegative ? roundedStr.slice(1) : roundedStr;
 
   if (absInt.length <= 3) {
-    return (isNegative ? '-' : '') + absInt + decPart;
+    return (isNegative ? '-' : '') + absInt;
   }
 
   const lastThree = absInt.substring(absInt.length - 3);
   const otherNumbers = absInt.substring(0, absInt.length - 3);
   const formattedInt = otherNumbers.replace(/\B(?=(\d{2})+(?!\d))/g, ',') + ',' + lastThree;
 
-  return (isNegative ? '-' : '') + formattedInt + decPart;
+  return (isNegative ? '-' : '') + formattedInt;
 };
 
 /**

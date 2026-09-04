@@ -993,7 +993,7 @@ const AddPolicy = () => {
     return Number(brokerageRateData?.find((r) => r._id === rateId)?.brokerageRate || 0);
   };
 
-  const round2 = (num) => Math.round((Number(num) + Number.EPSILON) * 100) / 100;
+  const round2 = (num) => Math.round(Number(num));
 
   useEffect(() => {
     if (!brokerageRateData || brokerageRateData.length === 0) return;
