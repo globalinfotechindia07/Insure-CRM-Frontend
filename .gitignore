@@ -2,8 +2,8 @@
 /node_modules/*
 /node_modules/
 /.pnp
-.env
-.env.*
-# /dist
+# .env
+# .env.*
+/dist
 /.vscode
 /node_modules/*
