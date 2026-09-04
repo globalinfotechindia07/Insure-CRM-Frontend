@@ -1950,7 +1950,7 @@ const EditPolicy = () => {
                           ))}
                         {(form.tpGst || form.gst) && !gstData.some((t) => String(t._id) === String(resolveSelectValue(gstData, form.tpGst || form.gst))) && (
                           <MenuItem key={String(form.tpGst || form.gst)} value={String(form.tpGst || form.gst)}>
-                            {String(form.tpGst || form.gst)}
+                            {policyData?.tpGst?.value || policyData?.gst?.value || String(form.tpGst || form.gst)}
                           </MenuItem>
                         )}
                       </Select>
@@ -2055,7 +2055,7 @@ const EditPolicy = () => {
                           ))}
                         {(form.odGst || form.gst) && !gstData.some((t) => String(t._id) === String(resolveSelectValue(gstData, form.odGst || form.gst))) && (
                           <MenuItem key={String(form.odGst || form.gst)} value={String(form.odGst || form.gst)}>
-                            {String(form.odGst || form.gst)}
+                            {policyData?.odGst?.value || policyData?.gst?.value || String(form.odGst || form.gst)}
                           </MenuItem>
                         )}
                       </Select>
@@ -2678,7 +2678,7 @@ const EditPolicy = () => {
                     ))}
                   {form.endorsementGst && !gstData.some((t) => String(t._id) === String(resolveSelectValue(gstData, form.endorsementGst))) && (
                     <MenuItem key={String(form.endorsementGst)} value={String(form.endorsementGst)}>
-                      {String(form.endorsementGst)}
+                      {policyData?.endorsementGst?.value || String(form.endorsementGst)}
                     </MenuItem>
                   )}
                 </Select>
@@ -3146,7 +3146,7 @@ const EditPolicy = () => {
                       ))}
                     {form.gst && !gstData.some((t) => String(t._id) === String(resolveSelectValue(gstData, form.gst))) && (
                       <MenuItem key={String(form.gst)} value={String(form.gst)}>
-                        {String(form.gst)}
+                        {policyData?.gst?.value || String(form.gst)}
                       </MenuItem>
                     )}
                   </Select>

@@ -546,7 +546,6 @@ const Policy = () => {
                       <TableCell sx={{ width: 120, px: 1, py: 0.2 }}>Start Date</TableCell>
                       <TableCell sx={{ width: 120, px: 1, py: 0.2 }}>Renewal Date</TableCell>
                       <TableCell sx={{ width: 80, px: 1, py: 0.2 }}>Net Premium</TableCell>
-                      <TableCell sx={{ width: 80, px: 1, py: 0.2 }}>Total GST</TableCell>
                       <TableCell sx={{ width: 80, px: 1, py: 0.2 }}>Total Amount</TableCell>
                       <TableCell sx={{ width: 80, px: 1, py: 0.2 }}>Actions</TableCell>
                     </TableRow>
@@ -595,7 +594,6 @@ const Policy = () => {
                           {entry?.endDate ? String(entry.endDate).split('T')[0] : (entry?.renewalDate ? String(entry.renewalDate).split('T')[0] : (entry?.tpEndDate ? String(entry.tpEndDate).split('T')[0] : '-'))}
                         </TableCell>
                         <TableCell sx={{ verticalAlign: 'top', py: 1.5 }}>{formatAmountWithCommas(entry?.netPremium)}</TableCell>
-                        <TableCell sx={{ verticalAlign: 'top', py: 1.5 }}>{formatAmountWithCommas(entry?.gstAmount)}</TableCell>
                         <TableCell sx={{ verticalAlign: 'top', py: 1.5 }}>{formatAmountWithCommas(entry?.totalAmount)}</TableCell>
                         <TableCell
                           sx={{
