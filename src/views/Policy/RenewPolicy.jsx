@@ -442,6 +442,18 @@ const RenewPolicy = () => {
               ? String(policyData?.otherAddon)
               : ''
         }));
+
+        // Inject populated GST objects from policyData into gstData so dropdowns display labels, not IDs
+        setGstData((prev) => {
+          const list = [...prev];
+          [policyData?.gst, policyData?.tpGst, policyData?.odGst, policyData?.endorsementGst].forEach((item) => {
+            if (item && typeof item === 'object' && item._id && !list.some((x) => String(x._id) === String(item._id))) {
+              list.push(item);
+            }
+          });
+          return list;
+        });
+
         if (policyData?.sharePercentage || policyData?.coBrokerageAmount) {
           setShowCoBrokerage(true);
         }
@@ -1120,8 +1132,8 @@ const RenewPolicy = () => {
   useEffect(() => {
     const net = parseAmount(form.endorsementNetPremium);
     const gstId = form.endorsementGst;
-    const gstValue = parseAmount(gstData?.find((g) => g._id === gstId)?.value || 0);
-    const gstAmount = round2(net * (gstValue / 100));
+    const gstValue = parseAmount(gstData?.find((g) => g._id === gstId)?.value);
+      const gstAmount = gstValue ? round2(net * (gstValue / 100)) : parseAmount(form.endorsementGstAmount);
     const total = round2(net + gstAmount);
     setForm((prev) => ({
       ...prev,
@@ -2300,9 +2312,9 @@ const RenewPolicy = () => {
                   {form.endorsementGst && !gstData.some((t) => String(t._id) === String(form.endorsementGst)) && (
                       <MenuItem key={String(form.endorsementGst)} value={String(form.endorsementGst)}>
                         {policyData?.endorsementGst?.value || 
-                          (parseAmount(form.endorsementNetPremium) > 0 && parseAmount(form.endorsementGstAmount) > 0 
+                          (parseAmount(form.endorsementNetPremium) > 0 
                             ? String(Math.round((parseAmount(form.endorsementGstAmount) / parseAmount(form.endorsementNetPremium)) * 100)) 
-                            : String(form.endorsementGst))}
+                            : '0')}
                       </MenuItem>
                     )}
                   </Select>
