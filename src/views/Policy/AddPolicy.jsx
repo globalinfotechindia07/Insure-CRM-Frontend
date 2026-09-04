@@ -256,14 +256,14 @@ const AddPolicy = () => {
     // const totalAmount = tpAmount + odAmount;
 
     const tpPremium = parseAmount(form?.tpPremium);
-    const tpGstId = form?.tpGst;
+    const tpGstId = form?.tpGst || form?.gst;
     const tpGstValue = parseAmount(gstData?.find((i) => i._id === tpGstId)?.value);
 
     const tpGstAmount = round2(tpPremium * (tpGstValue / 100));
     const tpAmount = round2(tpPremium + tpGstAmount);
 
     const odPremium = parseAmount(form?.odPremium);
-    const odGstId = form?.odGst;
+    const odGstId = form?.odGst || form?.gst;
     const odGstValue = parseAmount(gstData?.find((i) => i._id === odGstId)?.value);
 
     const odGstAmount = round2(odPremium * (odGstValue / 100));
@@ -993,7 +993,7 @@ const AddPolicy = () => {
     return Number(brokerageRateData?.find((r) => r._id === rateId)?.brokerageRate || 0);
   };
 
-  const round2 = (num) => Math.round((Number(num) + Number.EPSILON) * 100) / 100;
+  const round2 = (num) => Math.round(Number(num));
 
   useEffect(() => {
     if (!brokerageRateData || brokerageRateData.length === 0) return;

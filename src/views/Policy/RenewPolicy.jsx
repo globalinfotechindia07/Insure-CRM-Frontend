@@ -442,6 +442,18 @@ const RenewPolicy = () => {
               ? String(policyData?.otherAddon)
               : ''
         }));
+
+        // Inject populated GST objects from policyData into gstData so dropdowns display labels, not IDs
+        setGstData((prev) => {
+          const list = [...prev];
+          [policyData?.gst, policyData?.tpGst, policyData?.odGst, policyData?.endorsementGst].forEach((item) => {
+            if (item && typeof item === 'object' && item._id && !list.some((x) => String(x._id) === String(item._id))) {
+              list.push(item);
+            }
+          });
+          return list;
+        });
+
         if (policyData?.sharePercentage || policyData?.coBrokerageAmount) {
           setShowCoBrokerage(true);
         }
@@ -1006,8 +1018,8 @@ const RenewPolicy = () => {
     // ⛔ if both premiums are empty, don’t calculate
     if (!tpPremium && !odPremium) return;
 
-    const tpGstValue = parseAmount(gstData.find((i) => i._id === form.tpGst)?.value);
-    const odGstValue = parseAmount(gstData.find((i) => i._id === form.odGst)?.value);
+    const tpGstValue = parseAmount(gstData.find((i) => i._id === (form.tpGst || form.gst))?.value);
+    const odGstValue = parseAmount(gstData.find((i) => i._id === (form.odGst || form.gst))?.value);
 
     // ⛔ in edit mode, don’t override existing values
     if (isEditMode && !tpGstValue && !odGstValue) return;
@@ -1029,7 +1041,7 @@ const RenewPolicy = () => {
     }));
   }, [form.tpPremium, form.odPremium, form.tpGst, form.odGst, gstData]);
 
-  const round2 = (num) => Math.round((Number(num) + Number.EPSILON) * 100) / 100;
+  const round2 = (num) => Math.round(Number(num));
 
   const getRateValue = (rateId) => {
     return Number(brokerageRateData?.find((r) => r._id === rateId)?.brokerageRate || 0);
@@ -1120,8 +1132,8 @@ const RenewPolicy = () => {
   useEffect(() => {
     const net = parseAmount(form.endorsementNetPremium);
     const gstId = form.endorsementGst;
-    const gstValue = parseAmount(gstData?.find((g) => g._id === gstId)?.value || 0);
-    const gstAmount = round2(net * (gstValue / 100));
+    const gstValue = parseAmount(gstData?.find((g) => g._id === gstId)?.value);
+      const gstAmount = gstValue ? round2(net * (gstValue / 100)) : parseAmount(form.endorsementGstAmount);
     const total = round2(net + gstAmount);
     setForm((prev) => ({
       ...prev,
@@ -2297,7 +2309,15 @@ const RenewPolicy = () => {
                         {type.value}
                       </MenuItem>
                     ))}
-                </Select>
+                  {form.endorsementGst && !gstData.some((t) => String(t._id) === String(form.endorsementGst)) && (
+                      <MenuItem key={String(form.endorsementGst)} value={String(form.endorsementGst)}>
+                        {policyData?.endorsementGst?.value || 
+                          (parseAmount(form.endorsementNetPremium) > 0 
+                            ? String(Math.round((parseAmount(form.endorsementGstAmount) / parseAmount(form.endorsementNetPremium)) * 100)) 
+                            : '0')}
+                      </MenuItem>
+                    )}
+                  </Select>
               </FormControl>
             </Grid>
             <Grid item xs={12} sm={3}>

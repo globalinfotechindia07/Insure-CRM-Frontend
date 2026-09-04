@@ -39,8 +39,8 @@ const PaymentButton = ({
 
       // Step 2: Create order on backend
       // Change this URL to your actual backend URL
-      // const API_URL = 'http://localhost:5050/api';
-      const API_URL = 'http://api.jpinsurancebrokers.co.in';
+      const API_URL = import.meta.env.VITE_APP_API_URL;
+      // const API_URL = 'https://api.jpinsurancebrokers.co.in';
 
 
       // const API_URL = 'https://grampanchayattigaon/api/';

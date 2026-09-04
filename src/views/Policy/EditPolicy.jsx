@@ -1190,8 +1190,8 @@ const EditPolicy = () => {
     // ⛔ if both premiums are empty, don’t calculate
     if (!tpPremium && !odPremium) return;
 
-    const tpGstValue = parseAmount(gstData.find((i) => i._id === form.tpGst)?.value);
-    const odGstValue = parseAmount(gstData.find((i) => i._id === form.odGst)?.value);
+    const tpGstValue = parseAmount(gstData.find((i) => i._id === (form.tpGst || form.gst))?.value);
+    const odGstValue = parseAmount(gstData.find((i) => i._id === (form.odGst || form.gst))?.value);
 
     // ⛔ in edit mode, don’t override existing values
     if (isEditMode && !tpGstValue && !odGstValue) return;
@@ -1213,7 +1213,7 @@ const EditPolicy = () => {
     }));
   }, [form.tpPremium, form.odPremium, form.tpGst, form.odGst, gstData]);
 
-  const round2 = (num) => Math.round((Number(num) + Number.EPSILON) * 100) / 100;
+  const round2 = (num) => Math.round(Number(num));
 
   const getRateValue = (rateId) => {
     return Number(brokerageRateData?.find((r) => r._id === rateId)?.brokerageRate || 0);
@@ -1304,8 +1304,8 @@ const EditPolicy = () => {
   useEffect(() => {
     const net = parseAmount(form.endorsementNetPremium);
     const gstId = form.endorsementGst;
-    const gstValue = parseAmount(gstData?.find((g) => g._id === gstId)?.value || 0);
-    const gstAmount = round2(net * (gstValue / 100));
+    const gstValue = parseAmount(gstData?.find((g) => g._id === gstId)?.value);
+      const gstAmount = gstValue ? round2(net * (gstValue / 100)) : parseAmount(form.endorsementGstAmount);
     const total = round2(net + gstAmount);
     setForm((prev) => ({
       ...prev,
@@ -1950,7 +1950,7 @@ const EditPolicy = () => {
                           ))}
                         {(form.tpGst || form.gst) && !gstData.some((t) => String(t._id) === String(resolveSelectValue(gstData, form.tpGst || form.gst))) && (
                           <MenuItem key={String(form.tpGst || form.gst)} value={String(form.tpGst || form.gst)}>
-                            {String(form.tpGst || form.gst)}
+                            {policyData?.tpGst?.value || policyData?.gst?.value || String(form.tpGst || form.gst)}
                           </MenuItem>
                         )}
                       </Select>
@@ -2055,7 +2055,7 @@ const EditPolicy = () => {
                           ))}
                         {(form.odGst || form.gst) && !gstData.some((t) => String(t._id) === String(resolveSelectValue(gstData, form.odGst || form.gst))) && (
                           <MenuItem key={String(form.odGst || form.gst)} value={String(form.odGst || form.gst)}>
-                            {String(form.odGst || form.gst)}
+                            {policyData?.odGst?.value || policyData?.gst?.value || String(form.odGst || form.gst)}
                           </MenuItem>
                         )}
                       </Select>
@@ -2678,7 +2678,7 @@ const EditPolicy = () => {
                     ))}
                   {form.endorsementGst && !gstData.some((t) => String(t._id) === String(resolveSelectValue(gstData, form.endorsementGst))) && (
                     <MenuItem key={String(form.endorsementGst)} value={String(form.endorsementGst)}>
-                      {String(form.endorsementGst)}
+                      {policyData?.endorsementGst?.value || (parseAmount(form.endorsementNetPremium) > 0 ? String(Math.round((parseAmount(form.endorsementGstAmount) / parseAmount(form.endorsementNetPremium)) * 100)) : "0")}
                     </MenuItem>
                   )}
                 </Select>
@@ -3146,7 +3146,7 @@ const EditPolicy = () => {
                       ))}
                     {form.gst && !gstData.some((t) => String(t._id) === String(resolveSelectValue(gstData, form.gst))) && (
                       <MenuItem key={String(form.gst)} value={String(form.gst)}>
-                        {String(form.gst)}
+                        {policyData?.gst?.value || String(form.gst)}
                       </MenuItem>
                     )}
                   </Select>

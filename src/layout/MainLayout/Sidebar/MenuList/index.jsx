@@ -12,8 +12,8 @@ import NavItem from './NavItem';
 import { useNavigate } from 'react-router';
 import { fetchSystemRights } from 'reduxSlices/systemRightSlice.js';
 
-// const STATIC_BASE_URL = "http://localhost:5050";
-const STATIC_BASE_URL = "http://api.jpinsurancebrokers.co.in";
+const STATIC_BASE_URL = import.meta.env.VITE_APP_STATIC_BASE_URL;
+// const STATIC_BASE_URL = "https://api.jpinsurancebrokers.co.in";
 
 // const STATIC_BASE_URL = "https://grampanchayattigaon/api/"
 
