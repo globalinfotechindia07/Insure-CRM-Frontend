@@ -333,27 +333,7 @@ const Policy = () => {
 
   return (
     <>
-      {loading && (
-        <Box
-          sx={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: 'rgba(0,0,0,0.5)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 9999
-          }}
-        >
-          <Paper elevation={6} sx={{ p: 4, textAlign: 'center' }}>
-            <CircularProgress size={40} sx={{ mb: 2 }} />
-            <Typography variant="h6">Loading Policies...</Typography>
-          </Paper>
-        </Box>
-      )}
+
 
       <Breadcrumb>
         <Typography component={Link} to="/" variant="subtitle2" color="inherit" className="link-breadcrumb">
@@ -364,7 +344,7 @@ const Policy = () => {
         </Typography>
       </Breadcrumb>
 
-      <Grid container spacing={gridSpacing} sx={{ opacity: loading ? 0.6 : 1, pointerEvents: loading ? 'none' : 'auto' }}>
+      <Grid container spacing={gridSpacing}>
         <Grid item xs={12}>
           <Grid container justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
             <Typography variant="h5">Policy Management</Typography>
@@ -552,7 +532,16 @@ const Policy = () => {
                   </TableHead>
 
                   <TableBody>
-                    {customerList.map((entry, index) => (
+                    {loading ? (
+                      <TableRow>
+                        <TableCell colSpan={10} align="center" sx={{ py: 4 }}>
+                          <CircularProgress size={28} />
+                          <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                            Loading...
+                          </Typography>
+                        </TableCell>
+                      </TableRow>
+                    ) : customerList.map((entry, index) => (
                       <TableRow
                         key={entry?._id || index}
                         hover
@@ -614,7 +603,7 @@ const Policy = () => {
                         </TableCell>
                       </TableRow>
                     ))}
-                    {customerList.length === 0 && (
+                    {!loading && customerList.length === 0 && (
                       <TableRow>
                         <TableCell colSpan={9} align="center" sx={{ py: 4 }}>
                           <Typography variant="body1">No data found</Typography>

@@ -142,7 +142,13 @@ const AddPolicy = () => {
       totalBrokerageGst: '',
       totalBrokerageAmountincGst: '',
       sharePercentage: '',
-      coBrokerageAmount: ''
+      coBrokerageAmount: '',
+      posCode: '',
+      posName: '',
+      posContact: '',
+      bqpCode: '',
+      bqpName: '',
+      bqpContact: ''
     };
   }
 
@@ -190,6 +196,8 @@ const AddPolicy = () => {
   const [incotermsData, setIncotermsData] = useState([]);
   const [endorsementData, setEndorsementData] = useState([]);
   const [paymentModeData, setPaymentModeData] = useState([]);
+  const [posData, setPosData] = useState([]);
+  const [bqpData, setBqpData] = useState([]);
   const [showNominee, setShowNominee] = useState(false);
   const [showCoBrokerage, setShowCoBrokerage] = useState(false);
   const [taxes, setTaxes] = useState({
@@ -487,6 +495,26 @@ const AddPolicy = () => {
     }
   };
 
+  const fetchPosData = async () => {
+    try {
+      const res = await get('pos');
+      const list = res?.data || (Array.isArray(res) ? res : []);
+      setPosData(list);
+    } catch (error) {
+      console.error('Error fetching POS data', error);
+    }
+  };
+
+  const fetchBqpData = async () => {
+    try {
+      const res = await get('bqp');
+      const list = res?.data || (Array.isArray(res) ? res : []);
+      setBqpData(list);
+    } catch (error) {
+      console.error('Error fetching BQP data', error);
+    }
+  };
+
   useEffect(() => {
     fetchFYData();
     fetchGstData();
@@ -509,6 +537,8 @@ const AddPolicy = () => {
     fetchEndorsement();
     fetchBrokerageRate();
     fetchPaymentMode();
+    fetchPosData();
+    fetchBqpData();
   }, []);
 
   useEffect(() => {
@@ -572,6 +602,28 @@ const AddPolicy = () => {
     end.setDate(end.getDate() - 1);
 
     return end.toISOString().split('T')[0]; // yyyy-mm-dd
+  };
+
+  const handlePosChange = (e) => {
+    const selectedCode = e.target.value;
+    const selectedPos = posData.find(p => p.codeNumber === selectedCode);
+    setForm(prev => ({
+      ...prev,
+      posCode: selectedCode,
+      posName: selectedPos ? selectedPos.posName : '',
+      posContact: selectedPos ? selectedPos.contactNumber : ''
+    }));
+  };
+
+  const handleBqpChange = (e) => {
+    const selectedCode = e.target.value;
+    const selectedBqp = bqpData.find(b => b.codeNumber === selectedCode);
+    setForm(prev => ({
+      ...prev,
+      bqpCode: selectedCode,
+      bqpName: selectedBqp ? selectedBqp.bqpName : '',
+      bqpContact: selectedBqp ? selectedBqp.contactNumber : ''
+    }));
   };
 
   useEffect(() => {
@@ -2029,6 +2081,97 @@ finance = 69522c7b583c668bdda53af5
               </Grid>
             </CardContent>
           </Card>
+
+          <Divider sx={{ my: 2 }} />
+          <Typography variant="h5" gutterBottom>
+            POS & BQP Details
+          </Typography>
+          <Card>
+            <CardContent>
+              <Grid container spacing={2}>
+                {/* POS Details */}
+                <Grid item xs={12} sm={4}>
+                  <FormControl fullWidth>
+                    <InputLabel id="posCode-label">POS Code Number</InputLabel>
+                    <Select
+                      labelId="posCode-label"
+                      label="POS Code Number"
+                      name="posCode"
+                      value={form.posCode || ''}
+                      onChange={handlePosChange}
+                    >
+                      <MenuItem value=""><em>None</em></MenuItem>
+                      {posData.map((pos) => (
+                        <MenuItem key={pos._id} value={pos.codeNumber}>{pos.codeNumber} - {pos.posName}</MenuItem>
+                      ))}
+                      {form.posCode && !posData.some(p => p.codeNumber === form.posCode) && (
+                        <MenuItem key={form.posCode} value={form.posCode}>{form.posCode} - {form.posName}</MenuItem>
+                      )}
+                    </Select>
+                  </FormControl>
+                </Grid>
+                <Grid item xs={12} sm={4}>
+                  <TextField
+                    label="POS Name"
+                    value={form.posName}
+                    fullWidth
+                    InputProps={{ readOnly: true }}
+                    InputLabelProps={{ shrink: true }}
+                  />
+                </Grid>
+                <Grid item xs={12} sm={4}>
+                  <TextField
+                    label="POS Contact Number"
+                    value={form.posContact}
+                    fullWidth
+                    InputProps={{ readOnly: true }}
+                    InputLabelProps={{ shrink: true }}
+                  />
+                </Grid>
+
+                {/* BQP Details */}
+                <Grid item xs={12} sm={4}>
+                  <FormControl fullWidth>
+                    <InputLabel id="bqpCode-label">BQP Code Number</InputLabel>
+                    <Select
+                      labelId="bqpCode-label"
+                      label="BQP Code Number"
+                      name="bqpCode"
+                      value={form.bqpCode || ''}
+                      onChange={handleBqpChange}
+                    >
+                      <MenuItem value=""><em>None</em></MenuItem>
+                      {bqpData.map((bqp) => (
+                        <MenuItem key={bqp._id} value={bqp.codeNumber}>{bqp.codeNumber} - {bqp.bqpName}</MenuItem>
+                      ))}
+                      {form.bqpCode && !bqpData.some(b => b.codeNumber === form.bqpCode) && (
+                        <MenuItem key={form.bqpCode} value={form.bqpCode}>{form.bqpCode} - {form.bqpName}</MenuItem>
+                      )}
+                    </Select>
+                  </FormControl>
+                </Grid>
+                <Grid item xs={12} sm={4}>
+                  <TextField
+                    label="BQP Name"
+                    value={form.bqpName}
+                    fullWidth
+                    InputProps={{ readOnly: true }}
+                    InputLabelProps={{ shrink: true }}
+                  />
+                </Grid>
+                <Grid item xs={12} sm={4}>
+                  <TextField
+                    label="BQP Contact Number"
+                    value={form.bqpContact}
+                    fullWidth
+                    InputProps={{ readOnly: true }}
+                    InputLabelProps={{ shrink: true }}
+                  />
+                </Grid>
+              </Grid>
+            </CardContent>
+          </Card>
+
           {/* MOTOR */}
           {selectedDeptName === 'motor' ? (
             <>
@@ -2396,16 +2539,7 @@ finance = 69522c7b583c668bdda53af5
                     InputLabelProps={{ shrink: true }}
                   />
                 </Grid>
-                <Grid item xs={12} sm={4}>
-                  <TextField
-                    label="BQP Code"
-                    value={form.bqpCode}
-                    onChange={handleChange}
-                    name="bqpCode"
-                    fullWidth
-                    InputLabelProps={{ shrink: true }}
-                  />
-                </Grid>
+
                 <Grid item xs={12} sm={5}>
                   <Button variant="contained" onClick={handleSubmit}>
                     Save

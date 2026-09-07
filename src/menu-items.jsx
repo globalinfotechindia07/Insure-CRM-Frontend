@@ -68,6 +68,20 @@ export default {
               type: 'item',
               icon: AccountTreeIcon,
               url: '/master/departments'
+            },
+            {
+              id: 'pos',
+              title: 'POS',
+              type: 'item',
+              icon: AccountTreeIcon,
+              url: '/master/pos'
+            },
+            {
+              id: 'bqp',
+              title: 'BQP',
+              type: 'item',
+              icon: AccountTreeIcon,
+              url: '/master/bqp'
             }
           ]
         },

@@ -106,6 +106,9 @@ import BranchBroker from 'views/master/BranchBroker/BranchBroker';
 import SubCustomerGroup from 'views/master/SubCustomerGroup/SubCustomerGroup';
 import Incoterms from 'views/master/Incoterms/Incoterms';
 import EditCustomerGroup from 'views/master/CustomerGroup/EditCustomerGroup';
+import POS from '../views/master/POSAndBQP/POS';
+import BQP from '../views/master/POSAndBQP/BQP';
+import OtherAlertMessages from 'views/OtherAlertMessages/OtherAlertMessages';
 import CustomerForm from 'views/Customers/CustomerForm';
 import CustomerList from 'views/Customers/CustomerList';
 import CustomerPage from 'views/Customers/CustomerPage';
@@ -218,6 +221,26 @@ const MainRoutes = {
           allowedRoles={['admin', 'staff', 'Administrative', 'NursingAndParamedical', 'MedicalOfficer', 'Support', 'Consultant']}
         >
           <BankDetails />
+        </PrivateRoute>
+      )
+    },
+    {
+      path: '/master/pos',
+      element: (
+        <PrivateRoute
+          allowedRoles={['admin', 'staff', 'Administrative', 'NursingAndParamedical', 'MedicalOfficer', 'Support', 'Consultant']}
+        >
+          <POS />
+        </PrivateRoute>
+      )
+    },
+    {
+      path: '/master/bqp',
+      element: (
+        <PrivateRoute
+          allowedRoles={['admin', 'staff', 'Administrative', 'NursingAndParamedical', 'MedicalOfficer', 'Support', 'Consultant']}
+        >
+          <BQP />
         </PrivateRoute>
       )
     },
@@ -1559,6 +1582,22 @@ const MainRoutes = {
           allowedRoles={['admin', 'staff', 'Administrative', 'NursingAndParamedical', 'MedicalOfficer', 'Support', 'Consultant']}
         >
           <Calander />
+        </PrivateRoute>
+      )
+    },
+    {
+      path: '/renewal/renewal-reminder',
+      element: (
+        <PrivateRoute allowedRoles={['admin', 'staff', 'Administrative', 'NursingAndParamedical', 'MedicalOfficer', 'Support', 'Consultant']}>
+          <RenewalReminder />
+        </PrivateRoute>
+      )
+    },
+    {
+      path: '/other-alert-messages',
+      element: (
+        <PrivateRoute allowedRoles={['admin', 'staff', 'Administrative', 'NursingAndParamedical', 'MedicalOfficer', 'Support', 'Consultant']}>
+          <OtherAlertMessages />
         </PrivateRoute>
       )
     },

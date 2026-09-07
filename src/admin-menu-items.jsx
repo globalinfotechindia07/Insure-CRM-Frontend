@@ -231,6 +231,28 @@ export default {
                 }
               ]
             },
+            {
+              id: 'pos-and-bqp-group',
+              title: 'POS and BQP',
+              type: 'collapse',
+              icon: GridViewIcon,
+              children: [
+                {
+                  id: 'pos',
+                  title: 'POS',
+                  type: 'item',
+                  icon: TrendingUpIcon,
+                  url: '/master/pos'
+                },
+                {
+                  id: 'bqp',
+                  title: 'BQP',
+                  type: 'item',
+                  icon: TrendingUpIcon,
+                  url: '/master/bqp'
+                }
+              ]
+            },
             // {
             //   id: 'master-group',
             //   title: 'Customer Master',
@@ -719,6 +741,13 @@ export default {
             //   url: '/renewal/message-trigger'
             // }
           ]
+        },
+        {
+          id: 'other-alert-messages',
+          title: 'Other Alert Messages',
+          type: 'item',
+          icon: PeopleIcon,
+          url: '/other-alert-messages'
         },
 
         // {
