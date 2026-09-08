@@ -16,7 +16,9 @@ import {
   TableRow,
   TableCell,
   TableBody,
-  IconButton
+  IconButton,
+  Backdrop,
+  CircularProgress
 } from '@mui/material';
 import Breadcrumb from 'component/Breadcrumb';
 import { Link } from 'react-router-dom';
@@ -40,6 +42,7 @@ const BrokerBranch = () => {
   const [data, setData] = useState([]);
   const [editIndex, setEditIndex] = useState(null);
   const [isAdmin, setAdmin] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
 
 const fetchBrokerBranch = async () => {
   try {
@@ -117,6 +120,8 @@ const fetchBrokerBranch = async () => {
 
     const reader = new FileReader();
     reader.onload = async (evt) => {
+      setIsUploading(true);
+      try {
       const text = evt.target.result;
       const lines = text.split("\n").map(line => line.trim()).filter(line => line !== "");
       if (lines.length <= 1) {
@@ -179,6 +184,10 @@ const fetchBrokerBranch = async () => {
         toast.success(`Imported ${successCount} new unique branches successfully!`);
       }
       fetchBrokerBranch();
+    
+      } finally {
+        setIsUploading(false);
+      }
     };
     reader.readAsText(file);
     e.target.value = '';
@@ -479,6 +488,22 @@ const fetchBrokerBranch = async () => {
           </Button>
         </DialogActions>
       </Dialog>
+      
+      <Backdrop
+        sx={{ 
+          color: '#fff', 
+          zIndex: (theme) => Math.max(theme.zIndex.drawer + 1, 1400),
+          backgroundColor: 'rgba(0, 0, 0, 0.7)'
+        }}
+        open={isUploading}
+      >
+        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+          <CircularProgress color="inherit" size={60} />
+          <Typography variant="h6" sx={{ mt: 3, color: '#ffffff', fontWeight: 'bold', letterSpacing: 1 }}>
+            Importing Data... Please wait.
+          </Typography>
+        </Box>
+      </Backdrop>
       <ToastContainer />
     </>
   );

@@ -22,7 +22,9 @@ import {
   Tab,
   Tabs,
   Box,
-} from "@mui/material";
+  Backdrop,
+  CircularProgress
+} from '@mui/material';
 
 import {
   Add,
@@ -123,6 +125,7 @@ const ClaimPage = () => {
     postHospitalizationAmountClaimed: "",
     postHospitalizationNoOfDays: "",
   });
+  const [isUploading, setIsUploading] = useState(false);
 
   // ================= FETCH CLAIMS =================
   const fetchClaims = async () => {
@@ -638,6 +641,8 @@ const ClaimPage = () => {
 
     const reader = new FileReader();
     reader.onload = async (evt) => {
+      setIsUploading(true);
+      try {
       const text = evt.target.result;
       const lines = text.split("\n").map(line => line.trim()).filter(line => line !== "");
       if (lines.length <= 1) {
@@ -725,6 +730,10 @@ const ClaimPage = () => {
         toast.success(`Imported ${successCount} new unique claims successfully!`);
       }
       fetchClaims();
+    
+      } finally {
+        setIsUploading(false);
+      }
     };
     reader.readAsText(file);
     e.target.value = '';
@@ -1067,6 +1076,22 @@ const ClaimPage = () => {
           </Table>
         </CardContent>
       </Card>
+      
+      <Backdrop
+        sx={{ 
+          color: '#fff', 
+          zIndex: (theme) => Math.max(theme.zIndex.drawer + 1, 1400),
+          backgroundColor: 'rgba(0, 0, 0, 0.7)'
+        }}
+        open={isUploading}
+      >
+        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+          <CircularProgress color="inherit" size={60} />
+          <Typography variant="h6" sx={{ mt: 3, color: '#ffffff', fontWeight: 'bold', letterSpacing: 1 }}>
+            Importing Data... Please wait.
+          </Typography>
+        </Box>
+      </Backdrop>
       <ToastContainer />
     </div>
   );

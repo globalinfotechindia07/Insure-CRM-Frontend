@@ -108,7 +108,7 @@ import Incoterms from 'views/master/Incoterms/Incoterms';
 import EditCustomerGroup from 'views/master/CustomerGroup/EditCustomerGroup';
 import POS from '../views/master/POSAndBQP/POS';
 import BQP from '../views/master/POSAndBQP/BQP';
-import OtherAlertMessages from 'views/OtherAlertMessages/OtherAlertMessages';
+
 import CustomerForm from 'views/Customers/CustomerForm';
 import CustomerList from 'views/Customers/CustomerList';
 import CustomerPage from 'views/Customers/CustomerPage';
@@ -1590,14 +1590,6 @@ const MainRoutes = {
       element: (
         <PrivateRoute allowedRoles={['admin', 'staff', 'Administrative', 'NursingAndParamedical', 'MedicalOfficer', 'Support', 'Consultant']}>
           <RenewalReminder />
-        </PrivateRoute>
-      )
-    },
-    {
-      path: '/other-alert-messages',
-      element: (
-        <PrivateRoute allowedRoles={['admin', 'staff', 'Administrative', 'NursingAndParamedical', 'MedicalOfficer', 'Support', 'Consultant']}>
-          <OtherAlertMessages />
         </PrivateRoute>
       )
     },

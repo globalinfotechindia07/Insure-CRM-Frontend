@@ -31,7 +31,8 @@ import {
   InputAdornment,
   Radio,
   CircularProgress,
-  Skeleton
+  Skeleton,
+  Backdrop
 } from '@mui/material';
 import { FaTrash } from 'react-icons/fa';
 import { toast, ToastContainer } from 'react-toastify';
@@ -631,6 +632,21 @@ const Policy = () => {
           </Paper>
         </CardContent>
       </Card>
+      <Backdrop
+        sx={{ 
+          color: '#fff', 
+          zIndex: (theme) => Math.max(theme.zIndex.drawer + 1, 1400),
+          backgroundColor: 'rgba(0, 0, 0, 0.7)'
+        }}
+        open={isUploading}
+      >
+        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+          <CircularProgress color="inherit" size={60} />
+          <Typography variant="h6" sx={{ mt: 3, color: '#ffffff', fontWeight: 'bold', letterSpacing: 1 }}>
+            Importing Data... Please wait.
+          </Typography>
+        </Box>
+      </Backdrop>
       <ToastContainer />
     </>
   );

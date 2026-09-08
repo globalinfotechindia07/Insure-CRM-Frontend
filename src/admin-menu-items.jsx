@@ -742,13 +742,7 @@ export default {
             // }
           ]
         },
-        {
-          id: 'other-alert-messages',
-          title: 'Other Alert Messages',
-          type: 'item',
-          icon: PeopleIcon,
-          url: '/other-alert-messages'
-        },
+
 
         // {
         //   id: 'calander',

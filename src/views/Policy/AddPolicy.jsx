@@ -649,8 +649,33 @@ const AddPolicy = () => {
   }, [form.startDate, form.policyDuration]);
 
   const filteredProducts = useMemo(() => {
-    return productData;
-  }, [productData]);
+    if (!form.insDepartment) return productData;
+    
+    const selectedDeptObj = insDepartmentData.find(d => String(d._id) === String(form.insDepartment));
+    const selectedDeptName = selectedDeptObj ? (selectedDeptObj.insDepartment || selectedDeptObj.name || '').toLowerCase().trim() : '';
+
+    return productData.filter((product) => {
+      // Always include the currently selected product so it remains visible
+      if (form.product && String(product._id) === String(form.product)) {
+        return true;
+      }
+      
+      const prodDept = product.insDepartment || product.department;
+      if (!prodDept) return false;
+      
+      const prodDeptId = typeof prodDept === 'object' ? prodDept._id : prodDept;
+      const selectedDeptId = typeof form.insDepartment === 'object' ? form.insDepartment._id : form.insDepartment;
+      
+      if (String(prodDeptId) === String(selectedDeptId)) return true;
+      
+      if (selectedDeptName) {
+        const prodDeptName = (typeof prodDept === 'object' ? (prodDept.insDepartment || prodDept.name || prodDept.departmentName || '') : '').toLowerCase().trim();
+        if (prodDeptName && prodDeptName === selectedDeptName) return true;
+      }
+      
+      return false;
+    });
+  }, [productData, form.insDepartment, form.product, insDepartmentData]);
 
   useEffect(() => {
     if (!form.tpStartDate || !form.tpPolicyDuration) return;
@@ -2084,6 +2109,67 @@ finance = 69522c7b583c668bdda53af5
 
           <Divider sx={{ my: 2 }} />
           <Typography variant="h5" gutterBottom>
+            GST & Premium Summary
+          </Typography>
+          <Card>
+            <CardContent>
+              <Grid container spacing={2}>
+                <Grid item xs={12} sm={3}>
+                  <TextField
+                    label={selectedDeptName === 'motor' ? "TP + OD Net Premium" : "Net Premium"}
+                    name="netPremium"
+                    onChange={handleChange}
+                    value={form.netPremium}
+                    
+                    fullWidth
+                    error={!!errors.netPremium}
+                    helperText={errors.netPremium}
+                    InputLabelProps={{ shrink: true }}
+                  />
+                </Grid>
+                {selectedDeptName !== 'motor' && (
+                  <Grid item xs={12} sm={3}>
+                    <FormControl fullWidth>
+                      <InputLabel id="gst">GST</InputLabel>
+                      <Select labelId="gst" label="gst" name="gst" value={form.gst} onChange={handleChange} disabled={selectedDeptName.toLowerCase().includes('travel')}>
+                        {gstData.length > 0 &&
+                          gstData.map((type) => (
+                            <MenuItem key={type._id} value={type._id}>
+                              {type.value}
+                            </MenuItem>
+                          ))}
+                      </Select>
+                    </FormControl>
+                  </Grid>
+                )}
+                <Grid item xs={12} sm={3}>
+                  <TextField
+                    label={selectedDeptName === 'motor' ? "TP + OD GST Amt" : "GST Amt"}
+                    onChange={handleChange}
+                    value={form.gstAmount}
+                    name="gstAmount"
+                    
+                    fullWidth
+                    InputLabelProps={{ shrink: true }}
+                  />
+                </Grid>
+                <Grid item xs={12} sm={3}>
+                  <TextField
+                    label={selectedDeptName === 'motor' ? "TP + OD Total Amount" : "Total Amount"}
+                    name="totalAmount"
+                    value={form.totalAmount || ''}
+                    onChange={handleChange}
+                    
+                    fullWidth
+                    InputLabelProps={{ shrink: true }}
+                  />
+                </Grid>
+              </Grid>
+            </CardContent>
+          </Card>
+
+          <Divider sx={{ my: 2 }} />
+          <Typography variant="h5" gutterBottom>
             POS & BQP Details
           </Typography>
           <Card>
@@ -2779,66 +2865,6 @@ finance = 69522c7b583c668bdda53af5
             </CardContent>
           </Card>
 
-          <Divider sx={{ my: 2 }} />
-          <Typography variant="h5" gutterBottom>
-            GST & Premium Summary
-          </Typography>
-          <Card>
-            <CardContent>
-              <Grid container spacing={2}>
-                <Grid item xs={12} sm={3}>
-                  <TextField
-                    label={selectedDeptName === 'motor' ? "TP + OD Net Premium" : "Net Premium"}
-                    name="netPremium"
-                    onChange={handleChange}
-                    value={form.netPremium}
-                    
-                    fullWidth
-                    error={!!errors.netPremium}
-                    helperText={errors.netPremium}
-                    InputLabelProps={{ shrink: true }}
-                  />
-                </Grid>
-                {selectedDeptName !== 'motor' && (
-                  <Grid item xs={12} sm={3}>
-                    <FormControl fullWidth>
-                      <InputLabel id="gst">GST</InputLabel>
-                      <Select labelId="gst" label="gst" name="gst" value={form.gst} onChange={handleChange} disabled={selectedDeptName.toLowerCase().includes('travel')}>
-                        {gstData.length > 0 &&
-                          gstData.map((type) => (
-                            <MenuItem key={type._id} value={type._id}>
-                              {type.value}
-                            </MenuItem>
-                          ))}
-                      </Select>
-                    </FormControl>
-                  </Grid>
-                )}
-                <Grid item xs={12} sm={3}>
-                  <TextField
-                    label={selectedDeptName === 'motor' ? "TP + OD GST Amt" : "GST Amt"}
-                    onChange={handleChange}
-                    value={form.gstAmount}
-                    name="gstAmount"
-                    
-                    fullWidth
-                    InputLabelProps={{ shrink: true }}
-                  />
-                </Grid>
-                <Grid item xs={12} sm={3}>
-                  <TextField
-                    label={selectedDeptName === 'motor' ? "TP + OD Total Amount" : "Total Amount"}
-                    name="totalAmount"
-                    value={form.totalAmount || ''}
-                    onChange={handleChange}
-                    
-                    fullWidth
-                    InputLabelProps={{ shrink: true }}
-                  />
-                </Grid>
-              </Grid>
-            </CardContent>
-          </Card>
 
           <Divider sx={{ my: 2 }} />
           <Grid container spacing={2}>
