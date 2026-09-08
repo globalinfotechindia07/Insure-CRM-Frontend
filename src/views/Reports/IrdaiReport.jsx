@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   Grid,
   TextField,
@@ -59,6 +59,13 @@ const IrdaiReport = () => {
   });
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(25);
+
+  // Lazy loading state
+  const [serverPage, setServerPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const sentinelRef = useRef(null);
+  const activeFYRef = useRef('');
 
 
 
@@ -121,30 +128,60 @@ const IrdaiReport = () => {
 
   // Fetch all policy Detail
 
-  const fetchPolicyDetail = useCallback(async () => {
-    if (!financialYear) return; // Don't call if no FY
-
-    setLoading(true);
+  const fetchPolicyDetail = useCallback(async (fyId, pageNum = 1, append = false) => {
+    if (!fyId) return;
+    if (append) setLoadingMore(true);
+    else setLoading(true);
     try {
-      console.log('Fetching with FY:', financialYear);
-      const res = await get(`policyDetail?financialYear=${financialYear}`);
-      console.log('policyDetail data:', res);
-      if (res.status) setPolicy(res.data);
-      else setPolicy([]);
+      const PAGE_SIZE = 100;
+      const res = await get(`policyDetail?financialYear=${fyId}&limit=${PAGE_SIZE}&page=${pageNum}`);
+      if (res.status) {
+        const newData = res.data || [];
+        if (append) {
+          setPolicy(prev => [...prev, ...newData]);
+        } else {
+          setPolicy(newData);
+        }
+        setHasMore(newData.length === PAGE_SIZE);
+        setServerPage(pageNum);
+      } else {
+        if (!append) setPolicy([]);
+        setHasMore(false);
+      }
     } catch (error) {
       console.error(error);
     } finally {
-      setLoading(false); // ✅ Stop loading
+      if (append) setLoadingMore(false);
+      else setLoading(false);
     }
-  }, [financialYear]);
+  }, []);
 
   useEffect(() => {
     if (financialYear) {
       localStorage.setItem('selectedFY', financialYear);
       window.dispatchEvent(new Event('storage'));
+      activeFYRef.current = financialYear;
+      setServerPage(1);
+      setHasMore(true);
+      fetchPolicyDetail(financialYear, 1, false);
     }
-    fetchPolicyDetail();
   }, [financialYear]);
+
+  // IntersectionObserver: auto-load next page when sentinel is visible
+  useEffect(() => {
+    if (!sentinelRef.current) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore && !loadingMore && !loading) {
+          const nextPage = serverPage + 1;
+          fetchPolicyDetail(activeFYRef.current, nextPage, true);
+        }
+      },
+      { threshold: 0.1 }
+    );
+    observer.observe(sentinelRef.current);
+    return () => observer.disconnect();
+  }, [hasMore, loadingMore, loading, serverPage, fetchPolicyDetail]);
 
   const handleReset = () => {
     setIsFilterApplied(false);
@@ -931,6 +968,24 @@ const IrdaiReport = () => {
             </Card>
           </Grid>
         </Grid>
+      )}
+
+      {/* Lazy-load sentinel: IntersectionObserver watches this to load next page */}
+      <div ref={sentinelRef} style={{ height: 1 }} />
+      {loadingMore && (
+        <Box display="flex" justifyContent="center" alignItems="center" py={2}>
+          <CircularProgress size={28} />
+          <Typography variant="body2" color="text.secondary" ml={1}>
+            Loading more records... ({policy.length} loaded so far)
+          </Typography>
+        </Box>
+      )}
+      {!hasMore && policy.length > 0 && (
+        <Box display="flex" justifyContent="center" py={1}>
+          <Typography variant="caption" color="text.secondary">
+            All {policy.length} records loaded
+          </Typography>
+        </Box>
       )}
     </>
   );

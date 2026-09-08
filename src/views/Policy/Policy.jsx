@@ -31,7 +31,8 @@ import {
   InputAdornment,
   Radio,
   CircularProgress,
-  Skeleton
+  Skeleton,
+  Backdrop
 } from '@mui/material';
 import { FaTrash } from 'react-icons/fa';
 import { toast, ToastContainer } from 'react-toastify';
@@ -333,27 +334,7 @@ const Policy = () => {
 
   return (
     <>
-      {loading && (
-        <Box
-          sx={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: 'rgba(0,0,0,0.5)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 9999
-          }}
-        >
-          <Paper elevation={6} sx={{ p: 4, textAlign: 'center' }}>
-            <CircularProgress size={40} sx={{ mb: 2 }} />
-            <Typography variant="h6">Loading Policies...</Typography>
-          </Paper>
-        </Box>
-      )}
+
 
       <Breadcrumb>
         <Typography component={Link} to="/" variant="subtitle2" color="inherit" className="link-breadcrumb">
@@ -364,7 +345,7 @@ const Policy = () => {
         </Typography>
       </Breadcrumb>
 
-      <Grid container spacing={gridSpacing} sx={{ opacity: loading ? 0.6 : 1, pointerEvents: loading ? 'none' : 'auto' }}>
+      <Grid container spacing={gridSpacing}>
         <Grid item xs={12}>
           <Grid container justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
             <Typography variant="h5">Policy Management</Typography>
@@ -552,7 +533,16 @@ const Policy = () => {
                   </TableHead>
 
                   <TableBody>
-                    {customerList.map((entry, index) => (
+                    {loading ? (
+                      <TableRow>
+                        <TableCell colSpan={10} align="center" sx={{ py: 4 }}>
+                          <CircularProgress size={28} />
+                          <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                            Loading...
+                          </Typography>
+                        </TableCell>
+                      </TableRow>
+                    ) : customerList.map((entry, index) => (
                       <TableRow
                         key={entry?._id || index}
                         hover
@@ -614,7 +604,7 @@ const Policy = () => {
                         </TableCell>
                       </TableRow>
                     ))}
-                    {customerList.length === 0 && (
+                    {!loading && customerList.length === 0 && (
                       <TableRow>
                         <TableCell colSpan={9} align="center" sx={{ py: 4 }}>
                           <Typography variant="body1">No data found</Typography>
@@ -642,6 +632,21 @@ const Policy = () => {
           </Paper>
         </CardContent>
       </Card>
+      <Backdrop
+        sx={{ 
+          color: '#fff', 
+          zIndex: (theme) => Math.max(theme.zIndex.drawer + 1, 1400),
+          backgroundColor: 'rgba(0, 0, 0, 0.7)'
+        }}
+        open={isUploading}
+      >
+        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+          <CircularProgress color="inherit" size={60} />
+          <Typography variant="h6" sx={{ mt: 3, color: '#ffffff', fontWeight: 'bold', letterSpacing: 1 }}>
+            Importing Data... Please wait.
+          </Typography>
+        </Box>
+      </Backdrop>
       <ToastContainer />
     </>
   );

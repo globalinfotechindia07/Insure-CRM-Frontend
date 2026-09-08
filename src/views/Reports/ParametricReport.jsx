@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   Grid,
   TextField,
@@ -75,9 +75,20 @@ const ParametricReport = () => {
   const [reportGenerated, setReportGenerated] = useState(false);
   const [selectedDepartment, setSelectedDepartment] = useState('');
   const [selectedCompany, setSelectedCompany] = useState('');
+  const [selectedPos, setSelectedPos] = useState('');
+  const [selectedBqp, setSelectedBqp] = useState('');
+  const [posData, setPosData] = useState([]);
+  const [bqpData, setBqpData] = useState([]);
   const [searchCustomer, setSearchCustomer] = useState('');
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(25);
+
+  // Lazy loading state
+  const [serverPage, setServerPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const sentinelRef = useRef(null);
+  const activeFiltersRef = useRef({ financialYear: '', department: '', company: '', pos: '', bqp: '' });
 
   useEffect(() => {
     setPage(0);
@@ -130,9 +141,8 @@ const ParametricReport = () => {
 
   const rows = filteredRows;
 
-  const paginatedRows = useMemo(() => {
-    return rows.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
-  }, [rows, page, rowsPerPage]);
+  // With lazy loading, we show all loaded rows directly (no client-side pagination slice)
+  const paginatedRows = rows;
 
   const pageSubtotal = useMemo(() => {
     return paginatedRows.reduce(
@@ -154,24 +164,22 @@ const ParametricReport = () => {
 
   useEffect(() => {}, [filterDate]);
 
-  useEffect(() => {
-    const selectedFY = localStorage.getItem('selectedFY');
-    if (selectedFY) {
-      setFinancialYear(selectedFY);
-    }
-  }, []);
+  // Financial year is optional — do not auto-select from localStorage
 
   const fetchDropdownData = async () => {
     try {
-      const [insCompanyData, insDepartmentData, financialYearData] = await Promise.all([
+      const [insCompanyData, insDepartmentData, financialYearData, posRes, bqpRes] = await Promise.all([
         get('insCompany'),
         get('insDepartment'),
-        get('financialYear')
+        get('financialYear'),
+        get('pos'),
+        get('bqp')
       ]);
       setInsCompanyData(insCompanyData.data || []);
       setInsDepartmentData(insDepartmentData.data || []);
       setFinancialYearData(financialYearData.data || []);
-      // console.log('Prefix List data', insDepartmentData);
+      setPosData(posRes.data || []);
+      setBqpData(bqpRes.data || []);
     } catch (err) {
       console.error('Dropdown load error:', err);
     }
@@ -195,51 +203,46 @@ const ParametricReport = () => {
     return () => window.removeEventListener('storage', handleStorageChange);
   }, [financialYear]);
 
-  // Validate and default financialYear
-  useEffect(() => {
-    if (financialYearData.length > 0) {
-      const isValid = financialYearData.some(f => f._id === financialYear);
-      if (!isValid) {
-        const selectedFY = localStorage.getItem('selectedFY');
-        if (selectedFY && financialYearData.some(f => f._id === selectedFY)) {
-          setFinancialYear(selectedFY);
-        } else {
-          const defaultFY = financialYearData[0]._id;
-          setFinancialYear(defaultFY);
-          localStorage.setItem('selectedFY', defaultFY);
-          window.dispatchEvent(new Event('storage'));
-        }
-      }
-    }
-  }, [financialYearData, financialYear]);
+  // Financial year validation removed — FY is optional in Parametric Report
 
   // Fetch all policy Detail
 
-  const fetchPolicyDetail = useCallback(async () => {
-    if (!financialYear) return; // Don't call if no FY
-
-    setLoading(true);
+  const fetchPolicyDetail = useCallback(async (fyId, pageNum = 1, append = false) => {
+    if (append) setLoadingMore(true);
+    else setLoading(true);
     try {
-      console.log('Fetching with FY:', financialYear);
-      const res = await get(`policyDetail?financialYear=${financialYear}`);
-      console.log('policyDetail data:', res);
+      const PAGE_SIZE = 100;
+      let url = `policyDetail?limit=${PAGE_SIZE}&page=${pageNum}`;
+      if (fyId) url += `&financialYear=${fyId}`;
+      const res = await get(url);
       if (res.status) {
-        setCustomerList(res.data);
+        const newData = res.data || [];
+        if (append) {
+          setCustomerList(prev => [...prev, ...newData]);
+          setFilteredRows(prev => [...prev, ...newData]);
+        } else {
+          setCustomerList(newData);
+          setFilteredRows(newData);
+        }
+        setReportGenerated(true);
+        // If fewer than PAGE_SIZE returned, no more pages
+        setHasMore(newData.length === PAGE_SIZE);
+        setServerPage(pageNum);
       } else {
-        setCustomerList([]);
-        setSummary({
-          totalAmount: 0,
-          brokerageIncGst: 0,
-          netPremium: 0,
-          gstAmount: 0
-        });
+        if (!append) {
+          setCustomerList([]);
+          setFilteredRows([]);
+          setSummary({ totalAmount: 0, brokerageIncGst: 0, netPremium: 0, gstAmount: 0 });
+        }
+        setHasMore(false);
       }
     } catch (error) {
       console.error(error);
     } finally {
-      setLoading(false); // ✅ Stop loading
+      if (append) setLoadingMore(false);
+      else setLoading(false);
     }
-  }, [financialYear]);
+  }, []);
 
 
 
@@ -279,13 +282,30 @@ const ParametricReport = () => {
 
 
 
+  // Fetch all data on mount (no FY filter)
   useEffect(() => {
-    if (financialYear) {
-      localStorage.setItem('selectedFY', financialYear);
-      window.dispatchEvent(new Event('storage'));
-    }
-    fetchPolicyDetail();
-  }, [financialYear]);
+    activeFiltersRef.current = { financialYear: '', department: '', company: '', pos: '', bqp: '' };
+    setServerPage(1);
+    setHasMore(true);
+    fetchPolicyDetail('', 1, false);
+  }, []);
+
+  // IntersectionObserver: auto-load next page when sentinel is visible
+  useEffect(() => {
+    if (!sentinelRef.current) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore && !loadingMore && !loading && reportGenerated) {
+          const nextPage = serverPage + 1;
+          const { financialYear: fyId } = activeFiltersRef.current;
+          fetchPolicyDetail(fyId, nextPage, true);
+        }
+      },
+      { threshold: 0.1 }
+    );
+    observer.observe(sentinelRef.current);
+    return () => observer.disconnect();
+  }, [hasMore, loadingMore, loading, serverPage, reportGenerated, fetchPolicyDetail]);
 
   useEffect(() => {
     if (!filteredRows || filteredRows.length === 0) {
@@ -323,58 +343,62 @@ const ParametricReport = () => {
     if (name === 'month') setDateFrom(value); // month picker
   };
 
-  const handleFilter = () => {
+  const handleFilter = async () => {
     setPage(0);
     setReportGenerated(true);
+
+    // Store active FY for lazy-load continuation
+    activeFiltersRef.current = { financialYear };
+
+    // If a financial year is selected, re-fetch from server page 1 for that FY
+    if (financialYear) {
+      setServerPage(1);
+      setHasMore(true);
+      await fetchPolicyDetail(financialYear, 1, false);
+      // After FY fetch, apply client-side filters on top
+      setFilteredRows(prev => applyClientFilters(prev));
+      return;
+    }
+
+    // No FY — apply client-side filters on the already-loaded data
     if (!customerList.length) {
       setFilteredRows([]);
       return;
     }
+    setFilteredRows(applyClientFilters(customerList));
+  };
 
+  const applyClientFilters = (list) => {
     let start = null;
     let end = null;
 
-    // DATE / MONTH FILTER
     if (filterDate === 'byMonth' && dateFrom) {
       const range = getMonthRange(dateFrom);
       start = range.start;
       end = range.end;
     }
-
     if (filterDate === 'byDate' && dateFrom && dateTo) {
       start = normalizeDate(dateFrom);
       end = normalizeDate(dateTo);
     }
 
-    const filtered = customerList.filter((row) => {
-      // --- DATE CHECK ---
+    return list.filter((row) => {
       if (start && end) {
         const rawDate = row.startDate || row.tpStartDate || row.odStartDate || row.endorStartDate || row.transactionDate;
         if (!rawDate) return false;
         const rowDate = normalizeDate(rawDate);
         if (!rowDate || rowDate < start || rowDate > end) return false;
       }
-
-      // --- DEPARTMENT CHECK ---
-      if (selectedDepartment) {
-        if (row.insDepartment?._id !== selectedDepartment) return false;
-      }
-
-      // --- COMPANY CHECK ---
-      if (selectedCompany) {
-        if (row.insCompany?._id !== selectedCompany) return false;
-      }
-
-      // --- CUSTOMER SEARCH CHECK ---
+      if (selectedDepartment && row.insDepartment?._id !== selectedDepartment) return false;
+      if (selectedCompany && row.insCompany?._id !== selectedCompany && row.insCompany !== selectedCompany) return false;
+      if (selectedPos && row.pos?._id !== selectedPos && row.pos !== selectedPos) return false;
+      if (selectedBqp && row.bqp?._id !== selectedBqp && row.bqp !== selectedBqp) return false;
       if (searchCustomer) {
         const customerName = row.cutomerName?.toLowerCase() || '';
         if (!customerName.includes(searchCustomer.toLowerCase())) return false;
       }
-
       return true;
     });
-
-    setFilteredRows(filtered);
   };
 
   const handleClear = () => {
@@ -383,9 +407,15 @@ const ParametricReport = () => {
     setDateTo(null);
     setSelectedDepartment('');
     setSelectedCompany('');
+    setSelectedPos('');
+    setSelectedBqp('');
     setSearchCustomer('');
-    setFilteredRows([]);
-    setReportGenerated(false);
+    setFinancialYear('');
+    // Reset lazy-load state and re-fetch all from page 1
+    activeFiltersRef.current = { financialYear: '' };
+    setServerPage(1);
+    setHasMore(true);
+    fetchPolicyDetail('', 1, false);
   };
 
   const normalizeDate = (date) => {
@@ -546,6 +576,46 @@ const ParametricReport = () => {
                         {insCompanyData.map((type) => (
                           <MenuItem key={type._id} value={type._id}>
                             {type.insCompany}
+                          </MenuItem>
+                        ))}
+                      </TextField>
+                    </Grid>
+
+                    <Grid item xs={2}>
+                      <TextField
+                        select
+                        label="POS"
+                        name="pos"
+                        fullWidth
+                        value={selectedPos}
+                        onChange={(e) => setSelectedPos(e.target.value)}
+                      >
+                        <MenuItem value="">
+                          <em>None</em>
+                        </MenuItem>
+                        {posData.map((type) => (
+                          <MenuItem key={type._id} value={type._id}>
+                            {type.posCode} - {type.posName}
+                          </MenuItem>
+                        ))}
+                      </TextField>
+                    </Grid>
+
+                    <Grid item xs={2}>
+                      <TextField
+                        select
+                        label="BQP"
+                        name="bqp"
+                        fullWidth
+                        value={selectedBqp}
+                        onChange={(e) => setSelectedBqp(e.target.value)}
+                      >
+                        <MenuItem value="">
+                          <em>None</em>
+                        </MenuItem>
+                        {bqpData.map((type) => (
+                          <MenuItem key={type._id} value={type._id}>
+                            {type.bqpCode} - {type.bqpName}
                           </MenuItem>
                         ))}
                       </TextField>
@@ -759,20 +829,21 @@ const ParametricReport = () => {
               </TableBody>
             </Table>
           </TableContainer>
-          {reportGenerated && rows.length > 0 && (
-            <Box display="flex" justifyContent="flex-end" mt={1}>
-              <TablePagination
-                component="div"
-                count={rows.length}
-                page={page}
-                onPageChange={(e, newPage) => setPage(newPage)}
-                rowsPerPage={rowsPerPage}
-                onRowsPerPageChange={(e) => {
-                  setRowsPerPage(parseInt(e.target.value, 10));
-                  setPage(0);
-                }}
-                rowsPerPageOptions={[25, 50, 100]}
-              />
+          {/* Lazy-load sentinel: IntersectionObserver watches this to trigger next page */}
+          <div ref={sentinelRef} style={{ height: 1 }} />
+          {loadingMore && (
+            <Box display="flex" justifyContent="center" alignItems="center" py={2}>
+              <CircularProgress size={28} />
+              <Typography variant="body2" color="text.secondary" ml={1}>
+                Loading more records...
+              </Typography>
+            </Box>
+          )}
+          {reportGenerated && !hasMore && rows.length > 0 && (
+            <Box display="flex" justifyContent="center" py={1}>
+              <Typography variant="caption" color="text.secondary">
+                All {rows.length} records loaded
+              </Typography>
             </Box>
           )}
         </Grid>
