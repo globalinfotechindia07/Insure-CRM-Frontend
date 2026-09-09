@@ -73,7 +73,7 @@ const TPA = () => {
   };
 
   const handleEdit = (item) => {
-    setType(!type);
+    setType('edit');
     setOpenRegistrationModal(true);
     setEditData(item);
   };

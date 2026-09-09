@@ -111,7 +111,7 @@ const Department = () => {
     if (!validate()) return;
     try {
       const payload = {
-        name: form.department,
+        department: form.department,
         description: form.description || ''
       };
       if (editIndex !== null) {

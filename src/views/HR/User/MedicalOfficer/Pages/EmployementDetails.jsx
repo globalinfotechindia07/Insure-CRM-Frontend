@@ -33,7 +33,7 @@ function EmploymentDetails({ setValue, setStoredAllData, storedAllData }) {
   }
 
   async function fetchDepartmentData() {
-    const response = await get('department-setup');
+    const response = await get('department');
     setDepartmentData(response.data || []);
   }
 
@@ -203,7 +203,7 @@ function EmploymentDetails({ setValue, setStoredAllData, storedAllData }) {
                 >
                   {deparmentData.map((item, index) => (
                     <MenuItem key={item._id} value={item._id}>
-                      {item.departmentName}
+                      {item.department || item.name}
                     </MenuItem>
                   ))}
                 </TextField>

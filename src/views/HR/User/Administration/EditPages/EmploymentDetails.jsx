@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+﻿import React, { useEffect, useState } from 'react';
 import { Box, Grid, TextField, Button, Card, CardContent, CardHeader, MenuItem } from '@mui/material';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -10,7 +10,7 @@ function EmploymentDetails({ setValue, setStoredAllData, storedAllData }) {
   const [empRoleData, setEmpRoleData] = useState([]);
   const [designationData, setDesignationData] = useState([]);
   const [filteredDesignation, setFilteredDesignation] = useState([]);
-  const typeOfEmployeeData = ['Contract', 'Outsource', 'Part time', 'Full time', 'Visiting', 'Trainee', 'Probationer'];
+  const typeOfEmployeeData = ['CONTRACT', 'OUTSOURCE', 'PART TIME', 'FULL TIME', 'VISITING', 'TRAINEE', 'PROBATIONER'];
 
   const [administrativeDataForReportTo, setAdministrativeDataForReportTo] = useState([]);
 
@@ -64,7 +64,19 @@ function EmploymentDetails({ setValue, setStoredAllData, storedAllData }) {
   });
 
   useEffect(() => {
-    setEmploymentDetails(storedAllData.employmentDetails || {});
+    const data = storedAllData.employmentDetails;
+    if (data && Object.keys(data).length > 0) {
+      setEmploymentDetails({
+        ...data,
+        department: data.department?._id || data.department || '',
+        position: data.position?._id || data.position || '',
+        empRole: data.empRole?._id || data.empRole || '',
+        designation: data.designation?._id || data.designation || '',
+        departmentOrSpeciality: data.departmentOrSpeciality?._id || data.departmentOrSpeciality || '',
+      });
+    } else {
+      setEmploymentDetails({});
+    }
   }, [storedAllData.employmentDetails]);
 
   useEffect(() => {
@@ -148,7 +160,7 @@ function EmploymentDetails({ setValue, setStoredAllData, storedAllData }) {
                 >
                   {deparmentData.map((item, index) => (
                     <MenuItem key={item._id} value={item._id}>
-                      {item.departmentName}
+                      {item.department || item.name}
                     </MenuItem>
                   ))}
                 </TextField>
@@ -189,7 +201,7 @@ function EmploymentDetails({ setValue, setStoredAllData, storedAllData }) {
                   {deparmentData?.length > 0 ? (
                     deparmentData.map((item, index) => (
                       <MenuItem key={item._id} value={item._id}>
-                        {item.name}
+                        {item.department || item.name}
                       </MenuItem>
                     ))
                   ) : (
