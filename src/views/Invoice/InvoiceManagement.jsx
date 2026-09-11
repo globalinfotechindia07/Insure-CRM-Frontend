@@ -40,7 +40,7 @@ import InvoiceDetails from './InvoiceDetails';
 import { Receipt } from '@mui/icons-material';
 import { useSelector } from 'react-redux';
 import { setIn } from 'formik';
-import { data } from 'views/OPDQueue/data';
+
 
 const InvoiceManagement = () => {
   const navigate = useNavigate();

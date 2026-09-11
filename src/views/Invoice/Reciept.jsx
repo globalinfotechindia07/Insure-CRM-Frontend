@@ -19,15 +19,13 @@ import { useDispatch, useSelector } from 'react-redux';
 import { convertToWords } from 'utils/currentDate';
 import { useLocation, useNavigate } from 'react-router';
 import { toast } from 'react-toastify';
-import { resetPrintDataForAdvanceOPDReceipt, setCloseBillingModal, setInitialStates } from 'reduxSlices/opdBillingStates';
+
 import { get, remove } from 'api/api';
 import { IconButton } from '@mui/material';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import DeleteIcon from '@mui/icons-material/Delete';
 
 const AdvanceReciept = ({ closeModal, invoiceData, fetchInvoices }) => {
-  const { billingData } = useSelector((state) => state.opdBilling);
-  const { hospitalData } = useSelector((state) => state.hospitalData);
   const [company, setCompany] = useState({});
   const dispatch = useDispatch();
   const contentRef = useRef(null);
@@ -47,11 +45,10 @@ const AdvanceReciept = ({ closeModal, invoiceData, fetchInvoices }) => {
 
   const handleSave = () => {
     toast.success('Saved Successfully');
-    dispatch(setCloseBillingModal());
-    dispatch(resetPrintDataForAdvanceOPDReceipt());
-    dispatch(setInitialStates());
     closeModal();
   };
+
+
 
   const handleDelete = async (index, rec) => {
     try {
@@ -141,9 +138,7 @@ const AdvanceReciept = ({ closeModal, invoiceData, fetchInvoices }) => {
                     <Grid item xs={4}>
                       <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
                         <img src={img} alt="Hospital Logo" style={{ maxHeight: '80px', objectFit: 'contain', marginBottom: '8px' }} />
-                        <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#126078', fontSize: '1rem' }}>
-                          {hospitalData?.hospitalName}
-                        </Typography>
+                          {company?.clientName || ''}
                       </Box>
                     </Grid>
                     <Grid item xs={8} sx={{ textAlign: 'right', display: 'flex', flexDirection: 'column', gap: 0.8 }}>
@@ -341,9 +336,7 @@ const AdvanceReciept = ({ closeModal, invoiceData, fetchInvoices }) => {
                   <Grid item xs={4}>
                     <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
                       <img src={img} alt="Hospital Logo" style={{ maxHeight: '80px', objectFit: 'contain', marginBottom: '8px' }} />
-                      <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#126078', fontSize: '1rem' }}>
-                        {hospitalData?.hospitalName}
-                      </Typography>
+                        {company?.clientName || ''}
                     </Box>
                   </Grid>
                   <Grid item xs={8} sx={{ textAlign: 'right', display: 'flex', flexDirection: 'column', gap: 0.8 }}>
