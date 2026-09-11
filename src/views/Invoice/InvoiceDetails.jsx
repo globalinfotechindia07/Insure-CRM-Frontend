@@ -20,7 +20,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { convertToWords } from 'utils/currentDate';
 import { useLocation, useNavigate } from 'react-router';
 import { toast } from 'react-toastify';
-import { resetPrintDataForAdvanceOPDReceipt, setCloseBillingModal, setInitialStates } from 'reduxSlices/opdBillingStates';
+// // import { resetPrintDataForAdvanceOPDReceipt, setCloseBillingModal, setInitialStates } from 'reduxSlices/opdBillingStates';
 import { get } from 'api/api';
 import mirailogo from '../../assets/images/mirai.png';
 import { IoIosPhonePortrait } from 'react-icons/io';
@@ -29,10 +29,6 @@ import { SiSimilarweb } from 'react-icons/si';
 import mirai from '../../assets/images/mirai.png';
 
 const InvoiceDetails = ({ closeModal, invoiceData }) => {
-  const { billingData } = useSelector((state) => state.opdBilling);
-  const { PrintDataForAdvanceOPDReceipt } = useSelector((state) => state.opdBillingStates);
-  const { hospitalData } = useSelector((state) => state.hospitalData);
-
   const dispatch = useDispatch();
 
   const contentRef = useRef(null);
@@ -104,19 +100,13 @@ const InvoiceDetails = ({ closeModal, invoiceData }) => {
   const handlePrint = () => {
     reactToPrint();
     setTimeout(() => {
-      dispatch(setCloseBillingModal());
+      closeModal();
     }, 1000);
-    // if (pathname !== '/confirm-patientForm') {
-    //   navigate('/confirm-patientForm');
-    // }
-    dispatch(setInitialStates());
   };
 
   function handleSave() {
     toast.success('Saved Successfully');
-    dispatch(setCloseBillingModal());
-    dispatch(resetPrintDataForAdvanceOPDReceipt());
-    dispatch(setInitialStates());
+    closeModal();
 
     // navigate('/confirm-patientForm');
   }

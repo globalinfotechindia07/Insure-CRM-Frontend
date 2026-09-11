@@ -1,20 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import Default from 'views/Dashboard/Default';
-import FrontOfficeDashboards from 'views/master/frontOffice-setup/frontOfficeDashboards';
-import OPDQueueLayout from 'layout/OPDQueueLayout';
 import Loader from 'component/Loader/Loader';
 import SuperAdminDashboard from 'views/Dashboard/Default/SuperAdminDashboard';
 
 const DashboardRoute = {
   admin: <Default />,
   'super-admin': <SuperAdminDashboard />,
-  staff: <Default />,
-
-  Administrative: <FrontOfficeDashboards />,
-  Consultant: <OPDQueueLayout />,
-  NursingAndParamedical: <OPDQueueLayout />,
-  MedicalOfficer: <OPDQueueLayout />
+  staff: <Default />
 };
 
 function NavigateToDashboard() {

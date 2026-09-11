@@ -44,8 +44,6 @@ import {
   AssignmentTurnedIn
 } from '@mui/icons-material';
 import { MdMoney } from 'react-icons/md';
-import { IoMdGitNetwork } from 'react-icons/io';
-import StatusBoxes from 'views/master/frontOffice-setup/OPD-Dashboard/components/StatusBoxes';
 import PriorityHighIcon from '@mui/icons-material/PriorityHigh';
 import Priority from 'views/master/Priority/Priority';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
