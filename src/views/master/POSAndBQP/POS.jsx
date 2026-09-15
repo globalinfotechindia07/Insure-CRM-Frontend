@@ -27,13 +27,19 @@ import AddIcon from '@mui/icons-material/Add';
 import SettingsIcon from '@mui/icons-material/Settings';
 import NotificationsActiveIcon from '@mui/icons-material/NotificationsActive';
 import NotificationsOffIcon from '@mui/icons-material/NotificationsOff';
+import CloudUploadIcon from '@mui/icons-material/CloudUpload';
+import DownloadIcon from '@mui/icons-material/Download';
+import CircularProgress from '@mui/material/CircularProgress';
 import { toast } from 'react-toastify';
-import { get, post, put, remove } from 'api/api';
+import axios from 'axios';
+import REACT_APP_API_URL, { get, post, put, remove, retrieveToken } from 'api/api';
 
 const POS = () => {
   const [posList, setPosList] = useState([]);
   const [open, setOpen] = useState(false);
   const [editId, setEditId] = useState(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
   
   const [patternOpen, setPatternOpen] = useState(false);
   const [patternData, setPatternData] = useState({ prefix: 'POS-', nextSequence: 1, paddingSize: 3 });
@@ -179,12 +185,90 @@ const POS = () => {
     }
   };
 
+  const handleImportCSV = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    setIsUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const resData = await post(`pos/import-csv`, formData);
+      if (resData && resData.success) {
+        toast.success(resData.message || 'Upload Successful');
+        fetchPOS();
+      } else {
+        toast.info(resData.message || 'Upload Processed');
+        fetchPOS();
+      }
+    } catch (error) {
+      console.error(error);
+      toast.error('Error uploading file');
+    } finally {
+      setIsUploading(false);
+      e.target.value = '';
+    }
+  };
+
+  const handleExportCSV = async () => {
+    setIsExporting(true);
+    try {
+      const token = retrieveToken();
+      const url = `${REACT_APP_API_URL}pos/export-csv`;
+
+      const response = await axios.get(url, {
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
+        },
+        responseType: 'blob'
+      });
+
+      const filename = `posData.xlsx`;
+      const blob = new Blob([response.data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      const objectUrl = window.URL.createObjectURL(blob);
+
+      const link = document.createElement('a');
+      link.href = objectUrl;
+      link.setAttribute('download', filename);
+      link.style.display = 'none';
+
+      document.body.appendChild(link);
+      link.dispatchEvent(new MouseEvent('click', { bubbles: false, cancelable: true }));
+      document.body.removeChild(link);
+    } catch (error) {
+      console.error(error);
+      toast.error('Error exporting data');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   return (
     <Box sx={{ p: 3 }}>
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
         <Typography variant="h4" fontWeight="bold">POS Management</Typography>
-        <Box>
-          <Button variant="outlined" color="secondary" startIcon={<SettingsIcon />} onClick={handlePatternOpen} sx={{ mr: 2 }}>
+        <Box sx={{ display: 'flex', gap: 1 }}>
+          <Button
+            variant="outlined"
+            color="success"
+            startIcon={isExporting ? <CircularProgress size={20} /> : <DownloadIcon />}
+            onClick={handleExportCSV}
+            disabled={isExporting}
+          >
+            Export
+          </Button>
+          <Button
+            variant="outlined"
+            color="secondary"
+            component="label"
+            startIcon={isUploading ? <CircularProgress size={20} /> : <CloudUploadIcon />}
+            disabled={isUploading}
+          >
+            Import
+            <input type="file" hidden accept=".csv, .xlsx, .xls" onChange={handleImportCSV} />
+          </Button>
+          <Button variant="outlined" color="secondary" startIcon={<SettingsIcon />} onClick={handlePatternOpen}>
             Define Pattern
           </Button>
           <Button variant="contained" color="primary" startIcon={<AddIcon />} onClick={handleOpen}>
