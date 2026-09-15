@@ -91,7 +91,6 @@ const BasicDetails = ({ setValue, storedAllData, setStoredAllData }) => {
     setErrors((prev) => ({ ...prev, [name]: '' }));
   };
 
-  // Basic Details Form Validation Function
   const BasicDetailsFormValidation = () => {
     const validations = [
       { field: 'empCode', message: 'Employee code is required.' },
@@ -101,13 +100,12 @@ const BasicDetails = ({ setValue, storedAllData, setStoredAllData }) => {
       { field: 'email', message: 'Email is required.' }
     ];
 
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/; // Email validation regex
-    const maxFileSize = 2 * 1024 * 1024; // 2 MB
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const maxFileSize = 2 * 1024 * 1024;
 
     let allValid = true;
     const newErrors = {};
 
-    // Validate required fields
     validations.forEach(({ field, message }) => {
       if (!basicDetails[field]) {
         newErrors[field] = message;
@@ -115,7 +113,6 @@ const BasicDetails = ({ setValue, storedAllData, setStoredAllData }) => {
       }
     });
 
-    // Validate email format
     if (basicDetails.email && !emailRegex.test(basicDetails.email)) {
       newErrors.email = 'Please enter a valid email address.';
       allValid = false;
@@ -126,7 +123,6 @@ const BasicDetails = ({ setValue, storedAllData, setStoredAllData }) => {
       allValid = false;
     }
 
-    // Validate contact number length (must be exactly 10 digits)
     if (basicDetails.contactNumber && basicDetails.contactNumber.length !== 10) {
       newErrors.contactNumber = 'Contact number must be exactly 10 digits.';
       allValid = false;
@@ -137,7 +133,6 @@ const BasicDetails = ({ setValue, storedAllData, setStoredAllData }) => {
       allValid = false;
     }
 
-    // Validate profile photo size
     if (basicDetails.profilePhoto) {
       if (basicDetails.profilePhoto.size > maxFileSize) {
         newErrors.profilePhoto = 'Image size must be less than 2 MB.';
@@ -146,31 +141,18 @@ const BasicDetails = ({ setValue, storedAllData, setStoredAllData }) => {
     }
 
     setErrors(newErrors);
-    return allValid;
+    return { allValid, newErrors };
   };
 
   const handleSubmit = async (event) => {
     event.preventDefault();
 
-    const isValid = BasicDetailsFormValidation();
+    const { allValid, newErrors } = BasicDetailsFormValidation();
 
-    if (isValid) {
+    if (allValid) {
       const payLoad = { ...basicDetails };
 
       const formData = new FormData();
-
-      // for (const [key, value] of Object.entries(payLoad)) {
-      //   if (value !== undefined && value !== null) {
-      //     if (
-      //       (Array.isArray(value) || (typeof value === 'object' && !(value instanceof File)))
-      //       && key !== "profilePhoto"
-      //     ) {
-      //       formData.append(key, JSON.stringify(value));
-      //     } else {
-      //       formData.append(key, value);
-      //     }
-      //   }
-      // }
 
       for (const [key, value] of Object.entries(payLoad)) {
         if (value !== undefined && value !== null && value !== '') {
@@ -184,20 +166,6 @@ const BasicDetails = ({ setValue, storedAllData, setStoredAllData }) => {
 
       const submitBasicDetails = await put(`administrative/basicDetails/${id}`, formData);
 
-      // const response = await submitBasicDetails.json()
-      // if (response.success === true) {
-      //   setStoredAllData(prev => ({
-      //     ...prev,
-      //     basicDetails: response.data.basicDetails,
-      //     submittedFormId: response.data._id
-      //   }))
-      //   toast.success(response.message)
-      //   setValue && setValue((prev) => prev + 1)
-      // }
-
-      // if (response.success === false) {
-      //   toast.error(response.message)
-      // }
       if (submitBasicDetails.success === true) {
         setStoredAllData((prev) => ({
           ...prev,
@@ -212,7 +180,8 @@ const BasicDetails = ({ setValue, storedAllData, setStoredAllData }) => {
         toast.error(submitBasicDetails.message);
       }
     } else {
-      toast.error('Please fill out all required fields.');
+      const errorMessages = Object.values(newErrors).join('\n');
+      toast.error(`Validation Failed:\n${errorMessages}`);
     }
   };
 
