@@ -877,7 +877,8 @@ const EditPolicy = () => {
 
     // ⛔ in edit mode, if both GST rates are completely 0/missing despite having premium, don't override 
     // unless they actually selected a 0% GST intentionally.
-    if (isEditMode && !tpGstValue && !odGstValue && !tpGstId && !odGstId) return;
+    const editMode = Boolean(policyData?._id);
+    if (editMode && !tpGstValue && !odGstValue && !tpGstId && !odGstId) return;
 
     const tpGstAmount = tpGstValue ? round2(tpPremium * (tpGstValue / 100)) : parseAmount(form?.tpGstAmount);
     const tpAmount = round2(tpPremium + tpGstAmount);
@@ -923,7 +924,7 @@ const EditPolicy = () => {
         paidAmount: newTotalAmount
       };
     });
-  }, [form.tpPremium, form.odPremium, form.tpGst, form.odGst, form.gst, gstData, isEditMode]);
+  }, [form.tpPremium, form.odPremium, form.tpGst, form.odGst, form.gst, gstData, policyData]);
 
   useEffect(() => {
     if (!selectedDeptName.includes('motor')) {
