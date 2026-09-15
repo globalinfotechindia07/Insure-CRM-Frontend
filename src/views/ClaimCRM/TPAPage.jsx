@@ -17,7 +17,10 @@ import {
   TableCell,
   TableBody,
   IconButton,
-} from "@mui/material";
+  Backdrop,
+  CircularProgress,
+  Box
+} from '@mui/material';
 
 import {
   Add,
@@ -52,6 +55,7 @@ const TPAPage = () => {
     email: "",
     address: "",
   });
+  const [isUploading, setIsUploading] = useState(false);
 
   // FETCH DATA
   const fetchData = async () => {
@@ -91,6 +95,7 @@ const TPAPage = () => {
     try {
 
       if (editId) {
+        setOpen(false);
         const result = await Swal.fire({
           title: "Update Record?",
           text: "Do you want to update this record?",
@@ -112,7 +117,6 @@ const TPAPage = () => {
             timer: 2000,
             showConfirmButton: false,
           });
-          setOpen(false);
           setEditId(null);
           setFormData({
             tpaName: "",
@@ -122,6 +126,8 @@ const TPAPage = () => {
             address: "",
           });
           fetchData();
+        } else {
+          setOpen(true);
         }
       } else {
 
@@ -239,6 +245,8 @@ const TPAPage = () => {
 
     const reader = new FileReader();
     reader.onload = async (evt) => {
+      setIsUploading(true);
+      try {
       const text = evt.target.result;
       const lines = text.split("\n").map(line => line.trim()).filter(line => line !== "");
       if (lines.length <= 1) {
@@ -297,6 +305,10 @@ const TPAPage = () => {
         toast.success(`Imported ${successCount} new unique TPAs successfully!`);
       }
       fetchData();
+    
+      } finally {
+        setIsUploading(false);
+      }
     };
     reader.readAsText(file);
     e.target.value = '';
@@ -567,6 +579,22 @@ const TPAPage = () => {
         </CardContent>
 
       </Card>
+      
+      <Backdrop
+        sx={{ 
+          color: '#fff', 
+          zIndex: (theme) => Math.max(theme.zIndex.drawer + 1, 1400),
+          backgroundColor: 'rgba(0, 0, 0, 0.7)'
+        }}
+        open={isUploading}
+      >
+        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+          <CircularProgress color="inherit" size={60} />
+          <Typography variant="h6" sx={{ mt: 3, color: '#ffffff', fontWeight: 'bold', letterSpacing: 1 }}>
+            Importing Data... Please wait.
+          </Typography>
+        </Box>
+      </Backdrop>
       <ToastContainer />
     </div>
   );

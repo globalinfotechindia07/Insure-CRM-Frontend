@@ -1,8 +1,24 @@
 import React, { useState, useEffect } from 'react';
 import {
-    Grid, TextField, Button, Typography, Card, CardContent, Dialog, DialogTitle,
-    DialogContent, DialogActions, Table, TableHead, TableRow, TableCell, TableBody,
-    IconButton
+  Grid,
+  TextField,
+  Button,
+  Typography,
+  Card,
+  CardContent,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Table,
+  TableHead,
+  TableRow,
+  TableCell,
+  TableBody,
+  IconButton,
+  Backdrop,
+  CircularProgress,
+  Box
 } from '@mui/material';
 import Breadcrumb from 'component/Breadcrumb';
 import { Link } from 'react-router-dom';
@@ -31,6 +47,7 @@ const Prefix = () => {
         Edit: false,
         Delete: false
     });
+  const [isUploading, setIsUploading] = useState(false);
     const systemRights = useSelector((state)=>state.systemRights.systemRights);
         
 
@@ -132,6 +149,8 @@ const Prefix = () => {
 
         const reader = new FileReader();
         reader.onload = async (evt) => {
+      setIsUploading(true);
+      try {
             const text = evt.target.result;
             const lines = text.split("\n").map(line => line.trim()).filter(line => line !== "");
             if (lines.length <= 1) {
@@ -179,7 +198,11 @@ const Prefix = () => {
                 toast.success(`Imported ${successCount} new unique prefixes successfully!`);
             }
             fetchData();
-        };
+        
+      } finally {
+        setIsUploading(false);
+      }
+    };
         reader.readAsText(file);
         e.target.value = '';
     };
@@ -305,7 +328,23 @@ const Prefix = () => {
                     </CardContent>
                 </Card>
             )}
-            <ToastContainer />
+            
+      <Backdrop
+        sx={{ 
+          color: '#fff', 
+          zIndex: (theme) => Math.max(theme.zIndex.drawer + 1, 1400),
+          backgroundColor: 'rgba(0, 0, 0, 0.7)'
+        }}
+        open={isUploading}
+      >
+        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+          <CircularProgress color="inherit" size={60} />
+          <Typography variant="h6" sx={{ mt: 3, color: '#ffffff', fontWeight: 'bold', letterSpacing: 1 }}>
+            Importing Data... Please wait.
+          </Typography>
+        </Box>
+      </Backdrop>
+      <ToastContainer />
         </div>
     );
 }

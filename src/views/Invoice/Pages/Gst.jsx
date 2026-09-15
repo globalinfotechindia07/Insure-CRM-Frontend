@@ -33,7 +33,7 @@ import { toast, ToastContainer } from 'react-toastify';
 import { useNavigate } from 'react-router-dom';
 import { Radio, RadioGroup, FormControlLabel, FormLabel, FormControl } from '@mui/material';
 import { get, post } from 'api/api';
-import index from 'layout/MainLayout/HospitalName';
+
 import { currentDate } from 'utils/currentDate';
 
 const Gst = () => {

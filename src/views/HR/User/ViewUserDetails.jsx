@@ -50,7 +50,7 @@ function ViewUserDetails () {
       {/* Header Section */}
       <Card sx={{ display: 'flex', alignItems: 'center', padding: 3, gap: 3 }}>
         <Avatar
-          src={`https://your-server-url.com/${userData.basicDetails.profilePhoto}`}
+          src={`${REACT_APP_API_URL}images/${userData.basicDetails.profilePhoto}`}
           alt={`${userData.basicDetails.firstName} ${userData.basicDetails.lastName}`}
           sx={{ width: 120, height: 120 }}
         />
@@ -59,7 +59,7 @@ function ViewUserDetails () {
             {`${userData.basicDetails.firstName} ${userData.basicDetails.lastName}`}
           </Typography>
           <Typography variant='body1' color='text.secondary'>
-            {userData.basicDetails.designation || 'Employee'}
+            {userData?.basicDetails?.designation || 'Employee'}
           </Typography>
           <Typography variant='body2' color='text.secondary'>
             {userData.basicDetails.email}
@@ -84,21 +84,21 @@ function ViewUserDetails () {
             {/* Basic Details */}
             <Grid item xs={12} sm={6}>
               <Typography variant='subtitle2'>Full Name:</Typography>
-              <Typography>{`${userData.basicDetails.firstName} ${userData.basicDetails.middleName || ''} ${
-                userData.basicDetails.lastName
+              <Typography>{`${userData?.basicDetails?.firstName} ${userData?.basicDetails?.middleName || ''} ${
+                userData?.basicDetails?.lastName
               }`}</Typography>
             </Grid>
             <Grid item xs={12} sm={6}>
               <Typography variant='subtitle2'>Contact Number:</Typography>
-              <Typography>{userData.basicDetails.contactNumber}</Typography>
+              <Typography>{userData?.basicDetails?.contactNumber}</Typography>
             </Grid>
             <Grid item xs={12} sm={6}>
               <Typography variant='subtitle2'>Email:</Typography>
-              <Typography>{userData.basicDetails.email}</Typography>
+              <Typography>{userData?.basicDetails?.email}</Typography>
             </Grid>
             <Grid item xs={12} sm={6}>
               <Typography variant='subtitle2'>Residential Address:</Typography>
-              <Typography>{userData.basicDetails.residentialAddress}</Typography>
+              <Typography>{userData?.basicDetails?.residentialAddress}</Typography>
             </Grid>
           </Grid>
         )}
@@ -108,41 +108,45 @@ function ViewUserDetails () {
             {/* Employment Details */}
             <Grid item xs={12} sm={6}>
               <Typography variant='subtitle2'>Department:</Typography>
-              <Typography>{userData.employmentDetails.departmentOrSpeciality}</Typography>
+              <Typography>{userData?.employmentDetails?.departmentOrSpeciality}</Typography>
             </Grid>
             <Grid item xs={12} sm={6}>
               <Typography variant='subtitle2'>Joining Date:</Typography>
-              <Typography>{new Date(userData.employmentDetails.joiningDate).toLocaleDateString()}</Typography>
+              <Typography>{userData?.employmentDetails?.joiningDate ? new Date(userData.employmentDetails.joiningDate).toLocaleDateString() : ''}</Typography>
             </Grid>
             <Grid item xs={12} sm={6}>
               <Typography variant='subtitle2'>Location:</Typography>
-              <Typography>{userData.employmentDetails.location}</Typography>
+              <Typography>{userData?.employmentDetails?.location}</Typography>
             </Grid>
           </Grid>
         )}
 
         {activeTab === 2 && (
-          <Table>
+          <Grid container spacing={3}>
             {/* Documentation Details */}
-            <TableBody>
-              <TableRow>
-                <TableCell>Offer Letter</TableCell>
-                <TableCell>
-                  <a href={`https://your-server-url.com/${userData.documentation.offerLetter}`} target='_blank' rel='noopener noreferrer'>
-                    View
-                  </a>
-                </TableCell>
-              </TableRow>
-              <TableRow>
-                <TableCell>Testing Document</TableCell>
-                <TableCell>
-                  <a href={`https://your-server-url.com/${userData.documentation.testing}`} target='_blank' rel='noopener noreferrer'>
-                    View
-                  </a>
-                </TableCell>
-              </TableRow>
-            </TableBody>
-          </Table>
+            {userData?.documentation && Object.keys(userData.documentation).length > 0 ? (
+              Object.entries(userData.documentation).map(([key, fileName]) => (
+                <Grid item xs={12} sm={6} key={key}>
+                  <Typography variant='subtitle2' sx={{ textTransform: 'capitalize' }}>
+                    {key.replace(/([A-Z])/g, ' $1').trim()}:
+                  </Typography>
+                  <Typography>
+                    {fileName ? (
+                      <a href={`${REACT_APP_API_URL}images/${fileName}`} target='_blank' rel='noopener noreferrer'>
+                        View Document
+                      </a>
+                    ) : (
+                      'N/A'
+                    )}
+                  </Typography>
+                </Grid>
+              ))
+            ) : (
+              <Grid item xs={12}>
+                <Typography color='text.secondary'>No documents uploaded.</Typography>
+              </Grid>
+            )}
+          </Grid>
         )}
 
         {activeTab === 3 && (
@@ -150,15 +154,15 @@ function ViewUserDetails () {
             {/* HR/Finance Details */}
             <Grid item xs={12} sm={6}>
               <Typography variant='subtitle2'>Bank Name:</Typography>
-              <Typography>{userData.hrFinance.bankName}</Typography>
+              <Typography>{userData?.hrFinance?.bankName}</Typography>
             </Grid>
             <Grid item xs={12} sm={6}>
               <Typography variant='subtitle2'>Account Number:</Typography>
-              <Typography>{userData.hrFinance.bankAccountNumber}</Typography>
+              <Typography>{userData?.hrFinance?.bankAccountNumber}</Typography>
             </Grid>
             <Grid item xs={12} sm={6}>
               <Typography variant='subtitle2'>PAN Card No:</Typography>
-              <Typography>{userData.hrFinance.panCardNo}</Typography>
+              <Typography>{userData?.hrFinance?.panCardNo}</Typography>
             </Grid>
           </Grid>
         )}

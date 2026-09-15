@@ -77,6 +77,7 @@ const BasicDetails = ({ setValue, storedAllData, setStoredAllData }) => {
       setBasicDetails((prev) => ({
         ...prev,
         ...storedAllData.basicDetails,
+        prefix: storedAllData.basicDetails.prefix?._id || storedAllData.basicDetails.prefix || '',
         bankAccountNumber: cleanBankField(storedAllData.basicDetails.bankAccountNumber),
         bankName: cleanBankField(storedAllData.basicDetails.bankName),
         branchName: cleanBankField(storedAllData.basicDetails.branchName)

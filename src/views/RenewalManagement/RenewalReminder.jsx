@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import {
+import { 
   Grid,
   TextField,
   Button,
@@ -27,7 +27,7 @@ import {
   InputLabel,
   Select,
   TablePagination
-} from '@mui/material';
+, Backdrop } from '@mui/material';
 import { Link } from 'react-router-dom';
 import Breadcrumb from 'component/Breadcrumb';
 import { gridSpacing } from 'config.js';
@@ -1112,6 +1112,22 @@ const RenewalReminder = () => {
           </Button>
         </DialogActions>
       </Dialog>
+    
+      <Backdrop
+        sx={{ 
+          color: '#fff', 
+          zIndex: (theme) => Math.max(theme.zIndex.drawer + 1, 1400),
+          backgroundColor: 'rgba(0, 0, 0, 0.7)'
+        }}
+        open={isUploading}
+      >
+        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+          <CircularProgress color="inherit" size={60} />
+          <Typography variant="h6" sx={{ mt: 3, color: '#ffffff', fontWeight: 'bold', letterSpacing: 1 }}>
+            Importing Data... Please wait.
+          </Typography>
+        </Box>
+      </Backdrop>
     </>
   );
 };

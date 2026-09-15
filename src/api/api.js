@@ -30,37 +30,42 @@ const convertBsonObjectIdToString = (obj) => {
 
 const REACT_APP_API_URL = import.meta.env.VITE_APP_API_URL;
 
-
-
 export default REACT_APP_API_URL;
-//  REACT_APP_API_URL;
 
-// Get token
 export const retrieveToken = () => {
-  let token = '';
-  document.cookie.split('; ').forEach((v) => {
-    if (v.split('=')[0] === 'hmsToken') {
-      token = v.split('=')[1];
-    }
-  });
+  let token = localStorage.getItem('token') || '';
   if (!token) {
-    token = localStorage.getItem('token') || '';
+    document.cookie.split('; ').forEach((v) => {
+      if (v.trim().split('=')[0] === 'hmsToken') {
+        token = v.split('=')[1];
+      }
+    });
   }
   return token;
 };
 
-// Get request API
 export const get = async (url) => {
   const token = retrieveToken();
   const companyId = localStorage.getItem('companyId');
-  const response = await fetch(`${REACT_APP_API_URL}${url}${url.includes('?') ? '&' : '?'}companyId=${encodeURIComponent(companyId)}`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-      'Content-Type': 'application/json'
+  const cleanUrl = url.startsWith('/') ? url.slice(1) : url;
+  const fullUrl = `${REACT_APP_API_URL}${cleanUrl}${cleanUrl.includes('?') ? '&' : '?'}companyId=${encodeURIComponent(companyId)}`;
+
+  try {
+    const response = await axios.get(fullUrl, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+    return response.data;
+  } catch (error) {
+    if (error.response && (error.response.status === 401 || error.response.status === 403)) {
+      localStorage.removeItem('token');
+      document.cookie = 'hmsToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+      window.location.href = '/login';
     }
-  });
-  const json = await response.json();
-  return convertBsonObjectIdToString(json);
+    throw error;
+  }
 };
 
 // Post request API
@@ -82,61 +87,58 @@ export { toUppercasePayload };
 export const post = async (url, data) => {
   const token = retrieveToken();
   const companyId = localStorage.getItem('companyId');
-
   const isFormData = data instanceof FormData;
-  const headers = {
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    ...(isFormData ? {} : { 'Content-Type': 'application/json' })
-  };
-
-  const response = await fetch(`${REACT_APP_API_URL}${url}${url.includes('?') ? '&' : '?'}companyId=${encodeURIComponent(companyId)}`, {
-    method: 'POST',
-    headers,
-    body: isFormData ? data : JSON.stringify(convertBsonObjectIdToString(data))
+  const cleanUrl = url.startsWith('/') ? url.slice(1) : url;
+  
+  const fullUrl = `${REACT_APP_API_URL}${cleanUrl}${cleanUrl.includes('?') ? '&' : '?'}companyId=${encodeURIComponent(companyId)}`;
+  
+  const response = await axios.post(fullUrl, isFormData ? data : convertBsonObjectIdToString(data), {
+    headers: {
+      Authorization: `Bearer ${token}`,
+      ...(isFormData ? {} : { 'Content-Type': 'application/json' })
+    }
   });
 
-  if (response.status === 401) {
-    throw new Error('Unauthorized');
-  }
-
-  const json = await response.json();
-  return convertBsonObjectIdToString(json);
+  return response.data;
 };
 
 export const put = async (url, data) => {
   const token = retrieveToken();
   const companyId = localStorage.getItem('companyId');
   const isFormData = data instanceof FormData;
-  const headers = {
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    ...(isFormData ? {} : { 'Content-Type': 'application/json' })
-  };
+  const cleanUrl = url.startsWith('/') ? url.slice(1) : url;
+  
+  const fullUrl = `${REACT_APP_API_URL}${cleanUrl}${cleanUrl.includes('?') ? '&' : '?'}companyId=${encodeURIComponent(companyId)}`;
 
-  const response = await fetch(`${REACT_APP_API_URL}${url}${url.includes('?') ? '&' : '?'}companyId=${encodeURIComponent(companyId)}`, {
-    method: 'PUT',
-    headers,
-    body: isFormData ? data : JSON.stringify(convertBsonObjectIdToString(data))
-  });
-
-  if (response.status === 401) throw new Error('Unauthorized');
-  const json = await response.json();
-  return convertBsonObjectIdToString(json);
-};
-
-// Remove request API
-export const remove = async (url, ids) => {
-  const token = retrieveToken();
-  console.log(ids);
-
-  const response = await axios.delete(`${REACT_APP_API_URL}${url}`, {
+  const response = await axios.put(fullUrl, isFormData ? data : convertBsonObjectIdToString(data), {
     headers: {
       Authorization: `Bearer ${token}`,
-      'Content-Type': 'application/json'
-    },
-    data: { ids: ids } // Send `ids` directly in the `data` field
+      ...(isFormData ? {} : { 'Content-Type': 'application/json' })
+    }
   });
 
   return response.data;
+};
+
+// Remove request API
+export const remove = async (url) => {
+  const token = retrieveToken();
+  const companyId = localStorage.getItem('companyId');
+  const cleanUrl = url.startsWith('/') ? url.slice(1) : url;
+  
+  const fullUrl = `${REACT_APP_API_URL}${cleanUrl}${cleanUrl.includes('?') ? '&' : '?'}companyId=${encodeURIComponent(companyId)}`;
+
+  try {
+    const response = await axios.delete(fullUrl, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
 };
 
 // <<<<<<< HEAD

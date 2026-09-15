@@ -9,6 +9,7 @@ import { useMediaQuery, AppBar, Box, Toolbar } from '@mui/material';
 import { drawerWidth } from 'config.js';
 import Header from './Header';
 import Sidebar from './Sidebar';
+import DueAlertModal from './DueAlertModal';
 import value from 'assets/scss/_themes-vars.module.scss';
 
 // custom style
@@ -72,6 +73,7 @@ const MainLayout = () => {
         <OutletDiv>
           <Outlet />
         </OutletDiv>
+        <DueAlertModal />
       </Main>
     </Box>
   );

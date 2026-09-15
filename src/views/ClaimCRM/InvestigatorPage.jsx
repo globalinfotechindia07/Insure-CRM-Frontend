@@ -23,7 +23,9 @@ import {
   Box,
   FormControlLabel,
   Switch,
-} from "@mui/material";
+  Backdrop,
+  CircularProgress
+} from '@mui/material';
 
 import { 
   Add, 
@@ -71,6 +73,7 @@ const InvestigatorPage = () => {
     address: "",
     status: true,
   });
+  const [isUploading, setIsUploading] = useState(false);
 
   const fetchData = async () => {
     setLoading(true);
@@ -328,6 +331,8 @@ const InvestigatorPage = () => {
 
     const reader = new FileReader();
     reader.onload = async (evt) => {
+      setIsUploading(true);
+      try {
       const text = evt.target.result;
       const lines = text.split("\n").map(line => line.trim()).filter(line => line !== "");
       if (lines.length <= 1) {
@@ -386,6 +391,10 @@ const InvestigatorPage = () => {
         toast.success(`Imported ${successCount} new unique investigators successfully!`);
       }
       fetchData();
+    
+      } finally {
+        setIsUploading(false);
+      }
     };
     reader.readAsText(file);
     e.target.value = '';
@@ -632,6 +641,22 @@ const InvestigatorPage = () => {
           {snackbar.message}
         </Alert>
       </Snackbar>
+      
+      <Backdrop
+        sx={{ 
+          color: '#fff', 
+          zIndex: (theme) => Math.max(theme.zIndex.drawer + 1, 1400),
+          backgroundColor: 'rgba(0, 0, 0, 0.7)'
+        }}
+        open={isUploading}
+      >
+        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+          <CircularProgress color="inherit" size={60} />
+          <Typography variant="h6" sx={{ mt: 3, color: '#ffffff', fontWeight: 'bold', letterSpacing: 1 }}>
+            Importing Data... Please wait.
+          </Typography>
+        </Box>
+      </Backdrop>
       <ToastContainer />
     </div>
   );

@@ -6,7 +6,7 @@ import menuItem from 'menu-items';
 import adminMenuItems from 'admin-menu-items';
 import staffMenuItems from 'staff-menu-items.jsx';
 import { useDispatch, useSelector } from 'react-redux';
-import { selectPatient } from 'store/patientSlice';
+// // import { selectPatient } from 'store/patientSlice';
 import { toast, ToastContainer } from 'react-toastify';
 import NavItem from './NavItem';
 import { useNavigate } from 'react-router';
@@ -100,7 +100,7 @@ const MenuList = () => {
       dispatch(fetchSystemRights(userId));
     }
 
-    getDailyConfirmedAppointmentConsultantWise();
+    // getDailyConfirmedAppointmentConsultantWise(); // Removed as per user request
   }, []);
 
   // ✅ FILTER MENU
