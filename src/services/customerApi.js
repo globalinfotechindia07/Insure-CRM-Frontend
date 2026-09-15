@@ -1,9 +1,20 @@
 import axios from "axios";
+import { retrieveToken } from "../api/api";
 
 const API = axios.create({
   baseURL: import.meta.env.VITE_APP_API_URL,
-  // baseURL: "https://api.jpinsurancebrokers.co.in/api",
-  // baseURL: "https://insure-crm-backend-1-n420.onrender.com/api",
+});
+
+API.interceptors.request.use((config) => {
+  const token = retrieveToken();
+  const companyId = localStorage.getItem('companyId');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  if (companyId) {
+    config.params = { ...config.params, companyId };
+  }
+  return config;
 });
 
 export const createCustomer = (data) => API.post("/customers", data);

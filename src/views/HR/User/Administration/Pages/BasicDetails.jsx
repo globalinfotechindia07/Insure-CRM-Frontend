@@ -338,19 +338,17 @@ const BasicDetails = ({ setValue, storedAllData, setStoredAllData }) => {
     const validations = [
       { field: 'empCode', message: 'Employee code is required.' },
       { field: 'firstName', message: 'First name is required.' },
-      // { field: 'middleName', message: 'Middle name is required.' },
       { field: 'lastName', message: 'Last name is required.' },
       { field: 'contactNumber', message: 'Contact number is required.' },
       { field: 'email', message: 'Email is required.' }
     ];
 
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/; // Email validation regex
-    const maxFileSize = 2 * 1024 * 1024; // 2 MB
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const maxFileSize = 2 * 1024 * 1024;
 
     let allValid = true;
     const newErrors = {};
 
-    // Validate required fields
     validations.forEach(({ field, message }) => {
       if (!basicDetails[field]) {
         newErrors[field] = message;
@@ -358,7 +356,6 @@ const BasicDetails = ({ setValue, storedAllData, setStoredAllData }) => {
       }
     });
 
-    // Validate email format
     if (basicDetails.email && !emailRegex.test(basicDetails.email)) {
       newErrors.email = 'Please enter a valid email address.';
       allValid = false;
@@ -369,7 +366,6 @@ const BasicDetails = ({ setValue, storedAllData, setStoredAllData }) => {
       allValid = false;
     }
 
-    // Validate contact number length (must be exactly 10 digits)
     if (basicDetails.contactNumber && basicDetails.contactNumber.length !== 10) {
       newErrors.contactNumber = 'Contact number must be exactly 10 digits.';
       allValid = false;
@@ -380,7 +376,6 @@ const BasicDetails = ({ setValue, storedAllData, setStoredAllData }) => {
       allValid = false;
     }
 
-    // Validate profile photo size
     if (basicDetails.profilePhoto) {
       if (basicDetails.profilePhoto.size > maxFileSize) {
         newErrors.profilePhoto = 'Image size must be less than 2 MB.';
@@ -389,81 +384,16 @@ const BasicDetails = ({ setValue, storedAllData, setStoredAllData }) => {
     }
 
     setErrors(newErrors);
-    return allValid;
+    return { allValid, newErrors };
   };
-
-  // const handleSubmit = async (event) => {
-  //   event.preventDefault();
-
-  //   const isValid = BasicDetailsFormValidation();
-
-  //   if (isValid) {
-  //     const payLoad = { ...basicDetails };
-  //     console.log('payload', payLoad);
-
-  //     const formData = new FormData();
-
-  //     // for (const [key, value] of Object.entries(payLoad)) {
-  //     //   if (value) {
-  //     //     formData.append(key, value)
-  //     //   }
-  //     // }
-
-  //     // for (const [key, value] of Object.entries(payLoad)) {
-  //     //   if (value !== undefined && value !== null) {
-  //     //     if (Array.isArray(value) || (typeof value === 'object' && value !== null)) {
-  //     //       formData.append(key, JSON.stringify(value));
-  //     //     } else {
-  //     //       formData.append(key, value);
-  //     //     }
-  //     //   }
-  //     // }
-
-  //     for (const [key, value] of Object.entries(payLoad)) {
-  //       if (value !== undefined && value !== null) {
-  //         // ✅ Handle file separately (only profilePhoto)
-  //         if (key === 'profilePhoto' && value instanceof File) {
-  //           formData.append(key, value);
-  //         }
-  //         // ✅ For other objects/arrays, stringify them
-  //         else if (typeof value === 'object') {
-  //           formData.append(key, JSON.stringify(value));
-  //         } else {
-  //           formData.append(key, value);
-  //         }
-  //       }
-  //     }
-
-  //     const submitBasicDetails = await fetch(`${REACT_APP_API_URL}administrative/basicDetails`, {
-  //       method: 'POST',
-  //       body: formData
-  //     });
-
-  //     const response = await submitBasicDetails.json();
-  //     console.log('submit basic details', response);
-
-  //     if (response.success === true) {
-  //       setStoredAllData((prev) => ({ ...prev, basicDetails: response.data.basicDetails, submittedFormId: response.data._id }));
-  //       toast.success(response.message);
-  //       setValue((prev) => prev + 1);
-  //     }
-
-  //     if (response.success === false) {
-  //       toast.error(response.message);
-  //     }
-  //   } else {
-  //     toast.error('Please fill out all required fields.');
-  //   }
-  // };
-
-  //TODO: NEW DATA
 
   const handleSubmit = async (event) => {
     event.preventDefault();
 
-    const isValid = BasicDetailsFormValidation();
-    if (!isValid) {
-      toast.error('Please fill out all required fields.');
+    const { allValid, newErrors } = BasicDetailsFormValidation();
+    if (!allValid) {
+      const errorMessages = Object.values(newErrors).join('\n');
+      toast.error(`Validation Failed:\n${errorMessages}`);
       return;
     }
 
