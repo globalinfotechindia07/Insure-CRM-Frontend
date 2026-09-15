@@ -861,24 +861,58 @@ const EditPolicy = () => {
   }, [subProductData, selectedProductName]);
 
   useEffect(() => {
+<<<<<<< HEAD
+    // ⛔ wait until gstData is loaded
+    if (!gstData || gstData.length === 0) return;
+=======
     const tpPremium = parseAmount(form?.tpPremium);
     const tpGstId = form?.tpGst || form?.gst;
     const tpGstValue = parseAmount(gstData?.find((i) => i._id === tpGstId)?.value);
+>>>>>>> 3856d067b636fb53b63d418b6b2e249047d118d6
 
-    const tpGstAmount = round2(tpPremium * (tpGstValue / 100));
-    const tpAmount = round2(tpPremium + tpGstAmount);
+    const tpPremium = parseAmount(form?.tpPremium);
+    const tpGstId = form?.tpGst || form?.gst;
+    const tpGstValue = parseAmount(gstData?.find((i) => String(i._id) === String(tpGstId))?.value);
 
     const odPremium = parseAmount(form?.odPremium);
     const odGstId = form?.odGst || form?.gst;
+<<<<<<< HEAD
+    const odGstValue = parseAmount(gstData?.find((i) => String(i._id) === String(odGstId))?.value);
+=======
     const odGstValue = parseAmount(gstData?.find((i) => i._id === odGstId)?.value);
+>>>>>>> 3856d067b636fb53b63d418b6b2e249047d118d6
 
-    const odGstAmount = round2(odPremium * (odGstValue / 100));
+    // ⛔ if both premiums are empty, don't calculate
+    if (!tpPremium && !odPremium) return;
+
+    // ⛔ in edit mode, if both GST rates are completely 0/missing despite having premium, don't override 
+    // unless they actually selected a 0% GST intentionally.
+    if (isEditMode && !tpGstValue && !odGstValue && !tpGstId && !odGstId) return;
+
+    const tpGstAmount = tpGstValue ? round2(tpPremium * (tpGstValue / 100)) : parseAmount(form?.tpGstAmount);
+    const tpAmount = round2(tpPremium + tpGstAmount);
+
+    const odGstAmount = odGstValue ? round2(odPremium * (odGstValue / 100)) : parseAmount(form?.odGstAmount);
     const odAmount = round2(odPremium + odGstAmount);
 
     const totalPremium = round2(tpPremium + odPremium);
     const gstAmount = round2(tpGstAmount + odGstAmount);
     const totalAmount = round2(tpAmount + odAmount);
 
+<<<<<<< HEAD
+    setForm((prev) => ({
+      ...prev,
+      tpGstAmount: formatAmountWithCommas(tpGstAmount),
+      tpAmount: formatAmountWithCommas(tpAmount),
+      odGstAmount: formatAmountWithCommas(odGstAmount),
+      odAmount: formatAmountWithCommas(odAmount),
+      netPremium: formatAmountWithCommas(totalPremium),
+      gstAmount: formatAmountWithCommas(gstAmount),
+      totalAmount: formatAmountWithCommas(totalAmount),
+      paidAmount: formatAmountWithCommas(totalAmount)
+    }));
+  }, [form.tpPremium, form.odPremium, form.tpGst, form.odGst, form.gst, gstData, isEditMode]);
+=======
     setForm((prev) => {
       const newTpGstAmount = formatAmountWithCommas(tpGstAmount);
       const newTpAmount = formatAmountWithCommas(tpAmount);
@@ -914,6 +948,7 @@ const EditPolicy = () => {
       };
     });
   }, [form.tpPremium, form.odPremium, form.tpGst, form.odGst, form.gst, gstData]);
+>>>>>>> 3856d067b636fb53b63d418b6b2e249047d118d6
 
   useEffect(() => {
     if (!selectedDeptName.includes('motor')) {
@@ -1303,7 +1338,11 @@ const EditPolicy = () => {
 
   const isEditMode = Boolean(policyData?._id);
 
+<<<<<<< HEAD
+  // Duplicate GST calculation removed in favor of the consolidated one above
+=======
 
+>>>>>>> 3856d067b636fb53b63d418b6b2e249047d118d6
 
   const round2 = (num) => Math.round(Number(num));
 

@@ -19,7 +19,9 @@ import {
   TableContainer,
   TableHead,
   TableRow,
-  Tooltip
+  Tooltip,
+  Backdrop,
+  CircularProgress
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -27,14 +29,21 @@ import AddIcon from '@mui/icons-material/Add';
 import SettingsIcon from '@mui/icons-material/Settings';
 import NotificationsActiveIcon from '@mui/icons-material/NotificationsActive';
 import NotificationsOffIcon from '@mui/icons-material/NotificationsOff';
+import CloudUploadIcon from '@mui/icons-material/CloudUpload';
+import DownloadIcon from '@mui/icons-material/Download';
 import { toast } from 'react-toastify';
-import { get, post, put, remove } from 'api/api';
+import Swal from 'sweetalert2';
+import axios from 'axios';
+import REACT_APP_API_URL, { get, post, put, remove, retrieveToken } from 'api/api';
 
 const POS = () => {
   const [posList, setPosList] = useState([]);
   const [open, setOpen] = useState(false);
   const [editId, setEditId] = useState(null);
-  
+  const [isUploading, setIsUploading] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
+
   const [patternOpen, setPatternOpen] = useState(false);
   const [patternData, setPatternData] = useState({ prefix: 'POS-', nextSequence: 1, paddingSize: 3 });
   
@@ -121,12 +130,12 @@ const POS = () => {
       if (editId) {
         const response = await put(`pos/${editId}`, formData);
         if (response.success || response) {
-          toast.success('POS updated successfully');
+          Swal.fire({ title: 'Success!', text: 'POS updated successfully', icon: 'success', timer: 2000, showConfirmButton: false });
         }
       } else {
         const response = await post('pos', formData);
         if (response.success || response) {
-          toast.success('POS created successfully');
+          Swal.fire({ title: 'Success!', text: 'POS created successfully', icon: 'success', timer: 2000, showConfirmButton: false });
         }
       }
       fetchPOS();
@@ -154,11 +163,22 @@ const POS = () => {
   };
 
   const handleDelete = async (id) => {
-    if (window.confirm('Are you sure you want to delete this POS?')) {
+    const result = await Swal.fire({
+      title: 'Are you sure?',
+      text: "You won't be able to revert this!",
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#3085d6',
+      confirmButtonText: 'Yes, delete it!',
+      cancelButtonText: 'Cancel'
+    });
+
+    if (result.isConfirmed) {
       try {
         const response = await remove(`pos/${id}`);
         if (response.success || response) {
-          toast.success('POS deleted successfully');
+          Swal.fire('Deleted!', 'POS has been deleted.', 'success');
           fetchPOS();
         }
       } catch (error) {
@@ -179,12 +199,92 @@ const POS = () => {
     }
   };
 
+
+  const handleExportCSV = async () => {
+    setIsExporting(true);
+    try {
+      const token = retrieveToken();
+      const url = `${REACT_APP_API_URL}pos/export-csv`;
+
+      const response = await axios.get(url, {
+        headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+        responseType: 'blob'
+      });
+
+      const filename = `pos.xlsx`;
+      const blob = new Blob([response.data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      const objectUrl = window.URL.createObjectURL(blob);
+
+      const link = document.createElement('a');
+      link.href = objectUrl;
+      link.setAttribute('download', filename);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      setTimeout(() => window.URL.revokeObjectURL(objectUrl), 300);
+
+      toast.success('POS exported successfully');
+    } catch (error) {
+      console.error('Error exporting data:', error);
+      toast.error('Error exporting POS data');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const handleImportCSV = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    setIsImporting(true);
+    try {
+      const token = retrieveToken();
+      const response = await axios.post(`${REACT_APP_API_URL}pos/import-csv`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
+        }
+      });
+      if (response.data.success || response.data) {
+        toast.success(response.data.message || 'POS data imported successfully');
+        fetchPOS();
+      }
+    } catch (error) {
+      console.error('Error importing data:', error);
+      toast.error(error.response?.data?.message || error.response?.data?.error || 'Error importing POS data');
+    } finally {
+      setIsImporting(false);
+      e.target.value = null; // Reset input
+    }
+  };
   return (
     <Box sx={{ p: 3 }}>
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
         <Typography variant="h4" fontWeight="bold">POS Management</Typography>
-        <Box>
-          <Button variant="outlined" color="secondary" startIcon={<SettingsIcon />} onClick={handlePatternOpen} sx={{ mr: 2 }}>
+        <Box sx={{ display: 'flex', gap: 1 }}>
+          <Button
+            variant="contained"
+            color="secondary"
+            startIcon={isExporting ? <CircularProgress size={20} /> : <DownloadIcon />}
+            onClick={handleExportCSV}
+            disabled={isExporting}
+          >
+            {isExporting ? 'Exporting...' : 'Export'}
+          </Button>
+          <Button
+            variant="contained"
+            color="success"
+            component="label"
+            startIcon={isImporting ? <CircularProgress size={20} /> : <CloudUploadIcon />}
+            disabled={isImporting}
+          >
+            {isImporting ? 'Importing...' : 'Import'}
+            <input type="file" hidden accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel" onChange={handleImportCSV} />
+          </Button>
+          <Button variant="outlined" color="secondary" startIcon={<SettingsIcon />} onClick={handlePatternOpen}>
             Define Pattern
           </Button>
           <Button variant="contained" color="primary" startIcon={<AddIcon />} onClick={handleOpen}>
@@ -309,6 +409,22 @@ const POS = () => {
           </DialogActions>
         </form>
       </Dialog>
+
+      <Backdrop
+        sx={{ 
+          color: '#fff', 
+          zIndex: (theme) => Math.max(theme.zIndex.drawer + 1, 1400),
+          backgroundColor: 'rgba(0, 0, 0, 0.7)'
+        }}
+        open={isImporting || isExporting}
+      >
+        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+          <CircularProgress color="inherit" size={60} />
+          <Typography variant="h6" sx={{ mt: 3, color: '#ffffff', fontWeight: 'bold', letterSpacing: 1 }}>
+            {isExporting ? 'Exporting Data... Please wait.' : 'Importing Data... Please wait.'}
+          </Typography>
+        </Box>
+      </Backdrop>
     </Box>
   );
 };
