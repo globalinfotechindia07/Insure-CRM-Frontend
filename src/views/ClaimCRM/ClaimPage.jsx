@@ -370,8 +370,8 @@ const ClaimPage = () => {
 
         setFormData({
           claimNo: item.claimNo || "",
-          department: item.department || item.policyId?.insDepartment?.name || item.policyId?.insDepartment || "",
-          status: item.status || "Pending",
+          department: item.department || item.policyId?.insDepartment?.insDepartment || item.policyId?.insDepartment?.name || (typeof item.policyId?.insDepartment === 'string' ? item.policyId?.insDepartment : "") || "",
+          status: item.status ? (item.status.toLowerCase() === 'under process' ? 'Under Process' : item.status.charAt(0).toUpperCase() + item.status.slice(1).toLowerCase()) : "Pending",
           remarks: item.remarks || "",
           policyId: item.policyId?._id || item.policyId || "",
           policyNo: item.policyId?.policyNumber || item.policyNo || "",
@@ -407,7 +407,7 @@ const ClaimPage = () => {
           journeyFrom: item.journeyFrom || "",
           journeyTo: item.journeyTo || "",
           surveyorReferenceNumber: item.surveyorReferenceNumber || "",
-          settlementType: item.settlementType || "",
+          settlementType: item.settlementType ? (item.settlementType.toUpperCase() === 'NON-STANDARD' ? 'Non-Standard' : item.settlementType.charAt(0).toUpperCase() + item.settlementType.slice(1).toLowerCase()) : "",
           claimApprovedAmount: item.claimApprovedAmount || "",
           dateOfApprovalOfClaim: item.dateOfApprovalOfClaim?.split("T")[0] || "",
           dateOfSettlement: item.dateOfSettlement?.split("T")[0] || "",

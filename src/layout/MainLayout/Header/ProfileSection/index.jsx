@@ -35,8 +35,8 @@ const ProfileSection = () => {
   const [savedPattern, setSavedPattern] = useState(null);
   
   // ✅ REDUX SE DATA LO - YEH CHANGE KIYA HAI
-  const userData = useSelector((state) => state.patient.userData); // patient slice se userData
-  const isAuthenticated = useSelector((state) => state.patient.isAuthenticated);
+  const userData = useSelector((state) => state.auth?.user); // auth slice se user
+  const isAuthenticated = useSelector((state) => state.auth?.isAuthenticated);
   
   const dispatch = useDispatch(); 
   const navigate = useNavigate();

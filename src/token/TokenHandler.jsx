@@ -6,7 +6,7 @@ function TokenHandler () {
       return decodeURIComponent(cookieValue)
     }
   }
-  return null
+  return localStorage.getItem('token') || null;
 }
 
 export default TokenHandler

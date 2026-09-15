@@ -95,6 +95,7 @@ const TPAPage = () => {
     try {
 
       if (editId) {
+        setOpen(false);
         const result = await Swal.fire({
           title: "Update Record?",
           text: "Do you want to update this record?",
@@ -116,7 +117,6 @@ const TPAPage = () => {
             timer: 2000,
             showConfirmButton: false,
           });
-          setOpen(false);
           setEditId(null);
           setFormData({
             tpaName: "",
@@ -126,6 +126,8 @@ const TPAPage = () => {
             address: "",
           });
           fetchData();
+        } else {
+          setOpen(true);
         }
       } else {
 
