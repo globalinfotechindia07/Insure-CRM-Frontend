@@ -247,8 +247,13 @@ const AdminStaff = () => {
     const filterSuspended = async () => {
       const results = [];
       for (const item of filteredData) {
-        const response = await get(`admin/fetch-user-suspension-status/${item._id}`);
-        if (!response.isSuspended) {
+        try {
+          const response = await get(`admin/fetch-user-suspension-status/${item._id}`);
+          if (!response.isSuspended) {
+            results.push(item);
+          }
+        } catch (error) {
+          // If a user doesn't have an admin record yet, default to active
           results.push(item);
         }
       }
