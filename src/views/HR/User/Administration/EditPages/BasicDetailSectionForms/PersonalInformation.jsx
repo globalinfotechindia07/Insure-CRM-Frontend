@@ -23,18 +23,18 @@ function PersonalInformation({ basicDetails, setBasicDetails, errors, handleUpda
   //   }
   // }, [basicDetails.profilePhoto]);
   useEffect(() => {
-  fetchPrefix();
+    fetchPrefix();
 
-  if (
-    basicDetails?.profilePhoto &&
-    typeof basicDetails.profilePhoto === 'string' &&
-    !profilePhotoPreview
-  ) {
-    setProfilePhotoPreview(
-      `${REACT_APP_API_URL}api/images/${basicDetails.profilePhoto}`
-    );
-  }
-}, [basicDetails?.profilePhoto, profilePhotoPreview]);
+    if (
+      basicDetails?.profilePhoto &&
+      typeof basicDetails.profilePhoto === 'string' &&
+      !profilePhotoPreview
+    ) {
+      setProfilePhotoPreview(
+        `${REACT_APP_API_URL}images/${basicDetails.profilePhoto}`
+      );
+    }
+  }, [basicDetails?.profilePhoto, profilePhotoPreview]);
 
 
   // Handle profile photo change
