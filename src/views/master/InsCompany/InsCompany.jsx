@@ -202,15 +202,15 @@ const InsCompany = () => {
       <Grid container justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
         <Typography variant="h5">Insurance Company</Typography>
         <div style={{ display: 'flex', gap: '10px' }}>
-          <Button variant="contained" startIcon={<Add />} onClick={handleOpen}>
+          <Button variant="contained" startIcon={<Add />} onClick={handleOpen} disabled={localStorage.getItem('loginRole') !== 'admin'}>
             Add Company
           </Button>
           <Button variant="contained" color="secondary" onClick={exportCSV} disabled={localStorage.getItem('loginRole') !== 'admin'}>
             Export
           </Button>
-          <Button variant="contained" component="label" sx={{ backgroundColor: '#4caf50', color: 'white', '&:hover': { backgroundColor: '#388e3c' } }}>
+          <Button variant="contained" component="label" sx={{ backgroundColor: '#4caf50', color: 'white', '&:hover': { backgroundColor: '#388e3c' } }} disabled={localStorage.getItem('loginRole') !== 'admin'}>
             Import
-            <input type="file" accept=".csv" hidden onChange={handleImportCSV} />
+            <input type="file" accept=".csv" hidden onChange={handleImportCSV} disabled={localStorage.getItem('loginRole') !== 'admin'} />
           </Button>
         </div>
       </Grid>
@@ -278,13 +278,19 @@ const InsCompany = () => {
                           size="small"
                           onClick={() => handleEdit(index)}
                           sx={{ padding: '1px', minWidth: '24px', height: '24px', mr: '5px' }}
+                          disabled={localStorage.getItem('loginRole') !== 'admin'}
                         >
-                          <IconButton color="inherit">
+                          <IconButton color="inherit" disabled={localStorage.getItem('loginRole') !== 'admin'}>
                             <Edit />
                           </IconButton>
                         </Button>
-                        <Button color="error" onClick={() => handleDelete(index)} sx={{ padding: '1px', minWidth: '24px', height: '24px' }}>
-                          <IconButton color="inherit">
+                        <Button 
+                          color="error" 
+                          onClick={() => handleDelete(index)} 
+                          sx={{ padding: '1px', minWidth: '24px', height: '24px' }}
+                          disabled={localStorage.getItem('loginRole') !== 'admin'}
+                        >
+                          <IconButton color="inherit" disabled={localStorage.getItem('loginRole') !== 'admin'}>
                             <Delete />
                           </IconButton>
                         </Button>
