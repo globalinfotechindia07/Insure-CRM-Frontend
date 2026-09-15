@@ -565,7 +565,7 @@ const EditPolicy = () => {
               ? String(policyData?.odBrokerageRate)
               : '',
 
-           endorsementGst: policyData?.endorsementGst?._id
+          endorsementGst: policyData?.endorsementGst?._id
             ? String(policyData?.endorsementGst._id)
             : policyData?.endorsementGst
               ? String(policyData?.endorsementGst)
@@ -861,14 +861,14 @@ const EditPolicy = () => {
 
   useEffect(() => {
     const tpPremium = parseAmount(form?.tpPremium);
-    const tpGstId = form?.tpGst;
+    const tpGstId = form?.tpGst || form?.gst;
     const tpGstValue = parseAmount(gstData?.find((i) => i._id === tpGstId)?.value);
 
     const tpGstAmount = round2(tpPremium * (tpGstValue / 100));
     const tpAmount = round2(tpPremium + tpGstAmount);
 
     const odPremium = parseAmount(form?.odPremium);
-    const odGstId = form?.odGst;
+    const odGstId = form?.odGst || form?.gst;
     const odGstValue = parseAmount(gstData?.find((i) => i._id === odGstId)?.value);
 
     const odGstAmount = round2(odPremium * (odGstValue / 100));
@@ -878,28 +878,54 @@ const EditPolicy = () => {
     const gstAmount = round2(tpGstAmount + odGstAmount);
     const totalAmount = round2(tpAmount + odAmount);
 
-    setForm((prev) => ({
-      ...prev,
-      tpGstAmount: formatAmountWithCommas(tpGstAmount),
-      tpAmount: formatAmountWithCommas(tpAmount),
-      odGstAmount: formatAmountWithCommas(odGstAmount),
-      odAmount: formatAmountWithCommas(odAmount),
-      netPremium: formatAmountWithCommas(totalPremium),
-      gstAmount: formatAmountWithCommas(gstAmount),
-      totalAmount: formatAmountWithCommas(totalAmount),
-      paidAmount: formatAmountWithCommas(totalAmount)
-    }));
-  }, [form.tpPremium, form.odPremium, form.tpGst, form.odGst, gstData]);
+    setForm((prev) => {
+      const newTpGstAmount = formatAmountWithCommas(tpGstAmount);
+      const newTpAmount = formatAmountWithCommas(tpAmount);
+      const newOdGstAmount = formatAmountWithCommas(odGstAmount);
+      const newOdAmount = formatAmountWithCommas(odAmount);
+      const newNetPremium = formatAmountWithCommas(totalPremium);
+      const newGstAmount = formatAmountWithCommas(gstAmount);
+      const newTotalAmount = formatAmountWithCommas(totalAmount);
+
+      if (
+        prev.tpGstAmount === newTpGstAmount &&
+        prev.tpAmount === newTpAmount &&
+        prev.odGstAmount === newOdGstAmount &&
+        prev.odAmount === newOdAmount &&
+        prev.netPremium === newNetPremium &&
+        prev.gstAmount === newGstAmount &&
+        prev.totalAmount === newTotalAmount &&
+        prev.paidAmount === newTotalAmount
+      ) {
+        return prev;
+      }
+
+      return {
+        ...prev,
+        tpGstAmount: newTpGstAmount,
+        tpAmount: newTpAmount,
+        odGstAmount: newOdGstAmount,
+        odAmount: newOdAmount,
+        netPremium: newNetPremium,
+        gstAmount: newGstAmount,
+        totalAmount: newTotalAmount,
+        paidAmount: newTotalAmount
+      };
+    });
+  }, [form.tpPremium, form.odPremium, form.tpGst, form.odGst, form.gst, gstData]);
 
   useEffect(() => {
     if (!selectedDeptName.includes('motor')) {
       if (form.netPremium === '') {
-        setForm((prev) => ({
-          ...prev,
-          gstAmount: 0,
-          totalAmount: 0,
-          paidAmount: 0
-        }));
+        setForm((prev) => {
+          if (prev.gstAmount === 0 && prev.totalAmount === 0 && prev.paidAmount === 0) return prev;
+          return {
+            ...prev,
+            gstAmount: 0,
+            totalAmount: 0,
+            paidAmount: 0
+          };
+        });
         return;
       }
       const netPremium = round2(parseAmount(form.netPremium));
@@ -909,12 +935,17 @@ const EditPolicy = () => {
         const gstAmount = round2(netPremium * (gstValue / 100)) || 0;
         const totalAmount = round2(netPremium + gstAmount);
 
-        setForm((prev) => ({
-          ...prev,
-          gstAmount: formatAmountWithCommas(gstAmount),
-          totalAmount: formatAmountWithCommas(totalAmount),
-          paidAmount: formatAmountWithCommas(totalAmount)
-        }));
+        setForm((prev) => {
+          const newGstAmount = formatAmountWithCommas(gstAmount);
+          const newTotalAmount = formatAmountWithCommas(totalAmount);
+          if (prev.gstAmount === newGstAmount && prev.totalAmount === newTotalAmount && prev.paidAmount === newTotalAmount) return prev;
+          return {
+            ...prev,
+            gstAmount: newGstAmount,
+            totalAmount: newTotalAmount,
+            paidAmount: newTotalAmount
+          };
+        });
       }
     }
   }, [form.netPremium, form.gst, selectedDeptName, gstData]);
@@ -1008,7 +1039,7 @@ const EditPolicy = () => {
           nextForm.renewalDate = value;
         }
       }
-      
+
       if (name === 'insDepartment') {
         const selectedDept = insDepartmentData.find((d) => String(d._id) === String(value));
         const deptName = selectedDept?.insDepartment || selectedDept?.name || '';
@@ -1021,14 +1052,14 @@ const EditPolicy = () => {
           }
         }
       }
-      
+
       if (name === 'product' || name === 'subProduct') {
         const prod = productData.find((p) => p._id === (name === 'product' ? value : nextForm.product));
         const subProd = subProductData.find((p) => p._id === (name === 'subProduct' ? value : nextForm.subProduct));
         const pName = prod?.productName || prod?.name || '';
         const spName = subProd?.subproductName || subProd?.subProductName || subProd?.name || '';
         const combined = (pName + ' ' + spName).toLowerCase();
-        
+
         if (combined.includes('commercial vehicle od') || combined.includes('commercial vehicle - od')) {
           const gst18 = gstData.find(g => Math.round(g.value) === 18);
           if (gst18) {
@@ -1271,38 +1302,7 @@ const EditPolicy = () => {
 
   const isEditMode = Boolean(policyData?._id);
 
-  useEffect(() => {
-    // ⛔ wait until gstData is loaded
-    if (!gstData || gstData.length === 0) return;
 
-    const tpPremium = parseAmount(form.tpPremium);
-    const odPremium = parseAmount(form.odPremium);
-
-    // ⛔ if both premiums are empty, don’t calculate
-    if (!tpPremium && !odPremium) return;
-
-    const tpGstValue = parseAmount(gstData.find((i) => i._id === (form.tpGst || form.gst))?.value);
-    const odGstValue = parseAmount(gstData.find((i) => i._id === (form.odGst || form.gst))?.value);
-
-    // ⛔ in edit mode, don’t override existing values
-    if (isEditMode && !tpGstValue && !odGstValue) return;
-
-    const tpGstAmount = tpGstValue ? tpPremium * (tpGstValue / 100) : parseAmount(form.tpGstAmount);
-    const odGstAmount = odGstValue ? odPremium * (odGstValue / 100) : parseAmount(form.odGstAmount);
-
-    const netPremium = tpPremium + odPremium;
-    const gstAmount = tpGstAmount + odGstAmount;
-    const totalAmount = netPremium + gstAmount;
-
-    setForm((prev) => ({
-      ...prev,
-      tpGstAmount: formatAmountWithCommas(tpGstAmount),
-      odGstAmount: formatAmountWithCommas(odGstAmount),
-      netPremium: formatAmountWithCommas(netPremium),
-      gstAmount: formatAmountWithCommas(gstAmount),
-      totalAmount: formatAmountWithCommas(totalAmount)
-    }));
-  }, [form.tpPremium, form.odPremium, form.tpGst, form.odGst, gstData]);
 
   const round2 = (num) => Math.round(Number(num));
 
@@ -1325,13 +1325,27 @@ const EditPolicy = () => {
 
     const totalBrokerageAmount = round2(amountOnOtherTerr + amountOnTerr);
 
-    setForm((prev) => ({
-      ...prev,
-      amountOnOtherTerr: formatAmountWithCommas(amountOnOtherTerr),
-      amountOnTerr: formatAmountWithCommas(amountOnTerr),
-      totalBrokerageAmount: formatAmountWithCommas(totalBrokerageAmount),
-      totalBrokerageAmountincGst: formatAmountWithCommas(totalBrokerageAmount)
-    }));
+    setForm((prev) => {
+      const newAmountOnOtherTerr = formatAmountWithCommas(amountOnOtherTerr);
+      const newAmountOnTerr = formatAmountWithCommas(amountOnTerr);
+      const newTotalBrokerageAmount = formatAmountWithCommas(totalBrokerageAmount);
+
+      if (
+        prev.amountOnOtherTerr === newAmountOnOtherTerr &&
+        prev.amountOnTerr === newAmountOnTerr &&
+        prev.totalBrokerageAmount === newTotalBrokerageAmount &&
+        prev.totalBrokerageAmountincGst === newTotalBrokerageAmount
+      ) {
+        return prev;
+      }
+      return {
+        ...prev,
+        amountOnOtherTerr: newAmountOnOtherTerr,
+        amountOnTerr: newAmountOnTerr,
+        totalBrokerageAmount: newTotalBrokerageAmount,
+        totalBrokerageAmountincGst: newTotalBrokerageAmount
+      };
+    });
   }, [form.rateOnOtherTerr, form.rateOnTerr, form.netPremium, brokerageRateData]);
 
   useEffect(() => {
@@ -1352,22 +1366,40 @@ const EditPolicy = () => {
 
     const totalBrokerageAmount = round2(tpBrokerageAmount + odBrokerageAmount);
 
-    setForm((prev) => ({
-      ...prev,
-      tpBrokerageAmount: formatAmountWithCommas(tpBrokerageAmount),
-      odBrokerageAmount: formatAmountWithCommas(odBrokerageAmount),
-      totalBrokerageAmount: formatAmountWithCommas(totalBrokerageAmount),
-      totalBrokerageAmountincGst: formatAmountWithCommas(totalBrokerageAmount)
-    }));
+    setForm((prev) => {
+      const newTpBrokerageAmount = formatAmountWithCommas(tpBrokerageAmount);
+      const newOdBrokerageAmount = formatAmountWithCommas(odBrokerageAmount);
+      const newTotalBrokerageAmount = formatAmountWithCommas(totalBrokerageAmount);
+
+      if (
+        prev.tpBrokerageAmount === newTpBrokerageAmount &&
+        prev.odBrokerageAmount === newOdBrokerageAmount &&
+        prev.totalBrokerageAmount === newTotalBrokerageAmount &&
+        prev.totalBrokerageAmountincGst === newTotalBrokerageAmount
+      ) {
+        return prev;
+      }
+      return {
+        ...prev,
+        tpBrokerageAmount: newTpBrokerageAmount,
+        odBrokerageAmount: newOdBrokerageAmount,
+        totalBrokerageAmount: newTotalBrokerageAmount,
+        totalBrokerageAmountincGst: newTotalBrokerageAmount
+      };
+    });
   }, [form.tpPremium, form.odPremium, form.tpBrokerageRate, form.odBrokerageRate, brokerageRateData]);
 
   useEffect(() => {
     const total = parseAmount(form.totalBrokerageAmount);
     const pct = parseAmount(form.sharePercentage);
-    setForm((prev) => ({
-      ...prev,
-      coBrokerageAmount: pct ? formatAmountWithCommas(round2((total * pct) / 100)) : ''
-    }));
+    setForm((prev) => {
+      const newCoBrokerageAmount = pct ? formatAmountWithCommas(round2((total * pct) / 100)) : '';
+      if (prev.coBrokerageAmount === newCoBrokerageAmount) return prev;
+      return {
+        ...prev,
+        coBrokerageAmount: newCoBrokerageAmount
+      };
+    });
   }, [form.totalBrokerageAmount, form.sharePercentage]);
 
   useEffect(() => {
@@ -1375,10 +1407,14 @@ const EditPolicy = () => {
       const otherPrem = parseAmount(form.permiumOtherThanTerrorism);
       const terrPrem = parseAmount(form.terrorism);
       const computedNet = round2(otherPrem + terrPrem);
-      setForm((prev) => ({
-        ...prev,
-        netPremium: formatAmountWithCommas(computedNet)
-      }));
+      setForm((prev) => {
+        const newNetPremium = formatAmountWithCommas(computedNet);
+        if (prev.netPremium === newNetPremium) return prev;
+        return {
+          ...prev,
+          netPremium: newNetPremium
+        };
+      });
     }
   }, [form.permiumOtherThanTerrorism, form.terrorism, selectedDeptName]);
 
@@ -1386,23 +1422,32 @@ const EditPolicy = () => {
     const amount = parseAmount(form.totalBrokerageAmount);
     const gstPct = parseAmount(form.totalBrokerageGst);
     const incGst = round2(amount + (amount * gstPct) / 100);
-    setForm((prev) => ({
-      ...prev,
-      totalBrokerageAmountincGst: formatAmountWithCommas(incGst)
-    }));
+    setForm((prev) => {
+      const newTotalBrokerageAmountincGst = formatAmountWithCommas(incGst);
+      if (prev.totalBrokerageAmountincGst === newTotalBrokerageAmountincGst) return prev;
+      return {
+        ...prev,
+        totalBrokerageAmountincGst: newTotalBrokerageAmountincGst
+      };
+    });
   }, [form.totalBrokerageAmount, form.totalBrokerageGst]);
 
   useEffect(() => {
     const net = parseAmount(form.endorsementNetPremium);
     const gstId = form.endorsementGst;
     const gstValue = parseAmount(gstData?.find((g) => g._id === gstId)?.value);
-      const gstAmount = gstValue ? round2(net * (gstValue / 100)) : parseAmount(form.endorsementGstAmount);
+    const gstAmount = gstValue ? round2(net * (gstValue / 100)) : parseAmount(form.endorsementGstAmount);
     const total = round2(net + gstAmount);
-    setForm((prev) => ({
-      ...prev,
-      endorsementGstAmount: formatAmountWithCommas(gstAmount) || '',
-      etotalAmount: formatAmountWithCommas(total) || ''
-    }));
+    setForm((prev) => {
+      const newEndorsementGstAmount = formatAmountWithCommas(gstAmount) || '';
+      const newEtotalAmount = formatAmountWithCommas(total) || '';
+      if (prev.endorsementGstAmount === newEndorsementGstAmount && prev.etotalAmount === newEtotalAmount) return prev;
+      return {
+        ...prev,
+        endorsementGstAmount: newEndorsementGstAmount,
+        etotalAmount: newEtotalAmount
+      };
+    });
   }, [form.endorsementNetPremium, form.endorsementGst, gstData]);
 
   // useEffect(() => {
@@ -2340,54 +2385,54 @@ const EditPolicy = () => {
             {(selectedDeptName === 'engineering' ||
               selectedDeptName === 'fire' ||
               selectedDeptName === 'health') && (
-              <>
-                {selectedDeptName !== 'health' && (
-                  <Grid item xs={12} sm={4}>
+                <>
+                  {selectedDeptName !== 'health' && (
+                    <Grid item xs={12} sm={4}>
+                      <TextField
+                        label={siteLocation}
+                        name="Site Location"
+                        value={form.siteLocation}
+                        onChange={handleChange}
+                        fullWidth
+                        InputLabelProps={{ shrink: true }}
+                      />
+                    </Grid>
+                  )}
+                  <Grid item xs={12} sm={selectedDeptName === 'health' ? 3 : 4}>
                     <TextField
-                      label={siteLocation}
-                      name="Site Location"
-                      value={form.siteLocation}
+                      label="Number of Premium Installments"
+                      name="numberOfInstallments"
+                      value={form.numberOfInstallments}
                       onChange={handleChange}
                       fullWidth
                       InputLabelProps={{ shrink: true }}
                     />
                   </Grid>
-                )}
-                <Grid item xs={12} sm={selectedDeptName === 'health' ? 3 : 4}>
-                  <TextField
-                    label="Number of Premium Installments"
-                    name="numberOfInstallments"
-                    value={form.numberOfInstallments}
-                    onChange={handleChange}
-                    fullWidth
-                    InputLabelProps={{ shrink: true }}
-                  />
-                </Grid>
-                <Grid item xs={12} sm={selectedDeptName === 'health' ? 3 : 4}>
-                  <TextField
-                    type="date"
-                    label="Next Installment Due Date"
-                    name="nextInstallmentDate"
-                    value={form.nextInstallmentDate}
-                    onChange={handleChange}
-                    fullWidth
-                    InputLabelProps={{ shrink: true }}
-                  />
-                </Grid>
-                {selectedDeptName === 'health' && (
-                  <Grid item xs={12} sm={3}>
+                  <Grid item xs={12} sm={selectedDeptName === 'health' ? 3 : 4}>
                     <TextField
-                      label="Number of Lives Cover"
-                      name="livesCover"
-                      value={form.livesCover}
+                      type="date"
+                      label="Next Installment Due Date"
+                      name="nextInstallmentDate"
+                      value={form.nextInstallmentDate}
                       onChange={handleChange}
                       fullWidth
                       InputLabelProps={{ shrink: true }}
                     />
                   </Grid>
-                )}
-              </>
-            )}
+                  {selectedDeptName === 'health' && (
+                    <Grid item xs={12} sm={3}>
+                      <TextField
+                        label="Number of Lives Cover"
+                        name="livesCover"
+                        value={form.livesCover}
+                        onChange={handleChange}
+                        fullWidth
+                        InputLabelProps={{ shrink: true }}
+                      />
+                    </Grid>
+                  )}
+                </>
+              )}
             {selectedDeptName === 'liability' && (
               <>
                 <Grid item xs={12} sm={3}>
@@ -2783,7 +2828,7 @@ const EditPolicy = () => {
                       <MenuItem value="2025">2025</MenuItem>
                       <MenuItem value="2026">2026</MenuItem>
                       <MenuItem value="2027">2027</MenuItem>
-                      {form.yearOfManufacturing && !['2009','2010','2011','2012','2013','2014','2015','2016','2017','2018','2019','2020','2021','2022','2023','2024','2025','2026','2027'].includes(String(form.yearOfManufacturing)) && (
+                      {form.yearOfManufacturing && !['2009', '2010', '2011', '2012', '2013', '2014', '2015', '2016', '2017', '2018', '2019', '2020', '2021', '2022', '2023', '2024', '2025', '2026', '2027'].includes(String(form.yearOfManufacturing)) && (
                         <MenuItem key={String(form.yearOfManufacturing)} value={String(form.yearOfManufacturing)}>
                           {String(form.yearOfManufacturing)}
                         </MenuItem>
