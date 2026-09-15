@@ -1,17 +1,16 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import axios from 'axios';
-import REACT_APP_API_URL from '../api/api';
+import { get } from '../api/api';
 
 // Async thunk for fetching system rights
 export const fetchSystemRights = createAsyncThunk(
   'systemRights/fetchSystemRights',
   async (userId, thunkAPI) => {
     try {
-      const response = await axios.get(`${REACT_APP_API_URL}admin/user/system-rights/${userId}`);
-      if (response.data?.success) {
-        return response.data.systemRights;
+      const response = await get(`admin/user/system-rights/${userId}`);
+      if (response?.success) {
+        return response.systemRights;
       } else {
-        return thunkAPI.rejectWithValue(response.data?.message || "Failed to fetch");
+        return thunkAPI.rejectWithValue(response?.message || "Failed to fetch");
       }
     } catch (error) {
       return thunkAPI.rejectWithValue(error.response?.data || error.message);
