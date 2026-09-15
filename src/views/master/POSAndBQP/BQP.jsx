@@ -31,12 +31,8 @@ import NotificationsActiveIcon from '@mui/icons-material/NotificationsActive';
 import NotificationsOffIcon from '@mui/icons-material/NotificationsOff';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import DownloadIcon from '@mui/icons-material/Download';
-import CircularProgress from '@mui/material/CircularProgress';
 import { toast } from 'react-toastify';
-<<<<<<< HEAD
 import Swal from 'sweetalert2';
-=======
->>>>>>> d7095f032aa5c8fa31e9800c7aebc63d259a8921
 import axios from 'axios';
 import REACT_APP_API_URL, { get, post, put, remove, retrieveToken } from 'api/api';
 
@@ -45,8 +41,6 @@ const BQP = () => {
   const [open, setOpen] = useState(false);
   const [editId, setEditId] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
-  const [isExporting, setIsExporting] = useState(false);
-  
   const [isExporting, setIsExporting] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
 
@@ -205,35 +199,7 @@ const BQP = () => {
     }
   };
 
-<<<<<<< HEAD
-=======
-  const handleImportCSV = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
 
-    setIsUploading(true);
-    try {
-      const formData = new FormData();
-      formData.append('file', file);
-
-      const resData = await post(`bqp/import-csv`, formData);
-      if (resData && resData.success) {
-        toast.success(resData.message || 'Upload Successful');
-        fetchBQP();
-      } else {
-        toast.info(resData.message || 'Upload Processed');
-        fetchBQP();
-      }
-    } catch (error) {
-      console.error(error);
-      toast.error('Error uploading file');
-    } finally {
-      setIsUploading(false);
-      e.target.value = '';
-    }
-  };
-
->>>>>>> d7095f032aa5c8fa31e9800c7aebc63d259a8921
   const handleExportCSV = async () => {
     setIsExporting(true);
     try {
@@ -241,28 +207,17 @@ const BQP = () => {
       const url = `${REACT_APP_API_URL}bqp/export-csv`;
 
       const response = await axios.get(url, {
-<<<<<<< HEAD
         headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
         responseType: 'blob'
       });
 
       const filename = `bqp.xlsx`;
-=======
-        headers: {
-          ...(token ? { Authorization: `Bearer ${token}` } : {})
-        },
-        responseType: 'blob'
-      });
-
-      const filename = `bqpData.xlsx`;
->>>>>>> d7095f032aa5c8fa31e9800c7aebc63d259a8921
       const blob = new Blob([response.data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
       const objectUrl = window.URL.createObjectURL(blob);
 
       const link = document.createElement('a');
       link.href = objectUrl;
       link.setAttribute('download', filename);
-<<<<<<< HEAD
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -272,22 +227,11 @@ const BQP = () => {
     } catch (error) {
       console.error('Error exporting data:', error);
       toast.error('Error exporting BQP data');
-=======
-      link.style.display = 'none';
-
-      document.body.appendChild(link);
-      link.dispatchEvent(new MouseEvent('click', { bubbles: false, cancelable: true }));
-      document.body.removeChild(link);
-    } catch (error) {
-      console.error(error);
-      toast.error('Error exporting data');
->>>>>>> d7095f032aa5c8fa31e9800c7aebc63d259a8921
     } finally {
       setIsExporting(false);
     }
   };
 
-<<<<<<< HEAD
   const handleImportCSV = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -316,46 +260,31 @@ const BQP = () => {
       e.target.value = null; // Reset input
     }
   };
-
-=======
->>>>>>> d7095f032aa5c8fa31e9800c7aebc63d259a8921
   return (
     <Box sx={{ p: 3 }}>
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
         <Typography variant="h4" fontWeight="bold">BQP Management</Typography>
-<<<<<<< HEAD
-        <Box>
-          <Button variant="contained" color="secondary" onClick={handleExportCSV} disabled={isExporting} sx={{ mr: 2 }}>
-            {isExporting ? 'Exporting...' : 'Export'}
-          </Button>
-          <Button variant="contained" color="success" component="label" disabled={isImporting} sx={{ mr: 2 }}>
-            {isImporting ? 'Importing...' : 'Import'}
-            <input type="file" accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel" hidden onChange={handleImportCSV} />
-          </Button>
-          <Button variant="outlined" color="secondary" startIcon={<SettingsIcon />} onClick={handlePatternOpen} sx={{ mr: 2 }}>
-=======
         <Box sx={{ display: 'flex', gap: 1 }}>
           <Button
-            variant="outlined"
-            color="success"
+            variant="contained"
+            color="secondary"
             startIcon={isExporting ? <CircularProgress size={20} /> : <DownloadIcon />}
             onClick={handleExportCSV}
             disabled={isExporting}
           >
-            Export
+            {isExporting ? 'Exporting...' : 'Export'}
           </Button>
           <Button
-            variant="outlined"
-            color="secondary"
+            variant="contained"
+            color="success"
             component="label"
-            startIcon={isUploading ? <CircularProgress size={20} /> : <CloudUploadIcon />}
-            disabled={isUploading}
+            startIcon={isImporting ? <CircularProgress size={20} /> : <CloudUploadIcon />}
+            disabled={isImporting}
           >
-            Import
-            <input type="file" hidden accept=".csv, .xlsx, .xls" onChange={handleImportCSV} />
+            {isImporting ? 'Importing...' : 'Import'}
+            <input type="file" hidden accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel" onChange={handleImportCSV} />
           </Button>
           <Button variant="outlined" color="secondary" startIcon={<SettingsIcon />} onClick={handlePatternOpen}>
->>>>>>> d7095f032aa5c8fa31e9800c7aebc63d259a8921
             Define Pattern
           </Button>
           <Button variant="contained" color="primary" startIcon={<AddIcon />} onClick={handleOpen}>
@@ -485,7 +414,7 @@ const BQP = () => {
         sx={{ 
           color: '#fff', 
           zIndex: (theme) => Math.max(theme.zIndex.drawer + 1, 1400),
-          backgroundColor: 'rgba(0, 0, 0, 0.8)'
+          backgroundColor: 'rgba(0, 0, 0, 0.7)'
         }}
         open={isImporting || isExporting}
       >

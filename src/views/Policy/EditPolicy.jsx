@@ -860,18 +860,28 @@ const EditPolicy = () => {
   }, [subProductData, selectedProductName]);
 
   useEffect(() => {
-    const tpPremium = parseAmount(form?.tpPremium);
-    const tpGstId = form?.tpGst;
-    const tpGstValue = parseAmount(gstData?.find((i) => i._id === tpGstId)?.value);
+    // ⛔ wait until gstData is loaded
+    if (!gstData || gstData.length === 0) return;
 
-    const tpGstAmount = round2(tpPremium * (tpGstValue / 100));
-    const tpAmount = round2(tpPremium + tpGstAmount);
+    const tpPremium = parseAmount(form?.tpPremium);
+    const tpGstId = form?.tpGst || form?.gst;
+    const tpGstValue = parseAmount(gstData?.find((i) => String(i._id) === String(tpGstId))?.value);
 
     const odPremium = parseAmount(form?.odPremium);
-    const odGstId = form?.odGst;
-    const odGstValue = parseAmount(gstData?.find((i) => i._id === odGstId)?.value);
+    const odGstId = form?.odGst || form?.gst;
+    const odGstValue = parseAmount(gstData?.find((i) => String(i._id) === String(odGstId))?.value);
 
-    const odGstAmount = round2(odPremium * (odGstValue / 100));
+    // ⛔ if both premiums are empty, don't calculate
+    if (!tpPremium && !odPremium) return;
+
+    // ⛔ in edit mode, if both GST rates are completely 0/missing despite having premium, don't override 
+    // unless they actually selected a 0% GST intentionally.
+    if (isEditMode && !tpGstValue && !odGstValue && !tpGstId && !odGstId) return;
+
+    const tpGstAmount = tpGstValue ? round2(tpPremium * (tpGstValue / 100)) : parseAmount(form?.tpGstAmount);
+    const tpAmount = round2(tpPremium + tpGstAmount);
+
+    const odGstAmount = odGstValue ? round2(odPremium * (odGstValue / 100)) : parseAmount(form?.odGstAmount);
     const odAmount = round2(odPremium + odGstAmount);
 
     const totalPremium = round2(tpPremium + odPremium);
@@ -889,7 +899,7 @@ const EditPolicy = () => {
       totalAmount: formatAmountWithCommas(totalAmount),
       paidAmount: formatAmountWithCommas(totalAmount)
     }));
-  }, [form.tpPremium, form.odPremium, form.tpGst, form.odGst, gstData]);
+  }, [form.tpPremium, form.odPremium, form.tpGst, form.odGst, form.gst, gstData, isEditMode]);
 
   useEffect(() => {
     if (!selectedDeptName.includes('motor')) {
@@ -1271,38 +1281,7 @@ const EditPolicy = () => {
 
   const isEditMode = Boolean(policyData?._id);
 
-  useEffect(() => {
-    // ⛔ wait until gstData is loaded
-    if (!gstData || gstData.length === 0) return;
-
-    const tpPremium = parseAmount(form.tpPremium);
-    const odPremium = parseAmount(form.odPremium);
-
-    // ⛔ if both premiums are empty, don’t calculate
-    if (!tpPremium && !odPremium) return;
-
-    const tpGstValue = parseAmount(gstData.find((i) => i._id === (form.tpGst || form.gst))?.value);
-    const odGstValue = parseAmount(gstData.find((i) => i._id === (form.odGst || form.gst))?.value);
-
-    // ⛔ in edit mode, don’t override existing values
-    if (isEditMode && !tpGstValue && !odGstValue) return;
-
-    const tpGstAmount = tpGstValue ? tpPremium * (tpGstValue / 100) : parseAmount(form.tpGstAmount);
-    const odGstAmount = odGstValue ? odPremium * (odGstValue / 100) : parseAmount(form.odGstAmount);
-
-    const netPremium = tpPremium + odPremium;
-    const gstAmount = tpGstAmount + odGstAmount;
-    const totalAmount = netPremium + gstAmount;
-
-    setForm((prev) => ({
-      ...prev,
-      tpGstAmount: formatAmountWithCommas(tpGstAmount),
-      odGstAmount: formatAmountWithCommas(odGstAmount),
-      netPremium: formatAmountWithCommas(netPremium),
-      gstAmount: formatAmountWithCommas(gstAmount),
-      totalAmount: formatAmountWithCommas(totalAmount)
-    }));
-  }, [form.tpPremium, form.odPremium, form.tpGst, form.odGst, gstData]);
+  // Duplicate GST calculation removed in favor of the consolidated one above
 
   const round2 = (num) => Math.round(Number(num));
 
