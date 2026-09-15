@@ -6,8 +6,8 @@ export const loginUser = createAsyncThunk(
   'auth/loginUser',
   async (credentials, { rejectWithValue }) => {
     try {
-      const response = await post('auth/login', credentials);
-      if (response.status === 'true') {
+      const response = await post('admin/login', credentials);
+      if (response.status === 'true' || response.token) {
         // ✅ Store token in localStorage as well
         localStorage.setItem('token', response.token);
         localStorage.setItem('adminId', response.adminId);
