@@ -18,7 +18,8 @@ import {
   Divider,
   Box,
   Checkbox,
-  FormControlLabel
+  FormControlLabel,
+  Autocomplete
 } from '@mui/material';
 import { toast, ToastContainer } from 'react-toastify';
 import { Link, useNavigate, useParams } from 'react-router-dom';
@@ -1558,58 +1559,54 @@ const EditPolicy = () => {
             </Grid>
             {clientTypeValue === 'retail' ? (
               <Grid item xs={12} sm={4}>
-                <FormControl fullWidth error={!!errors.retailCustomer}>
-                  <InputLabel id="retailCustomer">Retail Customer</InputLabel>
-                  <Select
-                    labelId="retailCustomer"
-                    label="retailCustomer"
-                    name="retailCustomer"
-                    value={resolveSelectValue(clientList, form.retailCustomer, ['name', 'customerName', 'insuredName'])}
-                    onChange={handleChange}
-                  >
-                    <MenuItem value="other">Other (Create New)</MenuItem>
-                    {clientList.length > 0 &&
-                      clientList.map((type) => (
-                        <MenuItem key={type._id} value={type._id}>
-                          {type.name}
-                        </MenuItem>
-                      ))}
-                    {form.retailCustomer && form.retailCustomer !== 'other' && !clientList.some((t) => String(t._id) === String(resolveSelectValue(clientList, form.retailCustomer))) && (
-                      <MenuItem key={String(form.retailCustomer)} value={String(form.retailCustomer)}>
-                        {String(form.retailCustomer)}
-                      </MenuItem>
-                    )}
-                  </Select>
-                  {errors.retailCustomer && <FormHelperText>{errors.retailCustomer}</FormHelperText>}
-                </FormControl>
+                <Autocomplete
+                  options={[{ _id: 'other', name: 'Other (Create New)' }, ...(clientList || [])]}
+                  getOptionLabel={(option) => option?.name || option?.customerName || option?.insuredName || String(option?._id || option || '')}
+                  value={
+                    form.retailCustomer === 'other'
+                      ? { _id: 'other', name: 'Other (Create New)' }
+                      : (clientList || []).find((c) => String(c._id) === String(resolveSelectValue(clientList, form.retailCustomer, ['name', 'customerName', 'insuredName'])))
+                        || (form.retailCustomer ? { _id: form.retailCustomer, name: String(form.retailCustomer) } : null)
+                  }
+                  onChange={(event, newValue) => {
+                    handleChange({ target: { name: 'retailCustomer', value: newValue ? newValue._id : '' } });
+                  }}
+                  isOptionEqualToValue={(option, value) => String(option?._id) === String(value?._id)}
+                  renderInput={(params) => (
+                    <TextField
+                      {...params}
+                      label="Retail Customer"
+                      error={!!errors.retailCustomer}
+                      helperText={errors.retailCustomer}
+                    />
+                  )}
+                />
               </Grid>
             ) : (
               <>
                 <Grid item xs={12} sm={4}>
-                  <FormControl fullWidth error={!!errors.customerGroup}>
-                    <InputLabel id="customerGroup">Parent Group</InputLabel>
-                    <Select
-                      labelId="customerGroup"
-                      label="customerGroup"
-                      name="customerGroup"
-                      value={resolveSelectValue(customerGroupData, form.customerGroup, ['customerGroupName', 'name', 'groupName'])}
-                      onChange={handleChange}
-                    >
-                      <MenuItem value="other">Other (Create New)</MenuItem>
-                      {customerGroupData.length > 0 &&
-                        customerGroupData.map((type) => (
-                          <MenuItem key={type._id} value={type._id}>
-                            {type.customerGroupName}
-                          </MenuItem>
-                        ))}
-                      {form.customerGroup && form.customerGroup !== 'other' && !customerGroupData.some((t) => String(t._id) === String(resolveSelectValue(customerGroupData, form.customerGroup))) && (
-                        <MenuItem key={String(form.customerGroup)} value={String(form.customerGroup)}>
-                          {String(form.customerGroup)}
-                        </MenuItem>
-                      )}
-                    </Select>
-                    {errors.customerGroup && <FormHelperText>{errors.customerGroup}</FormHelperText>}
-                  </FormControl>
+                  <Autocomplete
+                    options={[{ _id: 'other', customerGroupName: 'Other (Create New)' }, ...(customerGroupData || [])]}
+                    getOptionLabel={(option) => option?.customerGroupName || option?.name || option?.groupName || String(option?._id || option || '')}
+                    value={
+                      form.customerGroup === 'other'
+                        ? { _id: 'other', customerGroupName: 'Other (Create New)' }
+                        : (customerGroupData || []).find((c) => String(c._id) === String(resolveSelectValue(customerGroupData, form.customerGroup, ['customerGroupName', 'name', 'groupName'])))
+                          || (form.customerGroup ? { _id: form.customerGroup, customerGroupName: String(form.customerGroup) } : null)
+                    }
+                    onChange={(event, newValue) => {
+                      handleChange({ target: { name: 'customerGroup', value: newValue ? newValue._id : '' } });
+                    }}
+                    isOptionEqualToValue={(option, value) => String(option?._id) === String(value?._id)}
+                    renderInput={(params) => (
+                      <TextField
+                        {...params}
+                        label="Parent Group"
+                        error={!!errors.customerGroup}
+                        helperText={errors.customerGroup}
+                      />
+                    )}
+                  />
                 </Grid>
                 <Grid item xs={12} sm={4}>
                   <FormControl fullWidth>
@@ -1673,29 +1670,26 @@ const EditPolicy = () => {
         <CardContent>
           <Grid container spacing={2}>
             <Grid item xs={12} sm={3}>
-              <FormControl fullWidth error={!!errors.branchCode}>
-                <InputLabel id="branchCode">Branch Code</InputLabel>
-                <Select
-                  labelId="branchCode"
-                  label="branchCode"
-                  name="branchCode"
-                  value={resolveSelectValue(branchCodeData, form.branchCode, ['branchCode', 'branchName', 'name'])}
-                  onChange={handleChange}
-                >
-                  {branchCodeData.length > 0 &&
-                    branchCodeData.map((type) => (
-                      <MenuItem key={type._id} value={type._id}>
-                        {type.branchCode} - {type.branchName}
-                      </MenuItem>
-                    ))}
-                  {form.branchCode && !branchCodeData.some((t) => String(t._id) === String(resolveSelectValue(branchCodeData, form.branchCode))) && (
-                    <MenuItem key={String(form.branchCode)} value={String(form.branchCode)}>
-                      {String(form.branchCode)}
-                    </MenuItem>
-                  )}
-                </Select>
-                {errors.branchCode && <FormHelperText>{errors.branchCode}</FormHelperText>}
-              </FormControl>
+              <Autocomplete
+                options={branchCodeData || []}
+                getOptionLabel={(option) => option?.branchCode ? `${option.branchCode} - ${option.branchName || ''}` : String(option?._id || option || '')}
+                value={
+                  (branchCodeData || []).find((c) => String(c._id) === String(resolveSelectValue(branchCodeData, form.branchCode, ['branchCode', 'branchName', 'name'])))
+                  || (form.branchCode ? { _id: form.branchCode, branchCode: String(form.branchCode) } : null)
+                }
+                onChange={(event, newValue) => {
+                  handleChange({ target: { name: 'branchCode', value: newValue ? newValue._id : '' } });
+                }}
+                isOptionEqualToValue={(option, value) => String(option?._id) === String(value?._id)}
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    label="Branch Code"
+                    error={!!errors.branchCode}
+                    helperText={errors.branchCode}
+                  />
+                )}
+              />
             </Grid>
             <Grid item xs={12} sm={3}>
               <TextField
@@ -1925,53 +1919,46 @@ const EditPolicy = () => {
               </FormControl>
             </Grid>
             <Grid item xs={12} sm={4}>
-              <FormControl fullWidth error={!!errors.insCompany}>
-                <InputLabel id="insCompany">Insurance Company</InputLabel>
-                <Select
-                  labelId="insCompany"
-                  label="insCompany"
-                  name="insCompany"
-                  value={resolveSelectValue(insCompanyData, form.insCompany, ['insCompany', 'name', 'companyName'])}
-                  onChange={handleChange}
-                >
-                  {insCompanyData.length > 0 &&
-                    insCompanyData.map((type) => (
-                      <MenuItem key={type._id} value={type._id}>
-                        {type.insCompany || type.name || type.companyName}
-                      </MenuItem>
-                    ))}
-                  {form.insCompany && !insCompanyData.some((t) => String(t._id) === String(resolveSelectValue(insCompanyData, form.insCompany))) && (
-                    <MenuItem key={String(form.insCompany)} value={String(form.insCompany)}>
-                      {String(form.insCompany)}
-                    </MenuItem>
-                  )}
-                </Select>
-                {errors.insCompany && <FormHelperText>{errors.insCompany}</FormHelperText>}
-              </FormControl>
+              <Autocomplete
+                options={insCompanyData || []}
+                getOptionLabel={(option) => option?.insCompany || option?.name || option?.companyName || String(option?._id || option || '')}
+                value={
+                  (insCompanyData || []).find((c) => String(c._id) === String(resolveSelectValue(insCompanyData, form.insCompany, ['insCompany', 'name', 'companyName'])))
+                  || (form.insCompany ? { _id: form.insCompany, insCompany: String(form.insCompany) } : null)
+                }
+                onChange={(event, newValue) => {
+                  handleChange({ target: { name: 'insCompany', value: newValue ? newValue._id : '' } });
+                }}
+                isOptionEqualToValue={(option, value) => String(option?._id) === String(value?._id)}
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    label="Insurance Company"
+                    error={!!errors.insCompany}
+                    helperText={errors.insCompany}
+                  />
+                )}
+              />
             </Grid>
             <Grid item xs={12} sm={4}>
-              <FormControl fullWidth>
-                <InputLabel id="brokerName">Broker Name</InputLabel>
-                <Select
-                  labelId="brokerName"
-                  label="Broker Name"
-                  name="brokerName"
-                  value={resolveSelectValue(brokerNameData, form.brokerName, ['brokerName', 'name'])}
-                  onChange={handleChange}
-                >
-                  {brokerNameData.length > 0 &&
-                    brokerNameData.map((type) => (
-                      <MenuItem key={type._id} value={type._id}>
-                        {type.brokerName}
-                      </MenuItem>
-                    ))}
-                  {form.brokerName && !brokerNameData.some((t) => String(t._id) === String(resolveSelectValue(brokerNameData, form.brokerName))) && (
-                    <MenuItem key={String(form.brokerName)} value={String(form.brokerName)}>
-                      {String(form.brokerName)}
-                    </MenuItem>
-                  )}
-                </Select>
-              </FormControl>
+              <Autocomplete
+                options={brokerNameData || []}
+                getOptionLabel={(option) => option?.brokerName || option?.name || String(option?._id || option || '')}
+                value={
+                  (brokerNameData || []).find((c) => String(c._id) === String(resolveSelectValue(brokerNameData, form.brokerName, ['brokerName', 'name'])))
+                  || (form.brokerName ? { _id: form.brokerName, brokerName: String(form.brokerName) } : null)
+                }
+                onChange={(event, newValue) => {
+                  handleChange({ target: { name: 'brokerName', value: newValue ? newValue._id : '' } });
+                }}
+                isOptionEqualToValue={(option, value) => String(option?._id) === String(value?._id)}
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    label="Broker Name"
+                  />
+                )}
+              />
             </Grid>
             <Grid item xs={12} sm={4}>
               <FormControl fullWidth>
