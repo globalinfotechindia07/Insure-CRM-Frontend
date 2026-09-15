@@ -19,7 +19,9 @@ import {
   TableContainer,
   TableHead,
   TableRow,
-  Tooltip
+  Tooltip,
+  Backdrop,
+  CircularProgress
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -28,13 +30,18 @@ import SettingsIcon from '@mui/icons-material/Settings';
 import NotificationsActiveIcon from '@mui/icons-material/NotificationsActive';
 import NotificationsOffIcon from '@mui/icons-material/NotificationsOff';
 import { toast } from 'react-toastify';
-import { get, post, put, remove } from 'api/api';
+import Swal from 'sweetalert2';
+import axios from 'axios';
+import REACT_APP_API_URL, { get, post, put, remove, retrieveToken } from 'api/api';
 
 const BQP = () => {
   const [bqpList, setBqpList] = useState([]);
   const [open, setOpen] = useState(false);
   const [editId, setEditId] = useState(null);
   
+  const [isExporting, setIsExporting] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
+
   const [patternOpen, setPatternOpen] = useState(false);
   const [patternData, setPatternData] = useState({ prefix: 'BQP-', nextSequence: 1, paddingSize: 3 });
   
@@ -121,12 +128,12 @@ const BQP = () => {
       if (editId) {
         const response = await put(`bqp/${editId}`, formData);
         if (response.success || response) {
-          toast.success('BQP updated successfully');
+          Swal.fire({ title: 'Success!', text: 'BQP updated successfully', icon: 'success', timer: 2000, showConfirmButton: false });
         }
       } else {
         const response = await post('bqp', formData);
         if (response.success || response) {
-          toast.success('BQP created successfully');
+          Swal.fire({ title: 'Success!', text: 'BQP created successfully', icon: 'success', timer: 2000, showConfirmButton: false });
         }
       }
       fetchBQP();
@@ -154,11 +161,22 @@ const BQP = () => {
   };
 
   const handleDelete = async (id) => {
-    if (window.confirm('Are you sure you want to delete this BQP?')) {
+    const result = await Swal.fire({
+      title: 'Are you sure?',
+      text: "You won't be able to revert this!",
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#3085d6',
+      confirmButtonText: 'Yes, delete it!',
+      cancelButtonText: 'Cancel'
+    });
+
+    if (result.isConfirmed) {
       try {
         const response = await remove(`bqp/${id}`);
         if (response.success || response) {
-          toast.success('BQP deleted successfully');
+          Swal.fire('Deleted!', 'BQP has been deleted.', 'success');
           fetchBQP();
         }
       } catch (error) {
@@ -179,11 +197,79 @@ const BQP = () => {
     }
   };
 
+  const handleExportCSV = async () => {
+    setIsExporting(true);
+    try {
+      const token = retrieveToken();
+      const url = `${REACT_APP_API_URL}bqp/export-csv`;
+
+      const response = await axios.get(url, {
+        headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+        responseType: 'blob'
+      });
+
+      const filename = `bqp.xlsx`;
+      const blob = new Blob([response.data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      const objectUrl = window.URL.createObjectURL(blob);
+
+      const link = document.createElement('a');
+      link.href = objectUrl;
+      link.setAttribute('download', filename);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      setTimeout(() => window.URL.revokeObjectURL(objectUrl), 300);
+
+      toast.success('BQP exported successfully');
+    } catch (error) {
+      console.error('Error exporting data:', error);
+      toast.error('Error exporting BQP data');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const handleImportCSV = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    setIsImporting(true);
+    try {
+      const token = retrieveToken();
+      const response = await axios.post(`${REACT_APP_API_URL}bqp/import-csv`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
+        }
+      });
+      if (response.data.success || response.data) {
+        toast.success(response.data.message || 'BQP data imported successfully');
+        fetchBQP();
+      }
+    } catch (error) {
+      console.error('Error importing data:', error);
+      toast.error(error.response?.data?.message || error.response?.data?.error || 'Error importing BQP data');
+    } finally {
+      setIsImporting(false);
+      e.target.value = null; // Reset input
+    }
+  };
+
   return (
     <Box sx={{ p: 3 }}>
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
         <Typography variant="h4" fontWeight="bold">BQP Management</Typography>
         <Box>
+          <Button variant="contained" color="secondary" onClick={handleExportCSV} disabled={isExporting} sx={{ mr: 2 }}>
+            {isExporting ? 'Exporting...' : 'Export'}
+          </Button>
+          <Button variant="contained" color="success" component="label" disabled={isImporting} sx={{ mr: 2 }}>
+            {isImporting ? 'Importing...' : 'Import'}
+            <input type="file" accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel" hidden onChange={handleImportCSV} />
+          </Button>
           <Button variant="outlined" color="secondary" startIcon={<SettingsIcon />} onClick={handlePatternOpen} sx={{ mr: 2 }}>
             Define Pattern
           </Button>
@@ -309,6 +395,22 @@ const BQP = () => {
           </DialogActions>
         </form>
       </Dialog>
+
+      <Backdrop
+        sx={{ 
+          color: '#fff', 
+          zIndex: (theme) => Math.max(theme.zIndex.drawer + 1, 1400),
+          backgroundColor: 'rgba(0, 0, 0, 0.8)'
+        }}
+        open={isImporting || isExporting}
+      >
+        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+          <CircularProgress color="inherit" size={60} />
+          <Typography variant="h6" sx={{ mt: 3, color: '#ffffff', fontWeight: 'bold', letterSpacing: 1 }}>
+            {isExporting ? 'Exporting Data... Please wait.' : 'Importing Data... Please wait.'}
+          </Typography>
+        </Box>
+      </Backdrop>
     </Box>
   );
 };
