@@ -861,14 +861,8 @@ const EditPolicy = () => {
   }, [subProductData, selectedProductName]);
 
   useEffect(() => {
-<<<<<<< HEAD
     // ⛔ wait until gstData is loaded
     if (!gstData || gstData.length === 0) return;
-=======
-    const tpPremium = parseAmount(form?.tpPremium);
-    const tpGstId = form?.tpGst || form?.gst;
-    const tpGstValue = parseAmount(gstData?.find((i) => i._id === tpGstId)?.value);
->>>>>>> 3856d067b636fb53b63d418b6b2e249047d118d6
 
     const tpPremium = parseAmount(form?.tpPremium);
     const tpGstId = form?.tpGst || form?.gst;
@@ -876,11 +870,7 @@ const EditPolicy = () => {
 
     const odPremium = parseAmount(form?.odPremium);
     const odGstId = form?.odGst || form?.gst;
-<<<<<<< HEAD
     const odGstValue = parseAmount(gstData?.find((i) => String(i._id) === String(odGstId))?.value);
-=======
-    const odGstValue = parseAmount(gstData?.find((i) => i._id === odGstId)?.value);
->>>>>>> 3856d067b636fb53b63d418b6b2e249047d118d6
 
     // ⛔ if both premiums are empty, don't calculate
     if (!tpPremium && !odPremium) return;
@@ -899,20 +889,6 @@ const EditPolicy = () => {
     const gstAmount = round2(tpGstAmount + odGstAmount);
     const totalAmount = round2(tpAmount + odAmount);
 
-<<<<<<< HEAD
-    setForm((prev) => ({
-      ...prev,
-      tpGstAmount: formatAmountWithCommas(tpGstAmount),
-      tpAmount: formatAmountWithCommas(tpAmount),
-      odGstAmount: formatAmountWithCommas(odGstAmount),
-      odAmount: formatAmountWithCommas(odAmount),
-      netPremium: formatAmountWithCommas(totalPremium),
-      gstAmount: formatAmountWithCommas(gstAmount),
-      totalAmount: formatAmountWithCommas(totalAmount),
-      paidAmount: formatAmountWithCommas(totalAmount)
-    }));
-  }, [form.tpPremium, form.odPremium, form.tpGst, form.odGst, form.gst, gstData, isEditMode]);
-=======
     setForm((prev) => {
       const newTpGstAmount = formatAmountWithCommas(tpGstAmount);
       const newTpAmount = formatAmountWithCommas(tpAmount);
@@ -947,8 +923,7 @@ const EditPolicy = () => {
         paidAmount: newTotalAmount
       };
     });
-  }, [form.tpPremium, form.odPremium, form.tpGst, form.odGst, form.gst, gstData]);
->>>>>>> 3856d067b636fb53b63d418b6b2e249047d118d6
+  }, [form.tpPremium, form.odPremium, form.tpGst, form.odGst, form.gst, gstData, isEditMode]);
 
   useEffect(() => {
     if (!selectedDeptName.includes('motor')) {
@@ -1338,11 +1313,7 @@ const EditPolicy = () => {
 
   const isEditMode = Boolean(policyData?._id);
 
-<<<<<<< HEAD
   // Duplicate GST calculation removed in favor of the consolidated one above
-=======
-
->>>>>>> 3856d067b636fb53b63d418b6b2e249047d118d6
 
   const round2 = (num) => Math.round(Number(num));
 
