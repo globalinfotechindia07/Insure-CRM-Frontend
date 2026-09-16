@@ -20,7 +20,7 @@
 // //   DialogContent,
 // //   DialogActions,
 // //   MenuItem
-// // } from '@mui/material';
+// // , TablePagination } from '@mui/material';
 // // import { FaTrash } from 'react-icons/fa';
 // // import { toast, ToastContainer } from 'react-toastify';
 // // import 'react-toastify/dist/ReactToastify.css';
@@ -39,6 +39,18 @@
 // // import { axiosInstance } from '../../api/api.js';
 
 // // const Client = () => {
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+
+  const handleChangePage = (event, newPage) => {
+    setPage(newPage);
+  };
+
+  const handleChangeRowsPerPage = (event) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
+
 // //   const [logoPreview, setLogoPreview] = useState('');
 // //   const [form, setForm] = useState(initialState());
 // //   const [data, setData] = useState([
@@ -325,7 +337,7 @@
 // //                         </TableRow>
 // //                       </TableHead>
 // //                       <TableBody>
-// //                         {data.map((entry, index) => (
+// //                         {data.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((entry, index) => (
 // //                           <TableRow key={index}>
 // //                             <TableCell>{index + 1}</TableCell>
 // //                             <TableCell>{entry.clientName}</TableCell>
@@ -357,6 +369,18 @@
 // //                         ))}
 // //                       </TableBody>
 // //                     </Table>
+
+            <TablePagination
+              rowsPerPageOptions={[5, 10, 25, 50, 100]}
+              component="div"
+              count={data.length || 0}
+              rowsPerPage={rowsPerPage}
+              page={page}
+              onPageChange={handleChangePage}
+              onRowsPerPageChange={handleChangeRowsPerPage}
+              labelRowsPerPage="Rows per page:"
+            />
+
 // //                   </Grid>
 // //                 </Box>
 // //               </CardContent>
@@ -573,7 +597,7 @@
 //   RadioGroup,
 //   FormControlLabel,
 //   Radio
-// } from '@mui/material';
+// , TablePagination } from '@mui/material';
 // import { FaTrash } from 'react-icons/fa';
 // import { toast, ToastContainer } from 'react-toastify';
 // import 'react-toastify/dist/ReactToastify.css';
@@ -969,6 +993,18 @@
 //                       ))}
 //                     </TableBody>
 //                   </Table>
+
+            <TablePagination
+              rowsPerPageOptions={[5, 10, 25, 50, 100]}
+              component="div"
+              count={data.length || 0}
+              rowsPerPage={rowsPerPage}
+              page={page}
+              onPageChange={handleChangePage}
+              onRowsPerPageChange={handleChangeRowsPerPage}
+              labelRowsPerPage="Rows per page:"
+            />
+
 //                 </Grid>
 //               </Box>
 //             </CardContent>

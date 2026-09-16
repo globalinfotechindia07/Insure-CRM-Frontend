@@ -18,7 +18,8 @@ import {
   Divider,
   Box,
   Checkbox,
-  FormControlLabel
+  FormControlLabel,
+  Autocomplete
 } from '@mui/material';
 import { toast, ToastContainer } from 'react-toastify';
 import { Link, useNavigate, useParams } from 'react-router-dom';
@@ -122,6 +123,8 @@ const EditPolicy = () => {
   const [fuelTypeData, setFuelTypeData] = useState([]);
   const [branchNameId, setBranchNameId] = useState('');
   const [paymentModeData, setPaymentModeData] = useState([]);
+  const [posData, setPosData] = useState([]);
+  const [bqpData, setBqpData] = useState([]);
 
   const [taxes, setTaxes] = useState({
     CGST: setForm.CGST,
@@ -231,9 +234,35 @@ const EditPolicy = () => {
       totalBrokerageGst: '',
       totalBrokerageAmountincGst: '',
       sharePercentage: '',
-      coBrokerageAmount: ''
+      coBrokerageAmount: '',
+      posCode: '',
+      posName: '',
+      posContact: '',
+      bqpCode: '',
+      bqpName: '',
+      bqpContact: ''
     };
   }
+
+  const fetchPosData = async () => {
+    try {
+      const res = await get('pos');
+      const list = res?.data || (Array.isArray(res) ? res : []);
+      setPosData(list);
+    } catch (error) {
+      console.error('Error fetching POS data', error);
+    }
+  };
+
+  const fetchBqpData = async () => {
+    try {
+      const res = await get('bqp');
+      const list = res?.data || (Array.isArray(res) ? res : []);
+      setBqpData(list);
+    } catch (error) {
+      console.error('Error fetching BQP data', error);
+    }
+  };
 
   // Fetch dropdown and lead details
   const fetchDropdownData = async () => {
@@ -307,8 +336,21 @@ const EditPolicy = () => {
       setIncotermsData(incotermsData.data || []);
       setFuelTypeData(fuelTypeData.data || []);
       setPaymentModeData(paymentModeRes?.paymentMode || []);
+      fetchPaymentMode();
+      fetchPosData();
+      fetchBqpData();
     } catch (err) {
       console.error('Dropdown load error:', err);
+    }
+  };
+
+  const fetchPaymentMode = async () => {
+    try {
+      const res = await get('payment-mode');
+      if (res && res.paymentMode) setPaymentModeData(res.paymentMode);
+      else setPaymentModeData([]);
+    } catch (error) {
+      console.error('Error fetching payment modes:', error);
     }
   };
 
@@ -427,7 +469,12 @@ const EditPolicy = () => {
           chequeNo: policyData?.chequeNo || '',
           transactionDate: policyData?.transactionDate ? policyData?.transactionDate?.split('T')[0] : '',
           posMisRef: policyData?.posMisRef || '',
+          posCode: policyData?.posCode || '',
+          posName: policyData?.posName || '',
+          posContact: policyData?.posContact || '',
           bqpCode: policyData?.bqpCode || '',
+          bqpName: policyData?.bqpName || '',
+          bqpContact: policyData?.bqpContact || '',
           amountOnOtherTerr: formatAmountWithCommas(policyData?.amountOnOtherTerr),
           amountOnTerr: formatAmountWithCommas(policyData?.amountOnTerr),
           tpBrokerageAmount: formatAmountWithCommas(policyData?.tpBrokerageAmount),
@@ -519,7 +566,7 @@ const EditPolicy = () => {
               ? String(policyData?.odBrokerageRate)
               : '',
 
-           endorsementGst: policyData?.endorsementGst?._id
+          endorsementGst: policyData?.endorsementGst?._id
             ? String(policyData?.endorsementGst._id)
             : policyData?.endorsementGst
               ? String(policyData?.endorsementGst)
@@ -676,6 +723,28 @@ const EditPolicy = () => {
     return end.toISOString().split('T')[0]; // yyyy-mm-dd
   };
 
+  const handlePosChange = (e) => {
+    const selectedCode = e.target.value;
+    const selectedPos = posData.find(p => p.codeNumber === selectedCode);
+    setForm(prev => ({
+      ...prev,
+      posCode: selectedCode,
+      posName: selectedPos ? selectedPos.posName : '',
+      posContact: selectedPos ? selectedPos.contactNumber : ''
+    }));
+  };
+
+  const handleBqpChange = (e) => {
+    const selectedCode = e.target.value;
+    const selectedBqp = bqpData.find(b => b.codeNumber === selectedCode);
+    setForm(prev => ({
+      ...prev,
+      bqpCode: selectedCode,
+      bqpName: selectedBqp ? selectedBqp.bqpName : '',
+      bqpContact: selectedBqp ? selectedBqp.contactNumber : ''
+    }));
+  };
+
   useEffect(() => {
     if (!form.startDate || !form.policyDuration) return;
 
@@ -699,8 +768,31 @@ const EditPolicy = () => {
   }, [form.startDate, form.policyDuration]);
 
   const filteredProducts = useMemo(() => {
-    return productData;
-  }, [productData]);
+    if (!form.insDepartment) return productData;
+    
+    const selectedDeptObj = insDepartmentData.find(d => String(d._id) === String(form.insDepartment));
+    const selectedDeptName = selectedDeptObj ? (selectedDeptObj.insDepartment || selectedDeptObj.name || '').toLowerCase().trim() : '';
+
+    return productData.filter((product) => {
+      if (form.product && String(product._id) === String(form.product)) {
+        return true;
+      }
+      const prodDept = product.insDepartment || product.department;
+      if (!prodDept) return false;
+      
+      const prodDeptId = typeof prodDept === 'object' ? prodDept._id : prodDept;
+      const selectedDeptId = typeof form.insDepartment === 'object' ? form.insDepartment._id : form.insDepartment;
+      
+      if (String(prodDeptId) === String(selectedDeptId)) return true;
+      
+      if (selectedDeptName) {
+        const prodDeptName = (typeof prodDept === 'object' ? (prodDept.insDepartment || prodDept.name || prodDept.departmentName || '') : '').toLowerCase().trim();
+        if (prodDeptName && prodDeptName === selectedDeptName) return true;
+      }
+      
+      return false;
+    });
+  }, [productData, form.insDepartment, form.product, insDepartmentData]);
 
   useEffect(() => {
     if (!form.tpStartDate || !form.tpPolicyDuration) return;
@@ -769,61 +861,103 @@ const EditPolicy = () => {
   }, [subProductData, selectedProductName]);
 
   useEffect(() => {
-    const tpPremium = parseAmount(form?.tpPremium);
-    const tpGstId = form?.tpGst;
-    const tpGstValue = parseAmount(gstData?.find((i) => i._id === tpGstId)?.value);
+    // ⛔ wait until gstData is loaded
+    if (!gstData || gstData.length === 0) return;
 
-    const tpGstAmount = round2(tpPremium * (tpGstValue / 100));
-    const tpAmount = round2(tpPremium + tpGstAmount);
+    const tpPremium = parseAmount(form?.tpPremium);
+    const tpGstId = form?.tpGst || form?.gst;
+    const tpGstValue = parseAmount(gstData?.find((i) => String(i._id) === String(tpGstId) || normalizeValStr(i.value) === normalizeValStr(tpGstId))?.value) || parseAmount(policyData?.tpGst?.value);
 
     const odPremium = parseAmount(form?.odPremium);
-    const odGstId = form?.odGst;
-    const odGstValue = parseAmount(gstData?.find((i) => i._id === odGstId)?.value);
+    const odGstId = form?.odGst || form?.gst;
+    const odGstValue = parseAmount(gstData?.find((i) => String(i._id) === String(odGstId) || normalizeValStr(i.value) === normalizeValStr(odGstId))?.value) || parseAmount(policyData?.odGst?.value);
 
-    const odGstAmount = round2(odPremium * (odGstValue / 100));
+    // ⛔ if both premiums are empty, don't calculate
+    if (!tpPremium && !odPremium) return;
+
+    // ⛔ in edit mode, if both GST rates are completely 0/missing despite having premium, don't override 
+    // unless they actually selected a 0% GST intentionally.
+    const editMode = Boolean(policyData?._id);
+    if (editMode && !tpGstValue && !odGstValue && !tpGstId && !odGstId) return;
+
+    const tpGstAmount = tpGstValue ? round2(tpPremium * (tpGstValue / 100)) : parseAmount(form?.tpGstAmount);
+    const tpAmount = round2(tpPremium + tpGstAmount);
+
+    const odGstAmount = odGstValue ? round2(odPremium * (odGstValue / 100)) : parseAmount(form?.odGstAmount);
     const odAmount = round2(odPremium + odGstAmount);
 
     const totalPremium = round2(tpPremium + odPremium);
     const gstAmount = round2(tpGstAmount + odGstAmount);
     const totalAmount = round2(tpAmount + odAmount);
 
-    setForm((prev) => ({
-      ...prev,
-      tpGstAmount: formatAmountWithCommas(tpGstAmount),
-      tpAmount: formatAmountWithCommas(tpAmount),
-      odGstAmount: formatAmountWithCommas(odGstAmount),
-      odAmount: formatAmountWithCommas(odAmount),
-      netPremium: formatAmountWithCommas(totalPremium),
-      gstAmount: formatAmountWithCommas(gstAmount),
-      totalAmount: formatAmountWithCommas(totalAmount),
-      paidAmount: formatAmountWithCommas(totalAmount)
-    }));
-  }, [form.tpPremium, form.odPremium, form.tpGst, form.odGst, gstData]);
+    setForm((prev) => {
+      const newTpGstAmount = formatAmountWithCommas(tpGstAmount);
+      const newTpAmount = formatAmountWithCommas(tpAmount);
+      const newOdGstAmount = formatAmountWithCommas(odGstAmount);
+      const newOdAmount = formatAmountWithCommas(odAmount);
+      const newNetPremium = formatAmountWithCommas(totalPremium);
+      const newGstAmount = formatAmountWithCommas(gstAmount);
+      const newTotalAmount = formatAmountWithCommas(totalAmount);
+
+      if (
+        prev.tpGstAmount === newTpGstAmount &&
+        prev.tpAmount === newTpAmount &&
+        prev.odGstAmount === newOdGstAmount &&
+        prev.odAmount === newOdAmount &&
+        prev.netPremium === newNetPremium &&
+        prev.gstAmount === newGstAmount &&
+        prev.totalAmount === newTotalAmount &&
+        prev.paidAmount === newTotalAmount
+      ) {
+        return prev;
+      }
+
+      return {
+        ...prev,
+        tpGstAmount: newTpGstAmount,
+        tpAmount: newTpAmount,
+        odGstAmount: newOdGstAmount,
+        odAmount: newOdAmount,
+        netPremium: newNetPremium,
+        gstAmount: newGstAmount,
+        totalAmount: newTotalAmount,
+        paidAmount: newTotalAmount
+      };
+    });
+  }, [form.tpPremium, form.odPremium, form.tpGst, form.odGst, form.gst, gstData, policyData]);
 
   useEffect(() => {
     if (!selectedDeptName.includes('motor')) {
       if (form.netPremium === '') {
-        setForm((prev) => ({
-          ...prev,
-          gstAmount: 0,
-          totalAmount: 0,
-          paidAmount: 0
-        }));
+        setForm((prev) => {
+          if (prev.gstAmount === 0 && prev.totalAmount === 0 && prev.paidAmount === 0) return prev;
+          return {
+            ...prev,
+            gstAmount: 0,
+            totalAmount: 0,
+            paidAmount: 0
+          };
+        });
         return;
       }
       const netPremium = round2(parseAmount(form.netPremium));
 
       if (form.netPremium != '') {
-        const gstValue = parseAmount(gstData?.find((i) => i._id === form.gst)?.value);
+        const gstValue = parseAmount(gstData?.find((i) => String(i._id) === String(form.gst) || normalizeValStr(i.value) === normalizeValStr(form.gst))?.value) || parseAmount(policyData?.gst?.value);
         const gstAmount = round2(netPremium * (gstValue / 100)) || 0;
         const totalAmount = round2(netPremium + gstAmount);
 
-        setForm((prev) => ({
-          ...prev,
-          gstAmount: formatAmountWithCommas(gstAmount),
-          totalAmount: formatAmountWithCommas(totalAmount),
-          paidAmount: formatAmountWithCommas(totalAmount)
-        }));
+        setForm((prev) => {
+          const newGstAmount = formatAmountWithCommas(gstAmount);
+          const newTotalAmount = formatAmountWithCommas(totalAmount);
+          if (prev.gstAmount === newGstAmount && prev.totalAmount === newTotalAmount && prev.paidAmount === newTotalAmount) return prev;
+          return {
+            ...prev,
+            gstAmount: newGstAmount,
+            totalAmount: newTotalAmount,
+            paidAmount: newTotalAmount
+          };
+        });
       }
     }
   }, [form.netPremium, form.gst, selectedDeptName, gstData]);
@@ -917,7 +1051,7 @@ const EditPolicy = () => {
           nextForm.renewalDate = value;
         }
       }
-      
+
       if (name === 'insDepartment') {
         const selectedDept = insDepartmentData.find((d) => String(d._id) === String(value));
         const deptName = selectedDept?.insDepartment || selectedDept?.name || '';
@@ -930,14 +1064,14 @@ const EditPolicy = () => {
           }
         }
       }
-      
+
       if (name === 'product' || name === 'subProduct') {
         const prod = productData.find((p) => p._id === (name === 'product' ? value : nextForm.product));
         const subProd = subProductData.find((p) => p._id === (name === 'subProduct' ? value : nextForm.subProduct));
         const pName = prod?.productName || prod?.name || '';
         const spName = subProd?.subproductName || subProd?.subProductName || subProd?.name || '';
         const combined = (pName + ' ' + spName).toLowerCase();
-        
+
         if (combined.includes('commercial vehicle od') || combined.includes('commercial vehicle - od')) {
           const gst18 = gstData.find(g => Math.round(g.value) === 18);
           if (gst18) {
@@ -1180,40 +1314,9 @@ const EditPolicy = () => {
 
   const isEditMode = Boolean(policyData?._id);
 
-  useEffect(() => {
-    // ⛔ wait until gstData is loaded
-    if (!gstData || gstData.length === 0) return;
+  // Duplicate GST calculation removed in favor of the consolidated one above
 
-    const tpPremium = parseAmount(form.tpPremium);
-    const odPremium = parseAmount(form.odPremium);
-
-    // ⛔ if both premiums are empty, don’t calculate
-    if (!tpPremium && !odPremium) return;
-
-    const tpGstValue = parseAmount(gstData.find((i) => i._id === form.tpGst)?.value);
-    const odGstValue = parseAmount(gstData.find((i) => i._id === form.odGst)?.value);
-
-    // ⛔ in edit mode, don’t override existing values
-    if (isEditMode && !tpGstValue && !odGstValue) return;
-
-    const tpGstAmount = tpGstValue ? tpPremium * (tpGstValue / 100) : parseAmount(form.tpGstAmount);
-    const odGstAmount = odGstValue ? odPremium * (odGstValue / 100) : parseAmount(form.odGstAmount);
-
-    const netPremium = tpPremium + odPremium;
-    const gstAmount = tpGstAmount + odGstAmount;
-    const totalAmount = netPremium + gstAmount;
-
-    setForm((prev) => ({
-      ...prev,
-      tpGstAmount: formatAmountWithCommas(tpGstAmount),
-      odGstAmount: formatAmountWithCommas(odGstAmount),
-      netPremium: formatAmountWithCommas(netPremium),
-      gstAmount: formatAmountWithCommas(gstAmount),
-      totalAmount: formatAmountWithCommas(totalAmount)
-    }));
-  }, [form.tpPremium, form.odPremium, form.tpGst, form.odGst, gstData]);
-
-  const round2 = (num) => Math.round((Number(num) + Number.EPSILON) * 100) / 100;
+  const round2 = (num) => Math.round(Number(num));
 
   const getRateValue = (rateId) => {
     return Number(brokerageRateData?.find((r) => r._id === rateId)?.brokerageRate || 0);
@@ -1234,13 +1337,27 @@ const EditPolicy = () => {
 
     const totalBrokerageAmount = round2(amountOnOtherTerr + amountOnTerr);
 
-    setForm((prev) => ({
-      ...prev,
-      amountOnOtherTerr: formatAmountWithCommas(amountOnOtherTerr),
-      amountOnTerr: formatAmountWithCommas(amountOnTerr),
-      totalBrokerageAmount: formatAmountWithCommas(totalBrokerageAmount),
-      totalBrokerageAmountincGst: formatAmountWithCommas(totalBrokerageAmount)
-    }));
+    setForm((prev) => {
+      const newAmountOnOtherTerr = formatAmountWithCommas(amountOnOtherTerr);
+      const newAmountOnTerr = formatAmountWithCommas(amountOnTerr);
+      const newTotalBrokerageAmount = formatAmountWithCommas(totalBrokerageAmount);
+
+      if (
+        prev.amountOnOtherTerr === newAmountOnOtherTerr &&
+        prev.amountOnTerr === newAmountOnTerr &&
+        prev.totalBrokerageAmount === newTotalBrokerageAmount &&
+        prev.totalBrokerageAmountincGst === newTotalBrokerageAmount
+      ) {
+        return prev;
+      }
+      return {
+        ...prev,
+        amountOnOtherTerr: newAmountOnOtherTerr,
+        amountOnTerr: newAmountOnTerr,
+        totalBrokerageAmount: newTotalBrokerageAmount,
+        totalBrokerageAmountincGst: newTotalBrokerageAmount
+      };
+    });
   }, [form.rateOnOtherTerr, form.rateOnTerr, form.netPremium, brokerageRateData]);
 
   useEffect(() => {
@@ -1261,22 +1378,40 @@ const EditPolicy = () => {
 
     const totalBrokerageAmount = round2(tpBrokerageAmount + odBrokerageAmount);
 
-    setForm((prev) => ({
-      ...prev,
-      tpBrokerageAmount: formatAmountWithCommas(tpBrokerageAmount),
-      odBrokerageAmount: formatAmountWithCommas(odBrokerageAmount),
-      totalBrokerageAmount: formatAmountWithCommas(totalBrokerageAmount),
-      totalBrokerageAmountincGst: formatAmountWithCommas(totalBrokerageAmount)
-    }));
+    setForm((prev) => {
+      const newTpBrokerageAmount = formatAmountWithCommas(tpBrokerageAmount);
+      const newOdBrokerageAmount = formatAmountWithCommas(odBrokerageAmount);
+      const newTotalBrokerageAmount = formatAmountWithCommas(totalBrokerageAmount);
+
+      if (
+        prev.tpBrokerageAmount === newTpBrokerageAmount &&
+        prev.odBrokerageAmount === newOdBrokerageAmount &&
+        prev.totalBrokerageAmount === newTotalBrokerageAmount &&
+        prev.totalBrokerageAmountincGst === newTotalBrokerageAmount
+      ) {
+        return prev;
+      }
+      return {
+        ...prev,
+        tpBrokerageAmount: newTpBrokerageAmount,
+        odBrokerageAmount: newOdBrokerageAmount,
+        totalBrokerageAmount: newTotalBrokerageAmount,
+        totalBrokerageAmountincGst: newTotalBrokerageAmount
+      };
+    });
   }, [form.tpPremium, form.odPremium, form.tpBrokerageRate, form.odBrokerageRate, brokerageRateData]);
 
   useEffect(() => {
     const total = parseAmount(form.totalBrokerageAmount);
     const pct = parseAmount(form.sharePercentage);
-    setForm((prev) => ({
-      ...prev,
-      coBrokerageAmount: pct ? formatAmountWithCommas(round2((total * pct) / 100)) : ''
-    }));
+    setForm((prev) => {
+      const newCoBrokerageAmount = pct ? formatAmountWithCommas(round2((total * pct) / 100)) : '';
+      if (prev.coBrokerageAmount === newCoBrokerageAmount) return prev;
+      return {
+        ...prev,
+        coBrokerageAmount: newCoBrokerageAmount
+      };
+    });
   }, [form.totalBrokerageAmount, form.sharePercentage]);
 
   useEffect(() => {
@@ -1284,10 +1419,14 @@ const EditPolicy = () => {
       const otherPrem = parseAmount(form.permiumOtherThanTerrorism);
       const terrPrem = parseAmount(form.terrorism);
       const computedNet = round2(otherPrem + terrPrem);
-      setForm((prev) => ({
-        ...prev,
-        netPremium: formatAmountWithCommas(computedNet)
-      }));
+      setForm((prev) => {
+        const newNetPremium = formatAmountWithCommas(computedNet);
+        if (prev.netPremium === newNetPremium) return prev;
+        return {
+          ...prev,
+          netPremium: newNetPremium
+        };
+      });
     }
   }, [form.permiumOtherThanTerrorism, form.terrorism, selectedDeptName]);
 
@@ -1295,23 +1434,32 @@ const EditPolicy = () => {
     const amount = parseAmount(form.totalBrokerageAmount);
     const gstPct = parseAmount(form.totalBrokerageGst);
     const incGst = round2(amount + (amount * gstPct) / 100);
-    setForm((prev) => ({
-      ...prev,
-      totalBrokerageAmountincGst: formatAmountWithCommas(incGst)
-    }));
+    setForm((prev) => {
+      const newTotalBrokerageAmountincGst = formatAmountWithCommas(incGst);
+      if (prev.totalBrokerageAmountincGst === newTotalBrokerageAmountincGst) return prev;
+      return {
+        ...prev,
+        totalBrokerageAmountincGst: newTotalBrokerageAmountincGst
+      };
+    });
   }, [form.totalBrokerageAmount, form.totalBrokerageGst]);
 
   useEffect(() => {
     const net = parseAmount(form.endorsementNetPremium);
     const gstId = form.endorsementGst;
-    const gstValue = parseAmount(gstData?.find((g) => g._id === gstId)?.value || 0);
-    const gstAmount = round2(net * (gstValue / 100));
+    const gstValue = parseAmount(gstData?.find((g) => String(g._id) === String(gstId) || normalizeValStr(g.value) === normalizeValStr(gstId))?.value) || parseAmount(policyData?.endorsementGst?.value);
+    const gstAmount = gstValue ? round2(net * (gstValue / 100)) : parseAmount(form.endorsementGstAmount);
     const total = round2(net + gstAmount);
-    setForm((prev) => ({
-      ...prev,
-      endorsementGstAmount: formatAmountWithCommas(gstAmount) || '',
-      etotalAmount: formatAmountWithCommas(total) || ''
-    }));
+    setForm((prev) => {
+      const newEndorsementGstAmount = formatAmountWithCommas(gstAmount) || '';
+      const newEtotalAmount = formatAmountWithCommas(total) || '';
+      if (prev.endorsementGstAmount === newEndorsementGstAmount && prev.etotalAmount === newEtotalAmount) return prev;
+      return {
+        ...prev,
+        endorsementGstAmount: newEndorsementGstAmount,
+        etotalAmount: newEtotalAmount
+      };
+    });
   }, [form.endorsementNetPremium, form.endorsementGst, gstData]);
 
   // useEffect(() => {
@@ -1422,58 +1570,54 @@ const EditPolicy = () => {
             </Grid>
             {clientTypeValue === 'retail' ? (
               <Grid item xs={12} sm={4}>
-                <FormControl fullWidth error={!!errors.retailCustomer}>
-                  <InputLabel id="retailCustomer">Retail Customer</InputLabel>
-                  <Select
-                    labelId="retailCustomer"
-                    label="retailCustomer"
-                    name="retailCustomer"
-                    value={resolveSelectValue(clientList, form.retailCustomer, ['name', 'customerName', 'insuredName'])}
-                    onChange={handleChange}
-                  >
-                    <MenuItem value="other">Other (Create New)</MenuItem>
-                    {clientList.length > 0 &&
-                      clientList.map((type) => (
-                        <MenuItem key={type._id} value={type._id}>
-                          {type.name}
-                        </MenuItem>
-                      ))}
-                    {form.retailCustomer && form.retailCustomer !== 'other' && !clientList.some((t) => String(t._id) === String(resolveSelectValue(clientList, form.retailCustomer))) && (
-                      <MenuItem key={String(form.retailCustomer)} value={String(form.retailCustomer)}>
-                        {String(form.retailCustomer)}
-                      </MenuItem>
-                    )}
-                  </Select>
-                  {errors.retailCustomer && <FormHelperText>{errors.retailCustomer}</FormHelperText>}
-                </FormControl>
+                <Autocomplete
+                  options={[{ _id: 'other', name: 'Other (Create New)' }, ...(clientList || [])]}
+                  getOptionLabel={(option) => option?.name || option?.customerName || option?.insuredName || String(option?._id || option || '')}
+                  value={
+                    form.retailCustomer === 'other'
+                      ? { _id: 'other', name: 'Other (Create New)' }
+                      : (clientList || []).find((c) => String(c._id) === String(resolveSelectValue(clientList, form.retailCustomer, ['name', 'customerName', 'insuredName'])))
+                        || (form.retailCustomer ? { _id: form.retailCustomer, name: String(form.retailCustomer) } : null)
+                  }
+                  onChange={(event, newValue) => {
+                    handleChange({ target: { name: 'retailCustomer', value: newValue ? newValue._id : '' } });
+                  }}
+                  isOptionEqualToValue={(option, value) => String(option?._id) === String(value?._id)}
+                  renderInput={(params) => (
+                    <TextField
+                      {...params}
+                      label="Retail Customer"
+                      error={!!errors.retailCustomer}
+                      helperText={errors.retailCustomer}
+                    />
+                  )}
+                />
               </Grid>
             ) : (
               <>
                 <Grid item xs={12} sm={4}>
-                  <FormControl fullWidth error={!!errors.customerGroup}>
-                    <InputLabel id="customerGroup">Parent Group</InputLabel>
-                    <Select
-                      labelId="customerGroup"
-                      label="customerGroup"
-                      name="customerGroup"
-                      value={resolveSelectValue(customerGroupData, form.customerGroup, ['customerGroupName', 'name', 'groupName'])}
-                      onChange={handleChange}
-                    >
-                      <MenuItem value="other">Other (Create New)</MenuItem>
-                      {customerGroupData.length > 0 &&
-                        customerGroupData.map((type) => (
-                          <MenuItem key={type._id} value={type._id}>
-                            {type.customerGroupName}
-                          </MenuItem>
-                        ))}
-                      {form.customerGroup && form.customerGroup !== 'other' && !customerGroupData.some((t) => String(t._id) === String(resolveSelectValue(customerGroupData, form.customerGroup))) && (
-                        <MenuItem key={String(form.customerGroup)} value={String(form.customerGroup)}>
-                          {String(form.customerGroup)}
-                        </MenuItem>
-                      )}
-                    </Select>
-                    {errors.customerGroup && <FormHelperText>{errors.customerGroup}</FormHelperText>}
-                  </FormControl>
+                  <Autocomplete
+                    options={[{ _id: 'other', customerGroupName: 'Other (Create New)' }, ...(customerGroupData || [])]}
+                    getOptionLabel={(option) => option?.customerGroupName || option?.name || option?.groupName || String(option?._id || option || '')}
+                    value={
+                      form.customerGroup === 'other'
+                        ? { _id: 'other', customerGroupName: 'Other (Create New)' }
+                        : (customerGroupData || []).find((c) => String(c._id) === String(resolveSelectValue(customerGroupData, form.customerGroup, ['customerGroupName', 'name', 'groupName'])))
+                          || (form.customerGroup ? { _id: form.customerGroup, customerGroupName: String(form.customerGroup) } : null)
+                    }
+                    onChange={(event, newValue) => {
+                      handleChange({ target: { name: 'customerGroup', value: newValue ? newValue._id : '' } });
+                    }}
+                    isOptionEqualToValue={(option, value) => String(option?._id) === String(value?._id)}
+                    renderInput={(params) => (
+                      <TextField
+                        {...params}
+                        label="Parent Group"
+                        error={!!errors.customerGroup}
+                        helperText={errors.customerGroup}
+                      />
+                    )}
+                  />
                 </Grid>
                 <Grid item xs={12} sm={4}>
                   <FormControl fullWidth>
@@ -1537,29 +1681,26 @@ const EditPolicy = () => {
         <CardContent>
           <Grid container spacing={2}>
             <Grid item xs={12} sm={3}>
-              <FormControl fullWidth error={!!errors.branchCode}>
-                <InputLabel id="branchCode">Branch Code</InputLabel>
-                <Select
-                  labelId="branchCode"
-                  label="branchCode"
-                  name="branchCode"
-                  value={resolveSelectValue(branchCodeData, form.branchCode, ['branchCode', 'branchName', 'name'])}
-                  onChange={handleChange}
-                >
-                  {branchCodeData.length > 0 &&
-                    branchCodeData.map((type) => (
-                      <MenuItem key={type._id} value={type._id}>
-                        {type.branchCode} - {type.branchName}
-                      </MenuItem>
-                    ))}
-                  {form.branchCode && !branchCodeData.some((t) => String(t._id) === String(resolveSelectValue(branchCodeData, form.branchCode))) && (
-                    <MenuItem key={String(form.branchCode)} value={String(form.branchCode)}>
-                      {String(form.branchCode)}
-                    </MenuItem>
-                  )}
-                </Select>
-                {errors.branchCode && <FormHelperText>{errors.branchCode}</FormHelperText>}
-              </FormControl>
+              <Autocomplete
+                options={branchCodeData || []}
+                getOptionLabel={(option) => option?.branchCode ? `${option.branchCode} - ${option.branchName || ''}` : String(option?._id || option || '')}
+                value={
+                  (branchCodeData || []).find((c) => String(c._id) === String(resolveSelectValue(branchCodeData, form.branchCode, ['branchCode', 'branchName', 'name'])))
+                  || (form.branchCode ? { _id: form.branchCode, branchCode: String(form.branchCode) } : null)
+                }
+                onChange={(event, newValue) => {
+                  handleChange({ target: { name: 'branchCode', value: newValue ? newValue._id : '' } });
+                }}
+                isOptionEqualToValue={(option, value) => String(option?._id) === String(value?._id)}
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    label="Branch Code"
+                    error={!!errors.branchCode}
+                    helperText={errors.branchCode}
+                  />
+                )}
+              />
             </Grid>
             <Grid item xs={12} sm={3}>
               <TextField
@@ -1749,8 +1890,8 @@ const EditPolicy = () => {
                   value={resolveSelectValue(productData, form.product, ['productName', 'name'])}
                   onChange={handleChange}
                 >
-                  {productData.length > 0 &&
-                    productData.map((type) => (
+                  {filteredProducts.length > 0 &&
+                    filteredProducts.map((type) => (
                       <MenuItem key={type._id} value={type._id}>
                         {type.productName}
                       </MenuItem>
@@ -1789,53 +1930,46 @@ const EditPolicy = () => {
               </FormControl>
             </Grid>
             <Grid item xs={12} sm={4}>
-              <FormControl fullWidth error={!!errors.insCompany}>
-                <InputLabel id="insCompany">Insurance Company</InputLabel>
-                <Select
-                  labelId="insCompany"
-                  label="insCompany"
-                  name="insCompany"
-                  value={resolveSelectValue(insCompanyData, form.insCompany, ['insCompany', 'name', 'companyName'])}
-                  onChange={handleChange}
-                >
-                  {insCompanyData.length > 0 &&
-                    insCompanyData.map((type) => (
-                      <MenuItem key={type._id} value={type._id}>
-                        {type.insCompany || type.name || type.companyName}
-                      </MenuItem>
-                    ))}
-                  {form.insCompany && !insCompanyData.some((t) => String(t._id) === String(resolveSelectValue(insCompanyData, form.insCompany))) && (
-                    <MenuItem key={String(form.insCompany)} value={String(form.insCompany)}>
-                      {String(form.insCompany)}
-                    </MenuItem>
-                  )}
-                </Select>
-                {errors.insCompany && <FormHelperText>{errors.insCompany}</FormHelperText>}
-              </FormControl>
+              <Autocomplete
+                options={insCompanyData || []}
+                getOptionLabel={(option) => option?.insCompany || option?.name || option?.companyName || String(option?._id || option || '')}
+                value={
+                  (insCompanyData || []).find((c) => String(c._id) === String(resolveSelectValue(insCompanyData, form.insCompany, ['insCompany', 'name', 'companyName'])))
+                  || (form.insCompany ? { _id: form.insCompany, insCompany: String(form.insCompany) } : null)
+                }
+                onChange={(event, newValue) => {
+                  handleChange({ target: { name: 'insCompany', value: newValue ? newValue._id : '' } });
+                }}
+                isOptionEqualToValue={(option, value) => String(option?._id) === String(value?._id)}
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    label="Insurance Company"
+                    error={!!errors.insCompany}
+                    helperText={errors.insCompany}
+                  />
+                )}
+              />
             </Grid>
             <Grid item xs={12} sm={4}>
-              <FormControl fullWidth>
-                <InputLabel id="brokerName">Broker Name</InputLabel>
-                <Select
-                  labelId="brokerName"
-                  label="Broker Name"
-                  name="brokerName"
-                  value={resolveSelectValue(brokerNameData, form.brokerName, ['brokerName', 'name'])}
-                  onChange={handleChange}
-                >
-                  {brokerNameData.length > 0 &&
-                    brokerNameData.map((type) => (
-                      <MenuItem key={type._id} value={type._id}>
-                        {type.brokerName}
-                      </MenuItem>
-                    ))}
-                  {form.brokerName && !brokerNameData.some((t) => String(t._id) === String(resolveSelectValue(brokerNameData, form.brokerName))) && (
-                    <MenuItem key={String(form.brokerName)} value={String(form.brokerName)}>
-                      {String(form.brokerName)}
-                    </MenuItem>
-                  )}
-                </Select>
-              </FormControl>
+              <Autocomplete
+                options={brokerNameData || []}
+                getOptionLabel={(option) => option?.brokerName || option?.name || String(option?._id || option || '')}
+                value={
+                  (brokerNameData || []).find((c) => String(c._id) === String(resolveSelectValue(brokerNameData, form.brokerName, ['brokerName', 'name'])))
+                  || (form.brokerName ? { _id: form.brokerName, brokerName: String(form.brokerName) } : null)
+                }
+                onChange={(event, newValue) => {
+                  handleChange({ target: { name: 'brokerName', value: newValue ? newValue._id : '' } });
+                }}
+                isOptionEqualToValue={(option, value) => String(option?._id) === String(value?._id)}
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    label="Broker Name"
+                  />
+                )}
+              />
             </Grid>
             <Grid item xs={12} sm={4}>
               <FormControl fullWidth>
@@ -1945,12 +2079,12 @@ const EditPolicy = () => {
                         {gstData.length > 0 &&
                           gstData.map((type) => (
                             <MenuItem key={type._id} value={type._id}>
-                              {type.value}
+                              {String(type.value)}
                             </MenuItem>
                           ))}
                         {(form.tpGst || form.gst) && !gstData.some((t) => String(t._id) === String(resolveSelectValue(gstData, form.tpGst || form.gst))) && (
                           <MenuItem key={String(form.tpGst || form.gst)} value={String(form.tpGst || form.gst)}>
-                            {String(form.tpGst || form.gst)}
+                            {policyData?.tpGst?.value !== undefined ? String(policyData.tpGst.value) : (policyData?.gst?.value !== undefined ? String(policyData.gst.value) : (parseAmount(form.tpPremium) > 0 ? String(Math.round(((parseAmount(form.tpGstAmount) || 0) / parseAmount(form.tpPremium)) * 100)) : "0"))}
                           </MenuItem>
                         )}
                       </Select>
@@ -2050,12 +2184,12 @@ const EditPolicy = () => {
                         {gstData.length > 0 &&
                           gstData.map((type) => (
                             <MenuItem key={type._id} value={type._id}>
-                              {type.value}
+                              {String(type.value)}
                             </MenuItem>
                           ))}
                         {(form.odGst || form.gst) && !gstData.some((t) => String(t._id) === String(resolveSelectValue(gstData, form.odGst || form.gst))) && (
                           <MenuItem key={String(form.odGst || form.gst)} value={String(form.odGst || form.gst)}>
-                            {String(form.odGst || form.gst)}
+                            {policyData?.odGst?.value !== undefined ? String(policyData.odGst.value) : (policyData?.gst?.value !== undefined ? String(policyData.gst.value) : (parseAmount(form.odPremium) > 0 ? String(Math.round(((parseAmount(form.odGstAmount) || 0) / parseAmount(form.odPremium)) * 100)) : "0"))}
                           </MenuItem>
                         )}
                       </Select>
@@ -2249,54 +2383,54 @@ const EditPolicy = () => {
             {(selectedDeptName === 'engineering' ||
               selectedDeptName === 'fire' ||
               selectedDeptName === 'health') && (
-              <>
-                {selectedDeptName !== 'health' && (
-                  <Grid item xs={12} sm={4}>
+                <>
+                  {selectedDeptName !== 'health' && (
+                    <Grid item xs={12} sm={4}>
+                      <TextField
+                        label={siteLocation}
+                        name="Site Location"
+                        value={form.siteLocation}
+                        onChange={handleChange}
+                        fullWidth
+                        InputLabelProps={{ shrink: true }}
+                      />
+                    </Grid>
+                  )}
+                  <Grid item xs={12} sm={selectedDeptName === 'health' ? 3 : 4}>
                     <TextField
-                      label={siteLocation}
-                      name="Site Location"
-                      value={form.siteLocation}
+                      label="Number of Premium Installments"
+                      name="numberOfInstallments"
+                      value={form.numberOfInstallments}
                       onChange={handleChange}
                       fullWidth
                       InputLabelProps={{ shrink: true }}
                     />
                   </Grid>
-                )}
-                <Grid item xs={12} sm={selectedDeptName === 'health' ? 3 : 4}>
-                  <TextField
-                    label="Number of Premium Installments"
-                    name="numberOfInstallments"
-                    value={form.numberOfInstallments}
-                    onChange={handleChange}
-                    fullWidth
-                    InputLabelProps={{ shrink: true }}
-                  />
-                </Grid>
-                <Grid item xs={12} sm={selectedDeptName === 'health' ? 3 : 4}>
-                  <TextField
-                    type="date"
-                    label="Next Installment Due Date"
-                    name="nextInstallmentDate"
-                    value={form.nextInstallmentDate}
-                    onChange={handleChange}
-                    fullWidth
-                    InputLabelProps={{ shrink: true }}
-                  />
-                </Grid>
-                {selectedDeptName === 'health' && (
-                  <Grid item xs={12} sm={3}>
+                  <Grid item xs={12} sm={selectedDeptName === 'health' ? 3 : 4}>
                     <TextField
-                      label="Number of Lives Cover"
-                      name="livesCover"
-                      value={form.livesCover}
+                      type="date"
+                      label="Next Installment Due Date"
+                      name="nextInstallmentDate"
+                      value={form.nextInstallmentDate}
                       onChange={handleChange}
                       fullWidth
                       InputLabelProps={{ shrink: true }}
                     />
                   </Grid>
-                )}
-              </>
-            )}
+                  {selectedDeptName === 'health' && (
+                    <Grid item xs={12} sm={3}>
+                      <TextField
+                        label="Number of Lives Cover"
+                        name="livesCover"
+                        value={form.livesCover}
+                        onChange={handleChange}
+                        fullWidth
+                        InputLabelProps={{ shrink: true }}
+                      />
+                    </Grid>
+                  )}
+                </>
+              )}
             {selectedDeptName === 'liability' && (
               <>
                 <Grid item xs={12} sm={3}>
@@ -2407,6 +2541,167 @@ const EditPolicy = () => {
           </Grid>
         </CardContent>
       </Card>
+
+      <Divider sx={{ my: 2 }} />
+      <Typography variant="h5" gutterBottom>
+        GST & Premium Summary
+      </Typography>
+      <Card>
+        <CardContent>
+          <Grid container spacing={2}>
+            <Grid item xs={12} sm={3}>
+              <TextField
+                label={selectedDeptName === 'motor' ? "TP + OD Net Premium" : "Net Premium"}
+                name="netPremium"
+                onChange={handleChange}
+                value={form.netPremium}
+                fullWidth
+                error={!!errors.netPremium}
+                helperText={errors.netPremium}
+                InputLabelProps={{ shrink: true }}
+              />
+            </Grid>
+            {selectedDeptName !== 'motor' && (
+              <Grid item xs={12} sm={3}>
+                <FormControl fullWidth>
+                  <InputLabel id="gst">GST</InputLabel>
+                  <Select
+                    labelId="gst"
+                    label="gst"
+                    name="gst"
+                    value={resolveSelectValue(gstData, form.gst, ['value'])}
+                    onChange={handleChange}
+                    disabled={selectedDeptName.toLowerCase().includes('travel')}
+                  >
+                    {gstData.length > 0 &&
+                      gstData.map((type) => (
+                        <MenuItem key={type._id} value={type._id}>
+                              {String(type.value)}
+                            </MenuItem>
+                      ))}
+                    {form.gst && !gstData.some((t) => String(t._id) === String(resolveSelectValue(gstData, form.gst))) && (
+                      <MenuItem key={String(form.gst)} value={String(form.gst)}>
+                        {policyData?.gst?.value !== undefined ? String(policyData.gst.value) : (parseAmount(form.netPremium) > 0 ? String(Math.round(((parseAmount(form.gstAmount) || 0) / parseAmount(form.netPremium)) * 100)) : "0")}
+                      </MenuItem>
+                    )}
+                  </Select>
+                </FormControl>
+              </Grid>
+            )}
+            <Grid item xs={12} sm={3}>
+              <TextField
+                label={selectedDeptName === 'motor' ? "TP + OD GST Amt" : "GST Amt"}
+                onChange={handleChange}
+                value={form.gstAmount || ''}
+                name="gstAmount"
+                fullWidth
+                InputLabelProps={{ shrink: true }}
+              />
+            </Grid>
+            <Grid item xs={12} sm={3}>
+              <TextField
+                label={selectedDeptName === 'motor' ? "TP + OD Total Amount" : "Total Amount"}
+                name="totalAmount"
+                value={form.totalAmount || ''}
+                onChange={handleChange}
+                fullWidth
+                InputLabelProps={{ shrink: true }}
+              />
+            </Grid>
+          </Grid>
+        </CardContent>
+      </Card>
+
+      <Divider sx={{ my: 2 }} />
+      <Typography variant="h5" gutterBottom>
+        POS & BQP Details
+      </Typography>
+      <Card>
+        <CardContent>
+          <Grid container spacing={2}>
+            {/* POS Details */}
+            <Grid item xs={12} sm={4}>
+              <FormControl fullWidth>
+                <InputLabel id="posCode-label">POS Code Number</InputLabel>
+                <Select
+                  labelId="posCode-label"
+                  label="POS Code Number"
+                  name="posCode"
+                  value={form.posCode || ''}
+                  onChange={handlePosChange}
+                >
+                  <MenuItem value=""><em>None</em></MenuItem>
+                  {posData.map((pos) => (
+                    <MenuItem key={pos._id} value={pos.codeNumber}>{pos.codeNumber} - {pos.posName}</MenuItem>
+                  ))}
+                  {form.posCode && !posData.some(p => p.codeNumber === form.posCode) && (
+                    <MenuItem key={form.posCode} value={form.posCode}>{form.posCode} - {form.posName}</MenuItem>
+                  )}
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid item xs={12} sm={4}>
+              <TextField
+                label="POS Name"
+                value={form.posName}
+                fullWidth
+                InputProps={{ readOnly: true }}
+                InputLabelProps={{ shrink: true }}
+              />
+            </Grid>
+            <Grid item xs={12} sm={4}>
+              <TextField
+                label="POS Contact Number"
+                value={form.posContact}
+                fullWidth
+                InputProps={{ readOnly: true }}
+                InputLabelProps={{ shrink: true }}
+              />
+            </Grid>
+
+            {/* BQP Details */}
+            <Grid item xs={12} sm={4}>
+              <FormControl fullWidth>
+                <InputLabel id="bqpCode-label">BQP Code Number</InputLabel>
+                <Select
+                  labelId="bqpCode-label"
+                  label="BQP Code Number"
+                  name="bqpCode"
+                  value={form.bqpCode || ''}
+                  onChange={handleBqpChange}
+                >
+                  <MenuItem value=""><em>None</em></MenuItem>
+                  {bqpData.map((bqp) => (
+                    <MenuItem key={bqp._id} value={bqp.codeNumber}>{bqp.codeNumber} - {bqp.bqpName}</MenuItem>
+                  ))}
+                  {form.bqpCode && !bqpData.some(b => b.codeNumber === form.bqpCode) && (
+                    <MenuItem key={form.bqpCode} value={form.bqpCode}>{form.bqpCode} - {form.bqpName}</MenuItem>
+                  )}
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid item xs={12} sm={4}>
+              <TextField
+                label="BQP Name"
+                value={form.bqpName}
+                fullWidth
+                InputProps={{ readOnly: true }}
+                InputLabelProps={{ shrink: true }}
+              />
+            </Grid>
+            <Grid item xs={12} sm={4}>
+              <TextField
+                label="BQP Contact Number"
+                value={form.bqpContact}
+                fullWidth
+                InputProps={{ readOnly: true }}
+                InputLabelProps={{ shrink: true }}
+              />
+            </Grid>
+          </Grid>
+        </CardContent>
+      </Card>
+
       {/* MOTOR */}
       {selectedDeptName === 'motor' ? (
         <>
@@ -2531,7 +2826,7 @@ const EditPolicy = () => {
                       <MenuItem value="2025">2025</MenuItem>
                       <MenuItem value="2026">2026</MenuItem>
                       <MenuItem value="2027">2027</MenuItem>
-                      {form.yearOfManufacturing && !['2009','2010','2011','2012','2013','2014','2015','2016','2017','2018','2019','2020','2021','2022','2023','2024','2025','2026','2027'].includes(String(form.yearOfManufacturing)) && (
+                      {form.yearOfManufacturing && !['2009', '2010', '2011', '2012', '2013', '2014', '2015', '2016', '2017', '2018', '2019', '2020', '2021', '2022', '2023', '2024', '2025', '2026', '2027'].includes(String(form.yearOfManufacturing)) && (
                         <MenuItem key={String(form.yearOfManufacturing)} value={String(form.yearOfManufacturing)}>
                           {String(form.yearOfManufacturing)}
                         </MenuItem>
@@ -2673,12 +2968,12 @@ const EditPolicy = () => {
                   {gstData.length > 0 &&
                     gstData.map((type) => (
                       <MenuItem key={type._id} value={type._id}>
-                        {type.value}
-                      </MenuItem>
+                              {String(type.value)}
+                            </MenuItem>
                     ))}
                   {form.endorsementGst && !gstData.some((t) => String(t._id) === String(resolveSelectValue(gstData, form.endorsementGst))) && (
                     <MenuItem key={String(form.endorsementGst)} value={String(form.endorsementGst)}>
-                      {String(form.endorsementGst)}
+                      {policyData?.endorsementGst?.value !== undefined ? String(policyData.endorsementGst.value) : (parseAmount(form.endorsementNetPremium) > 0 ? String(Math.round(((parseAmount(form.endorsementGstAmount) || 0) / parseAmount(form.endorsementNetPremium)) * 100)) : "0")}
                     </MenuItem>
                   )}
                 </Select>
@@ -2799,16 +3094,7 @@ const EditPolicy = () => {
                 InputLabelProps={{ shrink: true }}
               />
             </Grid>
-            <Grid item xs={12} sm={4}>
-              <TextField
-                label="BQP Code"
-                value={form.bqpCode}
-                onChange={handleChange}
-                name="bqpCode"
-                fullWidth
-                InputLabelProps={{ shrink: true }}
-              />
-            </Grid>
+
             <Grid item xs={12} sm={5}>
               <Button variant="contained" onClick={handleSubmit}>
                 Save
@@ -3041,8 +3327,8 @@ const EditPolicy = () => {
                   {gstData.length > 0 &&
                     gstData.map((type) => (
                       <MenuItem key={type._id} value={type.value}>
-                        {type.value}
-                      </MenuItem>
+                            {String(type.value)}
+                          </MenuItem>
                     ))}
                   {form.totalBrokerageGst && !gstData.some((t) => String(t.value) === String(form.totalBrokerageGst)) && (
                     <MenuItem key={String(form.totalBrokerageGst)} value={form.totalBrokerageGst}>
@@ -3107,75 +3393,6 @@ const EditPolicy = () => {
         </CardContent>
       </Card>
 
-      <Divider sx={{ my: 2 }} />
-      <Typography variant="h5" gutterBottom>
-        GST & Premium Summary
-      </Typography>
-      <Card>
-        <CardContent>
-          <Grid container spacing={2}>
-            <Grid item xs={12} sm={3}>
-              <TextField
-                label={selectedDeptName === 'motor' ? "TP + OD Net Premium" : "Net Premium"}
-                name="netPremium"
-                onChange={handleChange}
-                value={form.netPremium}
-                fullWidth
-                error={!!errors.netPremium}
-                helperText={errors.netPremium}
-                InputLabelProps={{ shrink: true }}
-              />
-            </Grid>
-            {selectedDeptName !== 'motor' && (
-              <Grid item xs={12} sm={3}>
-                <FormControl fullWidth>
-                  <InputLabel id="gst">GST</InputLabel>
-                  <Select
-                    labelId="gst"
-                    label="gst"
-                    name="gst"
-                    value={resolveSelectValue(gstData, form.gst, ['value'])}
-                    onChange={handleChange}
-                    disabled={selectedDeptName.toLowerCase().includes('travel')}
-                  >
-                    {gstData.length > 0 &&
-                      gstData.map((type) => (
-                        <MenuItem key={type._id} value={type._id}>
-                          {type.value}
-                        </MenuItem>
-                      ))}
-                    {form.gst && !gstData.some((t) => String(t._id) === String(resolveSelectValue(gstData, form.gst))) && (
-                      <MenuItem key={String(form.gst)} value={String(form.gst)}>
-                        {String(form.gst)}
-                      </MenuItem>
-                    )}
-                  </Select>
-                </FormControl>
-              </Grid>
-            )}
-            <Grid item xs={12} sm={3}>
-              <TextField
-                label={selectedDeptName === 'motor' ? "TP + OD GST Amt" : "GST Amt"}
-                onChange={handleChange}
-                value={form.gstAmount || ''}
-                name="gstAmount"
-                fullWidth
-                InputLabelProps={{ shrink: true }}
-              />
-            </Grid>
-            <Grid item xs={12} sm={3}>
-              <TextField
-                label={selectedDeptName === 'motor' ? "TP + OD Total Amount" : "Total Amount"}
-                name="totalAmount"
-                value={form.totalAmount || ''}
-                onChange={handleChange}
-                fullWidth
-                InputLabelProps={{ shrink: true }}
-              />
-            </Grid>
-          </Grid>
-        </CardContent>
-      </Card>
 
       <Divider sx={{ my: 2 }} />
       <Grid container spacing={2}>

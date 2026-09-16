@@ -54,8 +54,9 @@ const BranchSettings = () => {
     if (window.confirm(`Are you sure you want to delete "${branchName}"?`)) {
       try {
         const token = localStorage.getItem('token');
-        // const response = await fetch(`http://localhost:5050/api/branchSettings/${branchId}`, {
-        const response = await fetch(`http://api.jpinsurancebrokers.co.in/api/branchSettings/${branchId}`, {
+        const API_URL = import.meta.env.VITE_APP_API_URL;
+        const response = await fetch(`${API_URL}branchSettings/${branchId}`, {
+        // const response = await fetch(`https://api.jpinsurancebrokers.co.in/api/branchSettings/${branchId}`, {
 
           method: 'DELETE',
           headers: {
@@ -96,9 +97,10 @@ const BranchSettings = () => {
       const token = localStorage.getItem('token');
       console.log('🔗 Fetching branch settings...');
 
-      // const response = await fetch('http://localhost:5050/api/branchSettings/', {
+      const API_URL = import.meta.env.VITE_APP_API_URL;
+      const response = await fetch(`${API_URL}branchSettings/`, {
 
-        const response = await fetch('http://api.jpinsurancebrokers.co.in/api/branchSettings/', {
+        // const response = await fetch('https://api.jpinsurancebrokers.co.in/api/branchSettings/', {
 
 
         headers: {

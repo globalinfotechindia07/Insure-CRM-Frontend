@@ -22,7 +22,10 @@ import {
   Tab,
   Tabs,
   Box,
-} from "@mui/material";
+  Backdrop,
+  CircularProgress,
+  TablePagination
+} from '@mui/material';
 
 import {
   Add,
@@ -76,6 +79,18 @@ const ClaimPage = () => {
   const [investigators, setInvestigators] = useState([]);
   const [departments, setDepartments] = useState([]);
 
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+
+  const handleChangePage = (event, newPage) => {
+    setPage(newPage);
+  };
+
+  const handleChangeRowsPerPage = (event) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
+
   const [formData, setFormData] = useState({
     claimNo: "",
     department: "",
@@ -123,6 +138,7 @@ const ClaimPage = () => {
     postHospitalizationAmountClaimed: "",
     postHospitalizationNoOfDays: "",
   });
+  const [isUploading, setIsUploading] = useState(false);
 
   // ================= FETCH CLAIMS =================
   const fetchClaims = async () => {
@@ -367,8 +383,8 @@ const ClaimPage = () => {
 
         setFormData({
           claimNo: item.claimNo || "",
-          department: item.department || item.policyId?.insDepartment?.name || item.policyId?.insDepartment || "",
-          status: item.status || "Pending",
+          department: item.department || item.policyId?.insDepartment?.insDepartment || item.policyId?.insDepartment?.name || (typeof item.policyId?.insDepartment === 'string' ? item.policyId?.insDepartment : "") || "",
+          status: item.status ? (item.status.toLowerCase() === 'under process' ? 'Under Process' : item.status.charAt(0).toUpperCase() + item.status.slice(1).toLowerCase()) : "Pending",
           remarks: item.remarks || "",
           policyId: item.policyId?._id || item.policyId || "",
           policyNo: item.policyId?.policyNumber || item.policyNo || "",
@@ -404,7 +420,7 @@ const ClaimPage = () => {
           journeyFrom: item.journeyFrom || "",
           journeyTo: item.journeyTo || "",
           surveyorReferenceNumber: item.surveyorReferenceNumber || "",
-          settlementType: item.settlementType || "",
+          settlementType: item.settlementType ? (item.settlementType.toUpperCase() === 'NON-STANDARD' ? 'Non-Standard' : item.settlementType.charAt(0).toUpperCase() + item.settlementType.slice(1).toLowerCase()) : "",
           claimApprovedAmount: item.claimApprovedAmount || "",
           dateOfApprovalOfClaim: item.dateOfApprovalOfClaim?.split("T")[0] || "",
           dateOfSettlement: item.dateOfSettlement?.split("T")[0] || "",
@@ -638,6 +654,8 @@ const ClaimPage = () => {
 
     const reader = new FileReader();
     reader.onload = async (evt) => {
+      setIsUploading(true);
+      try {
       const text = evt.target.result;
       const lines = text.split("\n").map(line => line.trim()).filter(line => line !== "");
       if (lines.length <= 1) {
@@ -725,6 +743,10 @@ const ClaimPage = () => {
         toast.success(`Imported ${successCount} new unique claims successfully!`);
       }
       fetchClaims();
+    
+      } finally {
+        setIsUploading(false);
+      }
     };
     reader.readAsText(file);
     e.target.value = '';
@@ -1033,9 +1055,9 @@ const ClaimPage = () => {
             </TableHead>
             <TableBody>
               {data.length > 0 ? (
-                data.map((item, index) => (
+                data.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((item, index) => (
                   <TableRow key={item._id}>
-                    <TableCell>{index + 1}</TableCell>
+                    <TableCell>{page * rowsPerPage + index + 1}</TableCell>
                     <TableCell>{item.claimNo}</TableCell>
                     <TableCell>{item.policyNo}</TableCell>
                     <TableCell>{item.insuredName}</TableCell>
@@ -1065,8 +1087,33 @@ const ClaimPage = () => {
               )}
             </TableBody>
           </Table>
+          <TablePagination
+            rowsPerPageOptions={[5, 10, 25, 50, 100]}
+            component="div"
+            count={data.length || 0}
+            rowsPerPage={rowsPerPage}
+            page={page}
+            onPageChange={handleChangePage}
+            onRowsPerPageChange={handleChangeRowsPerPage}
+          />
         </CardContent>
       </Card>
+      
+      <Backdrop
+        sx={{ 
+          color: '#fff', 
+          zIndex: (theme) => Math.max(theme.zIndex.drawer + 1, 1400),
+          backgroundColor: 'rgba(0, 0, 0, 0.7)'
+        }}
+        open={isUploading}
+      >
+        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+          <CircularProgress color="inherit" size={60} />
+          <Typography variant="h6" sx={{ mt: 3, color: '#ffffff', fontWeight: 'bold', letterSpacing: 1 }}>
+            Importing Data... Please wait.
+          </Typography>
+        </Box>
+      </Backdrop>
       <ToastContainer />
     </div>
   );

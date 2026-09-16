@@ -15,8 +15,11 @@ import {
   TableRow,
   TableCell,
   TableBody,
-  IconButton
-} from '@mui/material';
+  IconButton,
+  Backdrop,
+  CircularProgress,
+  Box
+, TablePagination } from '@mui/material';
 import Breadcrumb from 'component/Breadcrumb';
 import { Link } from 'react-router-dom';
 import { validateFormFields } from '../../../utils/formValidation';
@@ -34,6 +37,18 @@ import { get, post, put, remove } from '../../../api/api.js';
 import { useSelector } from 'react-redux';
 
 const Department = () => {
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+
+  const handleChangePage = (event, newPage) => {
+    setPage(newPage);
+  };
+
+  const handleChangeRowsPerPage = (event) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
+
   const [form, setForm] = useState({ department: '' });
   const [errors, setErrors] = useState({});
   const [open, setOpen] = useState(false);
@@ -46,6 +61,7 @@ const Department = () => {
     Edit: false,
     Delete: false
   });
+  const [isUploading, setIsUploading] = useState(false);
   const systemRights = useSelector((state) => state.systemRights.systemRights);
 
   const validate = () => {
@@ -107,7 +123,7 @@ const Department = () => {
     if (!validate()) return;
     try {
       const payload = {
-        name: form.department,
+        department: form.department,
         description: form.description || ''
       };
       if (editIndex !== null) {
@@ -171,6 +187,8 @@ const Department = () => {
 
     const reader = new FileReader();
     reader.onload = async (evt) => {
+      setIsUploading(true);
+      try {
       const text = evt.target.result;
       const lines = text.split("\n").map(line => line.trim()).filter(line => line !== "");
       if (lines.length <= 1) {
@@ -220,6 +238,10 @@ const Department = () => {
         toast.success(`Imported ${successCount} new unique departments successfully!`);
       }
       fetchDepartments();
+    
+      } finally {
+        setIsUploading(false);
+      }
     };
     reader.readAsText(file);
     e.target.value = '';
@@ -309,7 +331,7 @@ const Department = () => {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {data.map((row, index) => (
+                {data.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((row, index) => (
                   <TableRow key={index}>
                     <TableCell>{index + 1}</TableCell>
                     <TableCell>{row.name || row.department}</TableCell>
@@ -337,9 +359,37 @@ const Department = () => {
                 ))}
               </TableBody>
             </Table>
+
+            <TablePagination
+              rowsPerPageOptions={[5, 10, 25, 50, 100]}
+              component="div"
+              count={data.length || 0}
+              rowsPerPage={rowsPerPage}
+              page={page}
+              onPageChange={handleChangePage}
+              onRowsPerPageChange={handleChangeRowsPerPage}
+              labelRowsPerPage="Rows per page:"
+            />
+
           </CardContent>
         </Card>
       )}
+      
+      <Backdrop
+        sx={{ 
+          color: '#fff', 
+          zIndex: (theme) => Math.max(theme.zIndex.drawer + 1, 1400),
+          backgroundColor: 'rgba(0, 0, 0, 0.7)'
+        }}
+        open={isUploading}
+      >
+        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+          <CircularProgress color="inherit" size={60} />
+          <Typography variant="h6" sx={{ mt: 3, color: '#ffffff', fontWeight: 'bold', letterSpacing: 1 }}>
+            Importing Data... Please wait.
+          </Typography>
+        </Box>
+      </Backdrop>
       <ToastContainer />
     </div>
   );

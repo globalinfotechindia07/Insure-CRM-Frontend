@@ -13,12 +13,25 @@ import {
   Select,
   MenuItem,
   FormControl,
-  InputLabel
-} from '@mui/material';
+  InputLabel,
+  Button
+, TablePagination } from '@mui/material';
 import { get } from 'api/api';
 import React, { useEffect, useState } from 'react';
 
 const CompanyStaffReport = () => {
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+
+  const handleChangePage = (event, newPage) => {
+    setPage(newPage);
+  };
+
+  const handleChangeRowsPerPage = (event) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
+
   const [administrativeData, setAdministrativeData] = useState([]);
   const [filteredData, setFilteredData] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -79,11 +92,66 @@ const CompanyStaffReport = () => {
   const departmentOptions = uniqueValues((s) => s.employmentDetails?.department?.department);
   const cityOptions = uniqueValues((s) => s.employmentDetails?.location);
 
+  const handleExportCSV = () => {
+    if (filteredData.length === 0) return;
+
+    // Headers
+    const headers = [
+      'Sr. No.',
+      'Staff Name',
+      'Position',
+      'Mobile No.',
+      'Gender',
+      'Type of Employee',
+      'Department',
+      'City'
+    ];
+
+    // Data rows
+    const rows = filteredData.map((staff, index) => {
+      const bd = staff.basicDetails || {};
+      const ed = staff.employmentDetails || {};
+      const name = `${bd.firstName || ''} ${bd.middleName || ''} ${bd.lastName || ''}`.trim();
+      
+      return [
+        index + 1,
+        `"${name}"`,
+        `"${ed.position?.position || 'N/A'}"`,
+        `"${bd.contactNumber || 'N/A'}"`,
+        `"${bd.gender || 'N/A'}"`,
+        `"${ed.typeOfEmployee || 'N/A'}"`,
+        `"${ed.department?.department || 'N/A'}"`,
+        `"${ed.location || 'N/A'}"`
+      ].join(',');
+    });
+
+    const csvContent = [headers.join(','), ...rows].join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', 'Staff_Report.csv');
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
     <Box p={2}>
-      <Typography variant="h6" gutterBottom>
-        Staff Report
-      </Typography>
+      <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+        <Typography variant="h6" gutterBottom mb={0}>
+          Staff Report
+        </Typography>
+        <Button 
+          variant="contained" 
+          color="secondary" 
+          onClick={handleExportCSV}
+          disabled={loading || filteredData.length === 0}
+        >
+          Export
+        </Button>
+      </Box>
 
       {/* Filters */}
       <Grid container spacing={2} mb={2}>
@@ -161,6 +229,7 @@ const CompanyStaffReport = () => {
       {loading ? (
         <CircularProgress />
       ) : (
+        <>
         <TableContainer component={Paper}>
           <Table>
             <TableHead>
@@ -176,7 +245,7 @@ const CompanyStaffReport = () => {
               </TableRow>
             </TableHead>
             <TableBody>
-              {filteredData.map((staff, index) => {
+              {filteredData.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((staff, index) => {
                 const bd = staff.basicDetails || {};
                 const ed = staff.employmentDetails || {};
                 return (
@@ -195,6 +264,19 @@ const CompanyStaffReport = () => {
             </TableBody>
           </Table>
         </TableContainer>
+
+            <TablePagination
+              rowsPerPageOptions={[5, 10, 25, 50, 100]}
+              component="div"
+              count={filteredData.length || 0}
+              rowsPerPage={rowsPerPage}
+              page={page}
+              onPageChange={handleChangePage}
+              onRowsPerPageChange={handleChangeRowsPerPage}
+              labelRowsPerPage="Rows per page:"
+            />
+            </>
+
       )}
     </Box>
   );

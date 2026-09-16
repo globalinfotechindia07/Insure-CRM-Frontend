@@ -15,8 +15,11 @@ import {
   TableRow,
   TableCell,
   TableBody,
-  IconButton
-} from '@mui/material';
+  IconButton,
+  Backdrop,
+  CircularProgress,
+  Box
+, TablePagination } from '@mui/material';
 import Breadcrumb from 'component/Breadcrumb';
 import { Link } from 'react-router-dom';
 import { Add, Edit, Delete, Close } from '@mui/icons-material';
@@ -31,12 +34,25 @@ import 'react-toastify/dist/ReactToastify.css';
 import { get, post, put, remove } from '../../../api/api.js';
 
 const InsCompany = () => {
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+
+  const handleChangePage = (event, newPage) => {
+    setPage(newPage);
+  };
+
+  const handleChangeRowsPerPage = (event) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
+
   const [form, setForm] = useState({ insCompany: '' });
   const [errors, setErrors] = useState({});
   const [open, setOpen] = useState(false);
   const [data, setData] = useState([]);
   const [editIndex, setEditIndex] = useState(null);
   const [isAdmin, setAdmin] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
 
   // Fetch all Insurance Compnay from backend
   const fetchInsCompany = async () => {
@@ -127,6 +143,8 @@ const InsCompany = () => {
 
     const reader = new FileReader();
     reader.onload = async (evt) => {
+      setIsUploading(true);
+      try {
       const text = evt.target.result;
       const lines = text.split("\n").map(line => line.trim()).filter(line => line !== "");
       if (lines.length <= 1) {
@@ -174,6 +192,10 @@ const InsCompany = () => {
         toast.success(`Imported ${successCount} new unique insurance companies successfully!`);
       }
       fetchInsCompany();
+    
+      } finally {
+        setIsUploading(false);
+      }
     };
     reader.readAsText(file);
     e.target.value = '';
@@ -192,15 +214,15 @@ const InsCompany = () => {
       <Grid container justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
         <Typography variant="h5">Insurance Company</Typography>
         <div style={{ display: 'flex', gap: '10px' }}>
-          <Button variant="contained" startIcon={<Add />} onClick={handleOpen}>
+          <Button variant="contained" startIcon={<Add />} onClick={handleOpen} disabled={localStorage.getItem('loginRole') !== 'admin'}>
             Add Company
           </Button>
           <Button variant="contained" color="secondary" onClick={exportCSV} disabled={localStorage.getItem('loginRole') !== 'admin'}>
             Export
           </Button>
-          <Button variant="contained" component="label" sx={{ backgroundColor: '#4caf50', color: 'white', '&:hover': { backgroundColor: '#388e3c' } }}>
+          <Button variant="contained" component="label" sx={{ backgroundColor: '#4caf50', color: 'white', '&:hover': { backgroundColor: '#388e3c' } }} disabled={localStorage.getItem('loginRole') !== 'admin'}>
             Import
-            <input type="file" accept=".csv" hidden onChange={handleImportCSV} />
+            <input type="file" accept=".csv" hidden onChange={handleImportCSV} disabled={localStorage.getItem('loginRole') !== 'admin'} />
           </Button>
         </div>
       </Grid>
@@ -259,7 +281,7 @@ const InsCompany = () => {
             {data.length > 0 ? (
               <TableBody>
                 <>
-                  {data.map((item, index) => (
+                  {data.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((item, index) => (
                     <TableRow key={item.id}>
                       <TableCell>{index + 1}</TableCell>
                       <TableCell>{item.insCompany}</TableCell>
@@ -268,13 +290,19 @@ const InsCompany = () => {
                           size="small"
                           onClick={() => handleEdit(index)}
                           sx={{ padding: '1px', minWidth: '24px', height: '24px', mr: '5px' }}
+                          disabled={localStorage.getItem('loginRole') !== 'admin'}
                         >
-                          <IconButton color="inherit">
+                          <IconButton color="inherit" disabled={localStorage.getItem('loginRole') !== 'admin'}>
                             <Edit />
                           </IconButton>
                         </Button>
-                        <Button color="error" onClick={() => handleDelete(index)} sx={{ padding: '1px', minWidth: '24px', height: '24px' }}>
-                          <IconButton color="inherit">
+                        <Button 
+                          color="error" 
+                          onClick={() => handleDelete(index)} 
+                          sx={{ padding: '1px', minWidth: '24px', height: '24px' }}
+                          disabled={localStorage.getItem('loginRole') !== 'admin'}
+                        >
+                          <IconButton color="inherit" disabled={localStorage.getItem('loginRole') !== 'admin'}>
                             <Delete />
                           </IconButton>
                         </Button>
@@ -287,8 +315,36 @@ const InsCompany = () => {
               <>Data Not Found </>
             )}
           </Table>
+
+            <TablePagination
+              rowsPerPageOptions={[5, 10, 25, 50, 100]}
+              component="div"
+              count={data.length || 0}
+              rowsPerPage={rowsPerPage}
+              page={page}
+              onPageChange={handleChangePage}
+              onRowsPerPageChange={handleChangeRowsPerPage}
+              labelRowsPerPage="Rows per page:"
+            />
+
         </CardContent>
       </Card>
+      
+      <Backdrop
+        sx={{ 
+          color: '#fff', 
+          zIndex: (theme) => Math.max(theme.zIndex.drawer + 1, 1400),
+          backgroundColor: 'rgba(0, 0, 0, 0.7)'
+        }}
+        open={isUploading}
+      >
+        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+          <CircularProgress color="inherit" size={60} />
+          <Typography variant="h6" sx={{ mt: 3, color: '#ffffff', fontWeight: 'bold', letterSpacing: 1 }}>
+            Importing Data... Please wait.
+          </Typography>
+        </Box>
+      </Backdrop>
       <ToastContainer />
     </>
   );

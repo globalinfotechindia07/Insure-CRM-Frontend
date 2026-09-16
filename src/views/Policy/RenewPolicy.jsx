@@ -1,4 +1,13 @@
+
+const normalizeValStr = (val) => {
+  if (val === null || val === undefined) return '';
+  let str = String(val).trim();
+  if (str.endsWith('%')) str = str.slice(0, -1).trim();
+  return str.toLowerCase();
+};
+
 import React, { useEffect, useState, useMemo } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import {
   Grid,
   TextField,
@@ -68,6 +77,8 @@ const RenewPolicy = () => {
   const [branchNameId, setBranchNameId] = useState('');
   const [policyData, setPolicyData] = useState([]);
   const [paymentModeData, setPaymentModeData] = useState([]);
+  const [posData, setPosData] = useState([]);
+  const [bqpData, setBqpData] = useState([]);
 
   const [taxes, setTaxes] = useState({
     CGST: setForm.CGST,
@@ -164,7 +175,12 @@ const RenewPolicy = () => {
       paidAmount: '',
       transactionDate: '',
       posMisRef: '',
+      posCode: '',
+      posName: '',
+      posContact: '',
       bqpCode: '',
+      bqpName: '',
+      bqpContact: '',
       rateOnOtherTerr: '',
       amountOnOtherTerr: '',
       rateOnTerr: '',
@@ -247,9 +263,42 @@ const RenewPolicy = () => {
       setIncotermsData(incotermsData.data || []);
       setFuelTypeData(fuelTypeData.data || []);
       setPaymentModeData(paymentModeRes?.paymentMode || []);
+
+      // Fetch POS & BQP data
+      try {
+        const posRes = await get('pos');
+        setPosData(posRes?.data || []);
+      } catch (e) { console.error('Error fetching POS data', e); }
+      try {
+        const bqpRes = await get('bqp');
+        setBqpData(bqpRes?.data || []);
+      } catch (e) { console.error('Error fetching BQP data', e); }
+
     } catch (err) {
       console.error('Dropdown load error:', err);
     }
+  };
+
+  const handlePosChange = (e) => {
+    const selectedCode = e.target.value;
+    const selectedPos = posData.find(p => p.codeNumber === selectedCode);
+    setForm(prev => ({
+      ...prev,
+      posCode: selectedCode,
+      posName: selectedPos ? selectedPos.posName : '',
+      posContact: selectedPos ? selectedPos.contactNumber : ''
+    }));
+  };
+
+  const handleBqpChange = (e) => {
+    const selectedCode = e.target.value;
+    const selectedBqp = bqpData.find(b => b.codeNumber === selectedCode);
+    setForm(prev => ({
+      ...prev,
+      bqpCode: selectedCode,
+      bqpName: selectedBqp ? selectedBqp.bqpName : '',
+      bqpContact: selectedBqp ? selectedBqp.contactNumber : ''
+    }));
   };
 
   const fetchPolicyDetailById = async () => {
@@ -330,7 +379,12 @@ const RenewPolicy = () => {
           chequeNo: policyData?.chequeNo || '',
           transactionDate: policyData?.transactionDate ? policyData?.transactionDate?.split('T')[0] : '',
           posMisRef: policyData?.posMisRef || '',
+          posCode: policyData?.posCode || '',
+          posName: policyData?.posName || '',
+          posContact: policyData?.posContact || '',
           bqpCode: policyData?.bqpCode || '',
+          bqpName: policyData?.bqpName || '',
+          bqpContact: policyData?.bqpContact || '',
           amountOnOtherTerr: formatAmountWithCommas(policyData?.amountOnOtherTerr),
           amountOnTerr: formatAmountWithCommas(policyData?.amountOnTerr),
           tpBrokerageAmount: formatAmountWithCommas(policyData?.tpBrokerageAmount),
@@ -442,6 +496,18 @@ const RenewPolicy = () => {
               ? String(policyData?.otherAddon)
               : ''
         }));
+
+        // Inject populated GST objects from policyData into gstData so dropdowns display labels, not IDs
+        setGstData((prev) => {
+          const list = [...prev];
+          [policyData?.gst, policyData?.tpGst, policyData?.odGst, policyData?.endorsementGst].forEach((item) => {
+            if (item && typeof item === 'object' && item._id && !list.some((x) => String(x._id) === String(item._id))) {
+              list.push(item);
+            }
+          });
+          return list;
+        });
+
         if (policyData?.sharePercentage || policyData?.coBrokerageAmount) {
           setShowCoBrokerage(true);
         }
@@ -614,14 +680,14 @@ const RenewPolicy = () => {
   useEffect(() => {
     const tpPremium = parseAmount(form?.tpPremium);
     const tpGstId = form?.tpGst;
-    const tpGstValue = parseAmount(gstData?.find((i) => i._id === tpGstId)?.value);
+    const tpGstValue = parseAmount(gstData?.find((i) => String(i._id) === String(tpGstId) || normalizeValStr(i.value) === normalizeValStr(tpGstId))?.value);
 
     const tpGstAmount = round2(tpPremium * (tpGstValue / 100));
     const tpAmount = round2(tpPremium + tpGstAmount);
 
     const odPremium = parseAmount(form?.odPremium);
     const odGstId = form?.odGst;
-    const odGstValue = parseAmount(gstData?.find((i) => i._id === odGstId)?.value);
+    const odGstValue = parseAmount(gstData?.find((i) => String(i._id) === String(odGstId) || normalizeValStr(i.value) === normalizeValStr(odGstId))?.value);
 
     const odGstAmount = round2(odPremium * (odGstValue / 100));
     const odAmount = round2(odPremium + odGstAmount);
@@ -657,7 +723,7 @@ const RenewPolicy = () => {
       const netPremium = round2(parseAmount(form.netPremium));
 
       if (form.netPremium != '') {
-        const gstValue = parseAmount(gstData?.find((i) => i._id === form.gst)?.value);
+        const gstValue = parseAmount(gstData?.find((i) => String(i._id) === String(form.gst) || normalizeValStr(i.value) === normalizeValStr(form.gst))?.value);
         const gstAmount = round2(netPremium * (gstValue / 100)) || 0;
         const totalAmount = round2(netPremium + gstAmount);
 
@@ -1006,8 +1072,8 @@ const RenewPolicy = () => {
     // ⛔ if both premiums are empty, don’t calculate
     if (!tpPremium && !odPremium) return;
 
-    const tpGstValue = parseAmount(gstData.find((i) => i._id === form.tpGst)?.value);
-    const odGstValue = parseAmount(gstData.find((i) => i._id === form.odGst)?.value);
+    const tpGstValue = parseAmount(gstData.find((i) => i._id === (form.tpGst || form.gst))?.value);
+    const odGstValue = parseAmount(gstData.find((i) => i._id === (form.odGst || form.gst))?.value);
 
     // ⛔ in edit mode, don’t override existing values
     if (isEditMode && !tpGstValue && !odGstValue) return;
@@ -1029,7 +1095,7 @@ const RenewPolicy = () => {
     }));
   }, [form.tpPremium, form.odPremium, form.tpGst, form.odGst, gstData]);
 
-  const round2 = (num) => Math.round((Number(num) + Number.EPSILON) * 100) / 100;
+  const round2 = (num) => Math.round(Number(num));
 
   const getRateValue = (rateId) => {
     return Number(brokerageRateData?.find((r) => r._id === rateId)?.brokerageRate || 0);
@@ -1120,8 +1186,8 @@ const RenewPolicy = () => {
   useEffect(() => {
     const net = parseAmount(form.endorsementNetPremium);
     const gstId = form.endorsementGst;
-    const gstValue = parseAmount(gstData?.find((g) => g._id === gstId)?.value || 0);
-    const gstAmount = round2(net * (gstValue / 100));
+    const gstValue = parseAmount(gstData?.find((g) => String(g._id) === String(gstId) || normalizeValStr(g.value) === normalizeValStr(gstId))?.value);
+      const gstAmount = gstValue ? round2(net * (gstValue / 100)) : parseAmount(form.endorsementGstAmount);
     const total = round2(net + gstAmount);
     setForm((prev) => ({
       ...prev,
@@ -1628,7 +1694,7 @@ const RenewPolicy = () => {
                         {gstData.length > 0 &&
                           gstData.map((type) => (
                             <MenuItem key={type._id} value={type._id}>
-                              {type.value}
+                              {String(type.value)}
                             </MenuItem>
                           ))}
                       </Select>
@@ -1722,7 +1788,7 @@ const RenewPolicy = () => {
                         {gstData.length > 0 &&
                           gstData.map((type) => (
                             <MenuItem key={type._id} value={type._id}>
-                              {type.value}
+                              {String(type.value)}
                             </MenuItem>
                           ))}
                       </Select>
@@ -2049,6 +2115,67 @@ const RenewPolicy = () => {
           </Grid>
         </CardContent>
       </Card>
+      <Divider sx={{ my: 2 }} />
+      <Typography variant="h5" gutterBottom>
+        GST & Premium Summary
+      </Typography>
+      <Card>
+        <CardContent>
+          <Grid container spacing={2}>
+            <Grid item xs={12} sm={3}>
+              <TextField
+                label={selectedDeptName === 'motor' ? "TP + OD Net Premium" : "Net Premium"}
+                name="netPremium"
+                onChange={handleChange}
+                value={form.netPremium}
+                
+                fullWidth
+                error={!!errors.netPremium}
+                helperText={errors.netPremium}
+                InputLabelProps={{ shrink: true }}
+              />
+            </Grid>
+            {selectedDeptName !== 'motor' && (
+              <Grid item xs={12} sm={3}>
+                <FormControl fullWidth>
+                  <InputLabel id="gst">GST</InputLabel>
+                  <Select labelId="gst" label="gst" name="gst" value={form.gst} onChange={handleChange}>
+                    {gstData.length > 0 &&
+                      gstData.map((type) => (
+                        <MenuItem key={type._id} value={type._id}>
+                              {String(type.value)}
+                            </MenuItem>
+                      ))}
+                  </Select>
+                </FormControl>
+              </Grid>
+            )}
+            <Grid item xs={12} sm={3}>
+              <TextField
+                label={selectedDeptName === 'motor' ? "TP + OD GST Amt" : "GST Amt"}
+                onChange={handleChange}
+                value={form.gstAmount || ''}
+                name="gstAmount"
+                
+                fullWidth
+                InputLabelProps={{ shrink: true }}
+              />
+            </Grid>
+            <Grid item xs={12} sm={3}>
+              <TextField
+                label={selectedDeptName === 'motor' ? "TP + OD Total Amount" : "Total Amount"}
+                name="totalAmount"
+                value={form.totalAmount || ''}
+                
+                onChange={handleChange}
+                fullWidth
+                InputLabelProps={{ shrink: true }}
+              />
+            </Grid>
+          </Grid>
+        </CardContent>
+      </Card>
+
       {/* MOTOR */}
       {selectedDeptName === 'motor' ? (
         <>
@@ -2294,10 +2421,18 @@ const RenewPolicy = () => {
                   {gstData.length > 0 &&
                     gstData.map((type) => (
                       <MenuItem key={type._id} value={type._id}>
-                        {type.value}
-                      </MenuItem>
+                              {String(type.value)}
+                            </MenuItem>
                     ))}
-                </Select>
+                  {form.endorsementGst && !gstData.some((t) => String(t._id) === String(form.endorsementGst)) && (
+                      <MenuItem key={String(form.endorsementGst)} value={String(form.endorsementGst)}>
+                        {policyData?.endorsementGst?.value || 
+                          (parseAmount(form.endorsementNetPremium) > 0 
+                            ? String(Math.round((parseAmount(form.endorsementGstAmount) / parseAmount(form.endorsementNetPremium)) * 100)) 
+                            : '0')}
+                      </MenuItem>
+                    )}
+                  </Select>
               </FormControl>
             </Grid>
             <Grid item xs={12} sm={3}>
@@ -2394,27 +2529,98 @@ const RenewPolicy = () => {
       </Card>
       <Divider sx={{ my: 2 }} />
       <Typography variant="h5" gutterBottom>
-        Servicing Details
+        POS & BQP Details
       </Typography>
       <Card>
         <CardContent>
           <Grid container spacing={2}>
+            {/* POS Details */}
+            <Grid item xs={12} sm={4}>
+              <FormControl fullWidth>
+                <InputLabel id="posCode-label">POS Code Number</InputLabel>
+                <Select
+                  labelId="posCode-label"
+                  label="POS Code Number"
+                  name="posCode"
+                  value={form.posCode || ''}
+                  onChange={handlePosChange}
+                >
+                  <MenuItem value=""><em>None</em></MenuItem>
+                  {posData.map((pos) => (
+                    <MenuItem key={pos._id} value={pos.codeNumber}>{pos.codeNumber} - {pos.posName}</MenuItem>
+                  ))}
+                  {form.posCode && !posData.some(p => p.codeNumber === form.posCode) && (
+                    <MenuItem key={form.posCode} value={form.posCode}>{form.posCode} - {form.posName}</MenuItem>
+                  )}
+                </Select>
+              </FormControl>
+            </Grid>
             <Grid item xs={12} sm={4}>
               <TextField
-                label="POS MIS REF"
-                value={form.posMisRef}
-                onChange={handleChange}
-                name="posMisRef"
+                label="POS Name"
+                value={form.posName || ''}
                 fullWidth
+                InputProps={{ readOnly: true }}
                 InputLabelProps={{ shrink: true }}
               />
             </Grid>
             <Grid item xs={12} sm={4}>
               <TextField
-                label="BQP Code"
-                value={form.bqpCode}
+                label="POS Contact Number"
+                value={form.posContact || ''}
+                fullWidth
+                InputProps={{ readOnly: true }}
+                InputLabelProps={{ shrink: true }}
+              />
+            </Grid>
+
+            {/* BQP Details */}
+            <Grid item xs={12} sm={4}>
+              <FormControl fullWidth>
+                <InputLabel id="bqpCode-label">BQP Code Number</InputLabel>
+                <Select
+                  labelId="bqpCode-label"
+                  label="BQP Code Number"
+                  name="bqpCode"
+                  value={form.bqpCode || ''}
+                  onChange={handleBqpChange}
+                >
+                  <MenuItem value=""><em>None</em></MenuItem>
+                  {bqpData.map((bqp) => (
+                    <MenuItem key={bqp._id} value={bqp.codeNumber}>{bqp.codeNumber} - {bqp.bqpName}</MenuItem>
+                  ))}
+                  {form.bqpCode && !bqpData.some(b => b.codeNumber === form.bqpCode) && (
+                    <MenuItem key={form.bqpCode} value={form.bqpCode}>{form.bqpCode} - {form.bqpName}</MenuItem>
+                  )}
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid item xs={12} sm={4}>
+              <TextField
+                label="BQP Name"
+                value={form.bqpName || ''}
+                fullWidth
+                InputProps={{ readOnly: true }}
+                InputLabelProps={{ shrink: true }}
+              />
+            </Grid>
+            <Grid item xs={12} sm={4}>
+              <TextField
+                label="BQP Contact Number"
+                value={form.bqpContact || ''}
+                fullWidth
+                InputProps={{ readOnly: true }}
+                InputLabelProps={{ shrink: true }}
+              />
+            </Grid>
+
+            {/* POS MIS REF */}
+            <Grid item xs={12} sm={4}>
+              <TextField
+                label="POS MIS REF"
+                value={form.posMisRef || ''}
                 onChange={handleChange}
-                name="bqpCode"
+                name="posMisRef"
                 fullWidth
                 InputLabelProps={{ shrink: true }}
               />
@@ -2597,8 +2803,8 @@ const RenewPolicy = () => {
                   {gstData.length > 0 &&
                     gstData.map((type) => (
                       <MenuItem key={type._id} value={type.value}>
-                        {type.value}
-                      </MenuItem>
+                            {String(type.value)}
+                          </MenuItem>
                     ))}
                 </Select>
               </FormControl>
@@ -2658,66 +2864,7 @@ const RenewPolicy = () => {
         </CardContent>
       </Card>
 
-      <Divider sx={{ my: 2 }} />
-      <Typography variant="h5" gutterBottom>
-        GST & Premium Summary
-      </Typography>
-      <Card>
-        <CardContent>
-          <Grid container spacing={2}>
-            <Grid item xs={12} sm={3}>
-              <TextField
-                label={selectedDeptName === 'motor' ? "TP + OD Net Premium" : "Net Premium"}
-                name="netPremium"
-                onChange={handleChange}
-                value={form.netPremium}
-                
-                fullWidth
-                error={!!errors.netPremium}
-                helperText={errors.netPremium}
-                InputLabelProps={{ shrink: true }}
-              />
-            </Grid>
-            {selectedDeptName !== 'motor' && (
-              <Grid item xs={12} sm={3}>
-                <FormControl fullWidth>
-                  <InputLabel id="gst">GST</InputLabel>
-                  <Select labelId="gst" label="gst" name="gst" value={form.gst} onChange={handleChange}>
-                    {gstData.length > 0 &&
-                      gstData.map((type) => (
-                        <MenuItem key={type._id} value={type._id}>
-                          {type.value}
-                        </MenuItem>
-                      ))}
-                  </Select>
-                </FormControl>
-              </Grid>
-            )}
-            <Grid item xs={12} sm={3}>
-              <TextField
-                label={selectedDeptName === 'motor' ? "TP + OD GST Amt" : "GST Amt"}
-                onChange={handleChange}
-                value={form.gstAmount || ''}
-                name="gstAmount"
-                
-                fullWidth
-                InputLabelProps={{ shrink: true }}
-              />
-            </Grid>
-            <Grid item xs={12} sm={3}>
-              <TextField
-                label={selectedDeptName === 'motor' ? "TP + OD Total Amount" : "Total Amount"}
-                name="totalAmount"
-                value={form.totalAmount || ''}
-                
-                onChange={handleChange}
-                fullWidth
-                InputLabelProps={{ shrink: true }}
-              />
-            </Grid>
-          </Grid>
-        </CardContent>
-      </Card>
+
 
       <Divider sx={{ my: 2 }} />
       <Grid container spacing={2}>

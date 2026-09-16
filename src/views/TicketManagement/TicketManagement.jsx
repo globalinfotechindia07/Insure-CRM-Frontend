@@ -19,7 +19,7 @@ import {
   DialogContent,
   Tooltip,
   Select
-} from '@mui/material';
+, TablePagination } from '@mui/material';
 import { LocalizationProvider, DatePicker } from '@mui/x-date-pickers';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { Link } from 'react-router-dom';
@@ -37,6 +37,18 @@ import { useSelector } from 'react-redux';
 import TicketDetailView from './TicketDetailView';
 
 const TicketManagement = () => {
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+
+  const handleChangePage = (event, newPage) => {
+    setPage(newPage);
+  };
+
+  const handleChangeRowsPerPage = (event) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
+
   const [form, setForm] = useState({
     clientName: '',
     phoneNumber: '',
@@ -327,7 +339,7 @@ const TicketManagement = () => {
                       </TableRow>
                     </TableHead>
                     <TableBody>
-                      {formList?.map((entry, index) => (
+                      {formList?.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((entry, index) => (
                         <TableRow key={entry._id || index}>
                           <TableCell>{index + 1}</TableCell>
                           <TableCell>{entry.TicketNo}</TableCell>
@@ -391,6 +403,18 @@ const TicketManagement = () => {
                       ))}
                     </TableBody>
                   </Table>
+
+            <TablePagination
+              rowsPerPageOptions={[5, 10, 25, 50, 100]}
+              component="div"
+              count={formList.length || 0}
+              rowsPerPage={rowsPerPage}
+              page={page}
+              onPageChange={handleChangePage}
+              onRowsPerPageChange={handleChangeRowsPerPage}
+              labelRowsPerPage="Rows per page:"
+            />
+
                 </Box>
               </CardContent>
             </Card>

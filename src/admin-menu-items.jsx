@@ -44,8 +44,6 @@ import {
   AssignmentTurnedIn
 } from '@mui/icons-material';
 import { MdMoney } from 'react-icons/md';
-import { IoMdGitNetwork } from 'react-icons/io';
-import StatusBoxes from 'views/master/frontOffice-setup/OPD-Dashboard/components/StatusBoxes';
 import PriorityHighIcon from '@mui/icons-material/PriorityHigh';
 import Priority from 'views/master/Priority/Priority';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
@@ -228,6 +226,28 @@ export default {
                   type: 'item',
                   icon: PeopleIcon,
                   url: '/staff-master/company-staff-report'
+                }
+              ]
+            },
+            {
+              id: 'pos-and-bqp-group',
+              title: 'POS and BQP',
+              type: 'collapse',
+              icon: GridViewIcon,
+              children: [
+                {
+                  id: 'pos',
+                  title: 'POS',
+                  type: 'item',
+                  icon: TrendingUpIcon,
+                  url: '/master/pos'
+                },
+                {
+                  id: 'bqp',
+                  title: 'BQP',
+                  type: 'item',
+                  icon: TrendingUpIcon,
+                  url: '/master/bqp'
                 }
               ]
             },
@@ -720,6 +740,7 @@ export default {
             // }
           ]
         },
+
 
         // {
         //   id: 'calander',

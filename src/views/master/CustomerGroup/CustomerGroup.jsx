@@ -19,7 +19,7 @@ import {
   TableCell,
   TableBody,
   IconButton
-} from '@mui/material';
+, TablePagination } from '@mui/material';
 import Breadcrumb from 'component/Breadcrumb';
 import { Link, useNavigate } from 'react-router-dom';
 import { Add, Edit, Delete, Close } from '@mui/icons-material';
@@ -65,6 +65,18 @@ const initialState = {
 };
 
 const CustomerGroup = () => {
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+
+  const handleChangePage = (event, newPage) => {
+    setPage(newPage);
+  };
+
+  const handleChangeRowsPerPage = (event) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
+
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState(initialState);
   const [errors, setErrors] = useState({});
@@ -172,7 +184,7 @@ const CustomerGroup = () => {
               </TableRow>
             </TableHead>
             <TableBody>
-              {clientList.map((item, index) => (
+              {clientList.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((item, index) => (
                 <TableRow key={item.id}>
                   <TableCell>{index + 1}</TableCell>
                   <TableCell>{item.customerGroupId}</TableCell>
@@ -192,6 +204,18 @@ const CustomerGroup = () => {
               ))}
             </TableBody>
           </Table>
+
+            <TablePagination
+              rowsPerPageOptions={[5, 10, 25, 50, 100]}
+              component="div"
+              count={clientList.length || 0}
+              rowsPerPage={rowsPerPage}
+              page={page}
+              onPageChange={handleChangePage}
+              onRowsPerPageChange={handleChangeRowsPerPage}
+              labelRowsPerPage="Rows per page:"
+            />
+
         </CardContent>
       </Card>
       <ToastContainer />

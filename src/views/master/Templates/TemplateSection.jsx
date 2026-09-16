@@ -15,7 +15,7 @@ import {
   TextField,
   Divider,
   CircularProgress
-} from '@mui/material';
+, TablePagination } from '@mui/material';
 import DeleteBtn from 'component/buttons/DeleteBtn'
 import EditBtn from 'component/buttons/EditBtn'
 import { Cancel, Save } from '@mui/icons-material'
@@ -28,6 +28,18 @@ import {
 import { ToastContainer,toast } from 'react-toastify';
 
 const TemplateSection = () => {
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+
+  const handleChangePage = (event, newPage) => {
+    setPage(newPage);
+  };
+
+  const handleChangeRowsPerPage = (event) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
+
   const { data: fetchedSections = [], isLoading, isError } = useGetRadiologySectionQuery();
   const [sections, setSections] = useState(fetchedSections);
   const [addSection] = useAddRadiologySectionMutation();
@@ -134,7 +146,7 @@ const TemplateSection = () => {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  sections.map((section, index) => (
+                  sections.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((section, index) => (
                     <TableRow key={section._id}>
                       <TableCell>{index + 1}</TableCell>
                       <TableCell>{section.section}</TableCell>
@@ -151,6 +163,18 @@ const TemplateSection = () => {
                 )}
               </TableBody>
             </Table>
+
+            <TablePagination
+              rowsPerPageOptions={[5, 10, 25, 50, 100]}
+              component="div"
+              count={sections.length || 0}
+              rowsPerPage={rowsPerPage}
+              page={page}
+              onPageChange={handleChangePage}
+              onRowsPerPageChange={handleChangeRowsPerPage}
+              labelRowsPerPage="Rows per page:"
+            />
+
           </TableContainer>
         )}
       </Paper>

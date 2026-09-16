@@ -26,7 +26,6 @@ import { Close as CloseIcon, AccessTime as AccessTimeIcon } from '@mui/icons-mat
 const Header = ({ drawerToggle }) => {
   const theme = useTheme();
   const dispatch = useDispatch();
-  const { hospitalData } = useSelector((state) => state.hospitalData);
   const loginData = JSON.parse(localStorage.getItem('loginData')) || {};
   const { user } = useSelector((state) => state.auth || {});
 

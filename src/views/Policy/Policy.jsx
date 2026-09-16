@@ -31,7 +31,8 @@ import {
   InputAdornment,
   Radio,
   CircularProgress,
-  Skeleton
+  Skeleton,
+  Backdrop
 } from '@mui/material';
 import { FaTrash } from 'react-icons/fa';
 import { toast, ToastContainer } from 'react-toastify';
@@ -65,24 +66,38 @@ const Policy = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState(initialState);
-  const [filter, setFilter] = useState('');
+  const getSessionState = (key, defaultValue) => {
+    const saved = sessionStorage.getItem(`policyList_${key}`);
+    return saved !== null ? JSON.parse(saved) : defaultValue;
+  };
+
+  const [filter, setFilter] = useState(() => getSessionState('filter', ''));
   const [customerList, setCustomerList] = useState([]);
   const [insCompanyData, setInsCompanyData] = useState({});
   const [insDepartmentData, setInsDepartmentData] = useState({});
   const [financialYearData, setFinancialYearData] = useState([]);
   const [financialYear, setFinancialYear] = useState('');
-  const [selectedCompany, setSelectedCompany] = useState('');
-  const [selectedDepartment, setSelectedDepartment] = useState('');
-  const [selectedMonth, setSelectedMonth] = useState('');
+  const [selectedCompany, setSelectedCompany] = useState(() => getSessionState('selectedCompany', ''));
+  const [selectedDepartment, setSelectedDepartment] = useState(() => getSessionState('selectedDepartment', ''));
+  const [selectedMonth, setSelectedMonth] = useState(() => getSessionState('selectedMonth', ''));
 
-  const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(10);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [page, setPage] = useState(() => getSessionState('page', 0));
+  const [rowsPerPage, setRowsPerPage] = useState(() => getSessionState('rowsPerPage', 10));
+  const [totalCount, setTotalCount] = useState(0);
+  const [searchTerm, setSearchTerm] = useState(() => getSessionState('searchTerm', ''));
   const [file, setFile] = useState(null);
   const [isExporting, setIsExporting] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
 
-  useEffect(() => { }, [filter]);
+  useEffect(() => {
+    sessionStorage.setItem('policyList_filter', JSON.stringify(filter));
+    sessionStorage.setItem('policyList_selectedCompany', JSON.stringify(selectedCompany));
+    sessionStorage.setItem('policyList_selectedDepartment', JSON.stringify(selectedDepartment));
+    sessionStorage.setItem('policyList_selectedMonth', JSON.stringify(selectedMonth));
+    sessionStorage.setItem('policyList_page', JSON.stringify(page));
+    sessionStorage.setItem('policyList_rowsPerPage', JSON.stringify(rowsPerPage));
+    sessionStorage.setItem('policyList_searchTerm', JSON.stringify(searchTerm));
+  }, [filter, selectedCompany, selectedDepartment, selectedMonth, page, rowsPerPage, searchTerm]);
 
   useEffect(() => {
     const selectedFY = localStorage.getItem('selectedFY');
@@ -121,25 +136,40 @@ const Policy = () => {
     setLoading(true);
     try {
       const companyId = localStorage.getItem('companyId');
-      let url = 'policyDetail';
+      let url = `policyDetail?page=${page + 1}&limit=${rowsPerPage}`;
+      
       if (companyId) {
-        url += `?companyId=${encodeURIComponent(companyId)}`;
+        url += `&companyId=${encodeURIComponent(companyId)}`;
       }
+      if (financialYear && filter === 'byFinancialYear') url += `&financialYear=${financialYear}`;
+      if (selectedCompany && filter === 'byCompany') url += `&company=${selectedCompany}`;
+      if (selectedDepartment && filter === 'byDepartment') url += `&department=${selectedDepartment}`;
+      if (selectedMonth && filter === 'byMonth') url += `&month=${selectedMonth}`;
+      if (searchTerm) url += `&search=${encodeURIComponent(searchTerm.trim())}`;
+
       console.log('Fetching policies with URL:', url);
       const res = await get(url);
       console.log('policyDetail data:', res);
+      
       if (res && (res.status === true || res.status === 'true' || Array.isArray(res.data))) {
         setCustomerList(res.data || []);
+        if (res.pagination) {
+          setTotalCount(res.pagination.totalItems || 0);
+        } else {
+          setTotalCount((res.data || []).length);
+        }
       } else {
         setCustomerList([]);
+        setTotalCount(0);
       }
     } catch (error) {
       console.error(error);
       setCustomerList([]);
+      setTotalCount(0);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [page, rowsPerPage, filter, financialYear, selectedCompany, selectedDepartment, selectedMonth, searchTerm]);
 
   useEffect(() => {
     // Listen for ANY localStorage changes (even from other components/tabs)
@@ -163,10 +193,9 @@ const Policy = () => {
     return () => window.removeEventListener('storage', handleStorageChange);
   }, []); // Empty deps - runs once
 
-  // Todo:
   useEffect(() => {
     fetchPolicyDetail();
-  }, [financialYear]);
+  }, [fetchPolicyDetail]);
 
   const handleDelete = (index) => {
     const id = index;
@@ -222,105 +251,7 @@ const Policy = () => {
     setPage(0);
   };
 
-  // Filter data based on search term and active dropdown filters
-  const filteredData = useMemo(() => {
-    let result = customerList;
 
-    if (filter === 'byFinancialYear' && financialYear) {
-      result = result.filter((entry) => {
-        const fyId = entry?.financialYear?._id || entry?.financialYear;
-        return String(fyId) === String(financialYear);
-      });
-    } else if (filter === 'byCompany' && selectedCompany) {
-      result = result.filter((entry) => {
-        const compId = entry?.insCompany?._id || entry?.insCompany;
-        return String(compId) === String(selectedCompany);
-      });
-    } else if (filter === 'byDepartment' && selectedDepartment) {
-      result = result.filter((entry) => {
-        const deptId = entry?.insDepartment?._id || entry?.insDepartment;
-        return String(deptId) === String(selectedDepartment);
-      });
-    } else if (filter === 'byMonth' && selectedMonth) {
-      const parseDateValue = (rawVal) => {
-        if (!rawVal) return null;
-        const str = String(rawVal).trim();
-        if (!str) return null;
-
-        if (str.includes('T') || /^\d{4}-\d{2}-\d{2}/.test(str)) {
-          const d = new Date(str);
-          return isNaN(d.getTime()) ? null : d;
-        }
-
-        const dmyMatch = str.match(/^(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{4})/);
-        if (dmyMatch) {
-          const [, d, m, y] = dmyMatch;
-          const dateObj = new Date(Number(y), Number(m) - 1, Number(d));
-          return isNaN(dateObj.getTime()) ? null : dateObj;
-        }
-
-        const ymdMatch = str.match(/^(\d{4})[\/\-\.](\d{1,2})[\/\-\.](\d{1,2})/);
-        if (ymdMatch) {
-          const [, y, m, d] = ymdMatch;
-          const dateObj = new Date(Number(y), Number(m) - 1, Number(d));
-          return isNaN(dateObj.getTime()) ? null : dateObj;
-        }
-
-        if (/^\d{5}(\.\d+)?$/.test(str)) {
-          const serial = parseFloat(str);
-          const parsedDate = new Date(Math.round((serial - 25569) * 86400 * 1000));
-          return isNaN(parsedDate.getTime()) ? null : parsedDate;
-        }
-
-        const fallbackDate = new Date(rawVal);
-        return isNaN(fallbackDate.getTime()) ? null : fallbackDate;
-      };
-
-      result = result.filter((entry) => {
-        const rawDate = entry?.startDate || entry?.tpStartDate || entry?.odStartDate || entry?.endorStartDate || entry?.transactionDate;
-        const date = parseDateValue(rawDate);
-        if (!date) return false;
-        const year = date.getFullYear();
-        const month = String(date.getMonth() + 1).padStart(2, '0');
-        return `${year}-${month}` === selectedMonth;
-      });
-    }
-
-    if (searchTerm.trim()) {
-      const lowerSearch = searchTerm.toLowerCase().trim();
-      result = result.filter((entry) => {
-        const custName = (entry?.cutomerName || entry?.retailCustomer?.name || entry?.customerGroup?.customerGroupName || '').toLowerCase();
-        const companyName = (entry?.insCompany?.insCompany || entry?.insCompany?.name || entry?.insurerName || '').toLowerCase();
-        const deptName = (entry?.insDepartment?.insDepartment || '').toLowerCase();
-        const policyNo = (entry?.policyNumber || '').toLowerCase();
-
-        return (
-          custName.includes(lowerSearch) ||
-          companyName.includes(lowerSearch) ||
-          deptName.includes(lowerSearch) ||
-          policyNo.includes(lowerSearch)
-        );
-      });
-    }
-
-    // Deduplicate strictly by document _id
-    const seenIds = new Set();
-    const uniqueResult = [];
-
-    for (const item of result) {
-      if (!item || !item._id || seenIds.has(String(item._id))) continue;
-      seenIds.add(String(item._id));
-      uniqueResult.push(item);
-    }
-
-    return uniqueResult;
-  }, [customerList, searchTerm, filter, financialYear, selectedCompany, selectedDepartment, selectedMonth]);
-
-  // Paginate filtered data
-  const paginatedData = useMemo(() => {
-    const startIndex = page * rowsPerPage;
-    return filteredData.slice(startIndex, startIndex + rowsPerPage);
-  }, [filteredData, page, rowsPerPage]);
 
   const handleFilter = (e) => {
     setFinancialYear(e.target.value);
@@ -416,27 +347,7 @@ const Policy = () => {
 
   return (
     <>
-      {loading && (
-        <Box
-          sx={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: 'rgba(0,0,0,0.5)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 9999
-          }}
-        >
-          <Paper elevation={6} sx={{ p: 4, textAlign: 'center' }}>
-            <CircularProgress size={40} sx={{ mb: 2 }} />
-            <Typography variant="h6">Loading Policies...</Typography>
-          </Paper>
-        </Box>
-      )}
+
 
       <Breadcrumb>
         <Typography component={Link} to="/" variant="subtitle2" color="inherit" className="link-breadcrumb">
@@ -447,7 +358,7 @@ const Policy = () => {
         </Typography>
       </Breadcrumb>
 
-      <Grid container spacing={gridSpacing} sx={{ opacity: loading ? 0.6 : 1, pointerEvents: loading ? 'none' : 'auto' }}>
+      <Grid container spacing={gridSpacing}>
         <Grid item xs={12}>
           <Grid container justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
             <Typography variant="h5">Policy Management</Typography>
@@ -629,14 +540,22 @@ const Policy = () => {
                       <TableCell sx={{ width: 120, px: 1, py: 0.2 }}>Start Date</TableCell>
                       <TableCell sx={{ width: 120, px: 1, py: 0.2 }}>Renewal Date</TableCell>
                       <TableCell sx={{ width: 80, px: 1, py: 0.2 }}>Net Premium</TableCell>
-                      <TableCell sx={{ width: 80, px: 1, py: 0.2 }}>Total GST</TableCell>
                       <TableCell sx={{ width: 80, px: 1, py: 0.2 }}>Total Amount</TableCell>
                       <TableCell sx={{ width: 80, px: 1, py: 0.2 }}>Actions</TableCell>
                     </TableRow>
                   </TableHead>
 
                   <TableBody>
-                    {paginatedData.map((entry, index) => (
+                    {loading ? (
+                      <TableRow>
+                        <TableCell colSpan={10} align="center" sx={{ py: 4 }}>
+                          <CircularProgress size={28} />
+                          <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                            Loading...
+                          </Typography>
+                        </TableCell>
+                      </TableRow>
+                    ) : customerList.map((entry, index) => (
                       <TableRow
                         key={entry?._id || index}
                         hover
@@ -678,7 +597,6 @@ const Policy = () => {
                           {entry?.endDate ? String(entry.endDate).split('T')[0] : (entry?.renewalDate ? String(entry.renewalDate).split('T')[0] : (entry?.tpEndDate ? String(entry.tpEndDate).split('T')[0] : '-'))}
                         </TableCell>
                         <TableCell sx={{ verticalAlign: 'top', py: 1.5 }}>{formatAmountWithCommas(entry?.netPremium)}</TableCell>
-                        <TableCell sx={{ verticalAlign: 'top', py: 1.5 }}>{formatAmountWithCommas(entry?.gstAmount)}</TableCell>
                         <TableCell sx={{ verticalAlign: 'top', py: 1.5 }}>{formatAmountWithCommas(entry?.totalAmount)}</TableCell>
                         <TableCell
                           sx={{
@@ -699,7 +617,7 @@ const Policy = () => {
                         </TableCell>
                       </TableRow>
                     ))}
-                    {paginatedData.length === 0 && (
+                    {!loading && customerList.length === 0 && (
                       <TableRow>
                         <TableCell colSpan={9} align="center" sx={{ py: 4 }}>
                           <Typography variant="body1">No data found</Typography>
@@ -716,7 +634,7 @@ const Policy = () => {
               <TablePagination
                 rowsPerPageOptions={[10, 25, 50, 100, 250, 500]}
                 component="div"
-                count={filteredData.length || 0}
+                count={totalCount || 0}
                 rowsPerPage={rowsPerPage}
                 page={page}
                 onPageChange={handleChangePage}
@@ -727,6 +645,21 @@ const Policy = () => {
           </Paper>
         </CardContent>
       </Card>
+      <Backdrop
+        sx={{ 
+          color: '#fff', 
+          zIndex: (theme) => Math.max(theme.zIndex.drawer + 1, 1400),
+          backgroundColor: 'rgba(0, 0, 0, 0.7)'
+        }}
+        open={isUploading}
+      >
+        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+          <CircularProgress color="inherit" size={60} />
+          <Typography variant="h6" sx={{ mt: 3, color: '#ffffff', fontWeight: 'bold', letterSpacing: 1 }}>
+            Importing Data... Please wait.
+          </Typography>
+        </Box>
+      </Backdrop>
       <ToastContainer />
     </>
   );

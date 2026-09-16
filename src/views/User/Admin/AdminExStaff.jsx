@@ -21,8 +21,10 @@ import {
   DialogContent,
   DialogContentText,
   DialogTitle,
-  Box
-} from '@mui/material';
+  Box,
+  Backdrop,
+  CircularProgress
+, TablePagination } from '@mui/material';
 import Breadcrumb from 'component/Breadcrumb';
 import { Link, useNavigate } from 'react-router-dom';
 import { gridSpacing } from 'config.js';
@@ -38,6 +40,18 @@ import SuspendUser from 'views/HR/User/SuspendUser';
 import { useSelector } from 'react-redux';
 
 const AdminExStaff = () => {
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+
+  const handleChangePage = (event, newPage) => {
+    setPage(newPage);
+  };
+
+  const handleChangeRowsPerPage = (event) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
+
   const [administrativeData, setAdministrativeData] = useState([]);
   const [filteredData, setFilteredData] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -54,6 +68,7 @@ const AdminExStaff = () => {
     Edit: false,
     Delete: false
   });
+  const [isUploading, setIsUploading] = useState(false);
   const systemRights = useSelector((state) => state.systemRights.systemRights);
 
   const navigate = useNavigate();
@@ -168,6 +183,8 @@ const AdminExStaff = () => {
 
     const reader = new FileReader();
     reader.onload = async (evt) => {
+      setIsUploading(true);
+      try {
       const text = evt.target.result;
       const lines = text.split("\n").map(line => line.trim()).filter(line => line !== "");
       if (lines.length <= 1) {
@@ -237,6 +254,10 @@ const AdminExStaff = () => {
         toast.success(`Imported ${successCount} new unique staff members successfully!`);
       }
       fetchAdministrativeData();
+    
+      } finally {
+        setIsUploading(false);
+      }
     };
     reader.readAsText(file);
     e.target.value = '';
@@ -305,6 +326,7 @@ const AdminExStaff = () => {
                       No Records Found
                     </Typography>
                   ) : (
+                    <>
                     <TableContainer component={Paper}>
                       <Table>
                         <TableHead>
@@ -322,7 +344,7 @@ const AdminExStaff = () => {
                           </TableRow>
                         </TableHead>
                         <TableBody>
-                          {filteredData.map((item, index) => (
+                          {filteredData.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((item, index) => (
                             <TableRow key={item._id}>
                               <TableCell>{index + 1}</TableCell>
                               <TableCell>{item.basicDetails?.empCode || 'N/A'}</TableCell>
@@ -369,6 +391,19 @@ const AdminExStaff = () => {
                         </TableBody>
                       </Table>
                     </TableContainer>
+
+            <TablePagination
+              rowsPerPageOptions={[5, 10, 25, 50, 100]}
+              component="div"
+              count={filteredData.length || 0}
+              rowsPerPage={rowsPerPage}
+              page={page}
+              onPageChange={handleChangePage}
+              onRowsPerPageChange={handleChangeRowsPerPage}
+              labelRowsPerPage="Rows per page:"
+            />
+            </>
+
                   )}
                 </>
               )}
@@ -394,6 +429,22 @@ const AdminExStaff = () => {
           )}
         </DialogActions>
       </Dialog>
+      
+      <Backdrop
+        sx={{ 
+          color: '#fff', 
+          zIndex: (theme) => Math.max(theme.zIndex.drawer + 1, 1400),
+          backgroundColor: 'rgba(0, 0, 0, 0.7)'
+        }}
+        open={isUploading}
+      >
+        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+          <CircularProgress color="inherit" size={60} />
+          <Typography variant="h6" sx={{ mt: 3, color: '#ffffff', fontWeight: 'bold', letterSpacing: 1 }}>
+            Importing Data... Please wait.
+          </Typography>
+        </Box>
+      </Backdrop>
       <ToastContainer />
     </>
   );

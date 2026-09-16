@@ -23,18 +23,18 @@ function PersonalInformation({ basicDetails, setBasicDetails, errors, handleUpda
   //   }
   // }, [basicDetails.profilePhoto]);
   useEffect(() => {
-  fetchPrefix();
+    fetchPrefix();
 
-  if (
-    basicDetails?.profilePhoto &&
-    typeof basicDetails.profilePhoto === 'string' &&
-    !profilePhotoPreview
-  ) {
-    setProfilePhotoPreview(
-      `${REACT_APP_API_URL}api/images/${basicDetails.profilePhoto}`
-    );
-  }
-}, [basicDetails?.profilePhoto, profilePhotoPreview]);
+    if (
+      basicDetails?.profilePhoto &&
+      typeof basicDetails.profilePhoto === 'string' &&
+      !profilePhotoPreview
+    ) {
+      setProfilePhotoPreview(
+        `${REACT_APP_API_URL}images/${basicDetails.profilePhoto}`
+      );
+    }
+  }, [basicDetails?.profilePhoto, profilePhotoPreview]);
 
 
   // Handle profile photo change
@@ -123,9 +123,9 @@ function PersonalInformation({ basicDetails, setBasicDetails, errors, handleUpda
             <InputLabel id="gender">Gender</InputLabel>
             <Select labelId="gender" name="gender" value={basicDetails.gender} onChange={handleUpdate} error={!!errors.gender}>
               <MenuItem value="">Select Gender</MenuItem>
-              <MenuItem value="Male">Male</MenuItem>
-              <MenuItem value="Female">Female</MenuItem>
-              <MenuItem value="Other">Other</MenuItem>
+              <MenuItem value="MALE">Male</MenuItem>
+              <MenuItem value="FEMALE">Female</MenuItem>
+              <MenuItem value="OTHER">Other</MenuItem>
             </Select>
           </FormControl>
         </Grid>

@@ -16,7 +16,7 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle
-} from '@mui/material';
+, TablePagination } from '@mui/material';
 import { Edit as EditIcon, Delete as DeleteIcon, Save as SaveIcon, Add as AddIcon } from '@mui/icons-material';
 import { toast, ToastContainer } from 'react-toastify';
 import { Cancel, Save } from '@mui/icons-material';
@@ -27,6 +27,18 @@ import { useSelector } from 'react-redux';
 import { baseApi } from 'services/baseApi';
 
 const PT = ({ salaryIncomeHeadPermission, isAdmin }) => {
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+
+  const handleChangePage = (event, newPage) => {
+    setPage(newPage);
+  };
+
+  const handleChangeRowsPerPage = (event) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
+
   const { data: ptData = [], refetch } = useGetPTQuery();
   const [addPT] = useAddPTMutation();
   const [updatePT] = useUpdatePTMutation();
@@ -224,7 +236,7 @@ const PT = ({ salaryIncomeHeadPermission, isAdmin }) => {
                           size="small"
                           sx={{ width: '120px' }}
                         >
-                          {monthOptions.map((month) => (
+                          {monthOptions.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((month) => (
                             <MenuItem key={month} value={month}>
                               {month}
                             </MenuItem>
@@ -282,6 +294,18 @@ const PT = ({ salaryIncomeHeadPermission, isAdmin }) => {
             </TableBody>
           </Table>
         </TableContainer>
+
+            <TablePagination
+              rowsPerPageOptions={[5, 10, 25, 50, 100]}
+              component="div"
+              count={monthOptions.length || 0}
+              rowsPerPage={rowsPerPage}
+              page={page}
+              onPageChange={handleChangePage}
+              onRowsPerPageChange={handleChangeRowsPerPage}
+              labelRowsPerPage="Rows per page:"
+            />
+
       </Paper>
 
       <ToastContainer />

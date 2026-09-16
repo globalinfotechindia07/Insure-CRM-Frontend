@@ -16,7 +16,7 @@ import {
   DialogContent,
   DialogTitle,
   Box
-} from '@mui/material';
+, TablePagination } from '@mui/material';
 import { Cancel, Save } from '@mui/icons-material';
 import { Edit as EditIcon, Delete as DeleteIcon, Save as SaveIcon, Add as AddIcon } from '@mui/icons-material';
 import { toast, ToastContainer } from 'react-toastify';
@@ -30,6 +30,18 @@ import {
 } from 'services/endpoints/Income/income';
 
 const Income = ({salaryIncomeHeadPermission,isAdmin}) => {
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+
+  const handleChangePage = (event, newPage) => {
+    setPage(newPage);
+  };
+
+  const handleChangeRowsPerPage = (event) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
+
   const { data: incomeData = [], refetch } = useGetIncomeQuery();
   const [addIncome] = useAddIncomeMutation();
   const [updateIncome] = useUpdateIncomeMutation();
@@ -192,7 +204,7 @@ const Income = ({salaryIncomeHeadPermission,isAdmin}) => {
               </TableRow>
             </TableHead>
             <TableBody>
-              {filteredRows.map((row) => (
+              {filteredRows.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((row) => (
                 <TableRow key={row.id}>
                   <TableCell>
                     {row.isEditing ? (
@@ -252,6 +264,18 @@ const Income = ({salaryIncomeHeadPermission,isAdmin}) => {
             </TableBody>
           </Table>
         </TableContainer>
+
+            <TablePagination
+              rowsPerPageOptions={[5, 10, 25, 50, 100]}
+              component="div"
+              count={filteredRows.length || 0}
+              rowsPerPage={rowsPerPage}
+              page={page}
+              onPageChange={handleChangePage}
+              onRowsPerPageChange={handleChangeRowsPerPage}
+              labelRowsPerPage="Rows per page:"
+            />
+
       </Paper>
 
       <ToastContainer />
