@@ -588,7 +588,7 @@ const RenewPolicy = () => {
     // 🔹 subtract 1 day
     end.setDate(end.getDate() - 1);
 
-    return end.toISOString().split('T')[0]; // yyyy-mm-dd
+    return end.toISOString(XXX).split('T')[0]; // yyyy-mm-dd
   };
 
   useEffect(() => {
@@ -597,7 +597,7 @@ const RenewPolicy = () => {
     const startDateObj = new Date(form.startDate);
     startDateObj.setDate(startDateObj.getDate() - 2);
 
-    const transactionDate = startDateObj.toISOString().split('T')[0];
+    const transactionDate = startDateObj.toISOString(XXX).split('T')[0];
 
     const calculatedEndDate = calculateEndDate(form.startDate, form.policyDuration);
 
@@ -621,7 +621,7 @@ const RenewPolicy = () => {
     const startDateObj = new Date(form.tpStartDate);
     startDateObj.setDate(startDateObj.getDate() - 2);
 
-    const transactionDate = startDateObj.toISOString().split('T')[0];
+    const transactionDate = startDateObj.toISOString(XXX).split('T')[0];
 
     const tpEndDate = calculateEndDate(form.tpStartDate, form.tpPolicyDuration);
 
@@ -641,7 +641,7 @@ const RenewPolicy = () => {
     const startDateObj = new Date(form.odStartDate);
     startDateObj.setDate(startDateObj.getDate() - 2);
 
-    const transactionDate = startDateObj.toISOString().split('T')[0];
+    const transactionDate = startDateObj.toISOString(XXX).split('T')[0];
 
     const odEndDate = calculateEndDate(form.odStartDate, form.odPolicyDuration);
 
@@ -672,14 +672,14 @@ const RenewPolicy = () => {
   useEffect(() => {
     const tpPremium = parseAmount(form?.tpPremium);
     const tpGstId = form?.tpGst;
-    const tpGstValue = parseAmount(gstData?.find((i) => i._id === tpGstId)?.value);
+    const tpGstValue = parseAmount(gstData?.find((i) => String(i._id) === String(tpGstId) || String(i.value) === String(tpGstId))?.value);
 
     const tpGstAmount = round2(tpPremium * (tpGstValue / 100));
     const tpAmount = round2(tpPremium + tpGstAmount);
 
     const odPremium = parseAmount(form?.odPremium);
     const odGstId = form?.odGst;
-    const odGstValue = parseAmount(gstData?.find((i) => i._id === odGstId)?.value);
+    const odGstValue = parseAmount(gstData?.find((i) => String(i._id) === String(odGstId) || String(i.value) === String(odGstId))?.value);
 
     const odGstAmount = round2(odPremium * (odGstValue / 100));
     const odAmount = round2(odPremium + odGstAmount);
@@ -715,7 +715,7 @@ const RenewPolicy = () => {
       const netPremium = round2(parseAmount(form.netPremium));
 
       if (form.netPremium != '') {
-        const gstValue = parseAmount(gstData?.find((i) => i._id === form.gst)?.value);
+        const gstValue = parseAmount(gstData?.find((i) => String(i._id) === String(form.gst) || String(i.value) === String(form.gst))?.value);
         const gstAmount = round2(netPremium * (gstValue / 100)) || 0;
         const totalAmount = round2(netPremium + gstAmount);
 
@@ -1178,7 +1178,7 @@ const RenewPolicy = () => {
   useEffect(() => {
     const net = parseAmount(form.endorsementNetPremium);
     const gstId = form.endorsementGst;
-    const gstValue = parseAmount(gstData?.find((g) => g._id === gstId)?.value);
+    const gstValue = parseAmount(gstData?.find((g) => String(g._id) === String(gstId) || String(g.value) === String(gstId))?.value);
       const gstAmount = gstValue ? round2(net * (gstValue / 100)) : parseAmount(form.endorsementGstAmount);
     const total = round2(net + gstAmount);
     setForm((prev) => ({
