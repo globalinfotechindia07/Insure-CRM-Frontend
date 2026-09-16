@@ -19,7 +19,7 @@ import {
   Box,
   Backdrop,
   CircularProgress
-} from '@mui/material';
+, TablePagination } from '@mui/material';
 import { Link } from 'react-router-dom';
 import { Add, Edit, Delete, Close, Save, Cancel } from '@mui/icons-material';
 import PriorityHighIcon from '@mui/icons-material/PriorityHigh';
@@ -33,6 +33,18 @@ import { get, post, put, remove } from '../../../api/api';
 import { useSelector } from 'react-redux';
 
 const Priority = () => {
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+
+  const handleChangePage = (event, newPage) => {
+    setPage(newPage);
+  };
+
+  const handleChangeRowsPerPage = (event) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
+
   const [form, setForm] = useState({ Priority: '' });
   const [errors, setErrors] = useState({});
   const [open, setOpen] = useState(false);
@@ -346,7 +358,7 @@ const Priority = () => {
               </TableHead>
               <TableBody>
                 {data.length > 0 ? (
-                  data.map((row, index) => (
+                  data.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((row, index) => (
                     <TableRow key={row._id}>
                       <TableCell>{index + 1}</TableCell>
                       <TableCell>{row.Priority}</TableCell>
@@ -369,6 +381,18 @@ const Priority = () => {
                 )}
               </TableBody>
             </Table>
+
+            <TablePagination
+              rowsPerPageOptions={[5, 10, 25, 50, 100]}
+              component="div"
+              count={data.length || 0}
+              rowsPerPage={rowsPerPage}
+              page={page}
+              onPageChange={handleChangePage}
+              onRowsPerPageChange={handleChangeRowsPerPage}
+              labelRowsPerPage="Rows per page:"
+            />
+
           </Box>
         </CardContent>
       </Card>

@@ -14,7 +14,7 @@ import {
   TableRow,
   TableCell,
   TableBody
-} from '@mui/material';
+, TablePagination } from '@mui/material';
 import { put } from 'api/api';
 import { toast } from 'react-toastify';
 
@@ -57,6 +57,18 @@ function PastEmploymentDetails({ setStoredAllData, setValue, storedAllData }) {
   console.log(pastEmploymentData);
 
   const validateFields = (data) => {
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+
+  const handleChangePage = (event, newPage) => {
+    setPage(newPage);
+  };
+
+  const handleChangeRowsPerPage = (event) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
+
     const validations = [
       { field: 'organisationName', message: 'Organisation name is required' },
       { field: 'designation', message: 'Designation is required' },
@@ -168,7 +180,7 @@ function PastEmploymentDetails({ setStoredAllData, setValue, storedAllData }) {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {pastEmploymentData.map((entry, index) => (
+                  {pastEmploymentData.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((entry, index) => (
                     <TableRow key={index} sx={{ border: '1px solid black' }}>
                       <TableCell sx={{ border: '1px solid black' }}>
                         <TextField
@@ -263,6 +275,18 @@ function PastEmploymentDetails({ setStoredAllData, setValue, storedAllData }) {
                 </TableBody>
               </Table>
             </TableContainer>
+
+            <TablePagination
+              rowsPerPageOptions={[5, 10, 25, 50, 100]}
+              component="div"
+              count={pastEmploymentData.length || 0}
+              rowsPerPage={rowsPerPage}
+              page={page}
+              onPageChange={handleChangePage}
+              onRowsPerPageChange={handleChangeRowsPerPage}
+              labelRowsPerPage="Rows per page:"
+            />
+
 
             <Box sx={{ display: 'flex', justifyContent: 'space-between', marginTop: 2 }}>
               <Button type="button" onClick={handleAddRow} variant="outlined">

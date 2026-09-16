@@ -44,12 +44,25 @@ import {
   DialogTitle,
   IconButton,
   Tooltip,
+  TablePagination 
 } from '@mui/material';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import { toast } from 'react-toastify';
 import value from 'assets/scss/_themes-vars.module.scss';
 
 const SalaryIncomeDeduction = ({salaryIncomeHeadPermission,isAdmin}) => {
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+
+  const handleChangePage = (event, newPage) => {
+    setPage(newPage);
+  };
+
+  const handleChangeRowsPerPage = (event) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
+
   const [inputValue, setInputValue] = useState('');
   const [selectedItems, setSelectedItems] = useState([]);
   const [employeeValue, setEmployeeValue] = useState('');
@@ -303,8 +316,9 @@ const SalaryIncomeDeduction = ({salaryIncomeHeadPermission,isAdmin}) => {
           {/* Table */}
           <Box mt={4} borderRadius={2} padding={2}>
             {filteredData.length > 0 ? (
-              <TableContainer component={Paper}>
-                <Table>
+              <>
+                <TableContainer component={Paper}>
+                  <Table>
                   <TableHead>
                     <TableRow sx={{ backgroundColor: '#F0F2F8' }}>
                       <TableCell>Input Value</TableCell>
@@ -315,7 +329,7 @@ const SalaryIncomeDeduction = ({salaryIncomeHeadPermission,isAdmin}) => {
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {filteredData.map((row, index) => (
+                    {filteredData.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((row, index) => (
                       <TableRow key={row._id || index}>
                         <TableCell>{row.percentage}</TableCell>
                         <TableCell>{row.selectedItems?.join(' + ')}</TableCell>
@@ -343,6 +357,18 @@ const SalaryIncomeDeduction = ({salaryIncomeHeadPermission,isAdmin}) => {
                   </TableBody>
                 </Table>
               </TableContainer>
+
+            <TablePagination
+              rowsPerPageOptions={[5, 10, 25, 50, 100]}
+              component="div"
+              count={filteredData.length || 0}
+              rowsPerPage={rowsPerPage}
+              page={page}
+              onPageChange={handleChangePage}
+              onRowsPerPageChange={handleChangeRowsPerPage}
+              labelRowsPerPage="Rows per page:"
+            />
+              </>
             ) : (
               <Box textAlign="center" mt={2} fontStyle="italic" color="gray">
                 No entries to display.

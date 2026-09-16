@@ -1670,7 +1670,7 @@ const AddPolicy = () => {
                             {gstData.length > 0 &&
                               gstData.map((type) => (
                                 <MenuItem key={type._id} value={type._id}>
-                                  {type.value}
+                                  {String(type.value)}
                                 </MenuItem>
                               ))}
                           </Select>
@@ -1765,7 +1765,7 @@ const AddPolicy = () => {
                             {gstData.length > 0 &&
                               gstData.map((type) => (
                                 <MenuItem key={type._id} value={type._id}>
-                                  {type.value}
+                                  {String(type.value)}
                                 </MenuItem>
                               ))}
                           </Select>
@@ -2135,7 +2135,7 @@ finance = 69522c7b583c668bdda53af5
                         {gstData.length > 0 &&
                           gstData.map((type) => (
                             <MenuItem key={type._id} value={type._id}>
-                              {type.value}
+                              {String(type.value)}
                             </MenuItem>
                           ))}
                       </Select>
@@ -2504,8 +2504,8 @@ finance = 69522c7b583c668bdda53af5
                       {gstData.length > 0 &&
                         gstData.map((type) => (
                           <MenuItem key={type._id} value={type._id}>
-                            {type.value}
-                          </MenuItem>
+                              {String(type.value)}
+                            </MenuItem>
                         ))}
                     </Select>
                   </FormControl>
@@ -2804,7 +2804,7 @@ finance = 69522c7b583c668bdda53af5
                       {gstData.length > 0 &&
                         gstData.map((type) => (
                           <MenuItem key={type._id} value={type.value}>
-                            {type.value}
+                            {String(type.value)}
                           </MenuItem>
                         ))}
                     </Select>

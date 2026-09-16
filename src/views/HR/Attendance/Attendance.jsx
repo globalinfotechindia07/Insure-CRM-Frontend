@@ -17,7 +17,7 @@ import {
   Select,
   FormControl,
   InputLabel
-} from '@mui/material';
+, TablePagination } from '@mui/material';
 import Breadcrumb from 'component/Breadcrumb';
 import { gridSpacing } from 'config.js';
 import SaveIcon from '@mui/icons-material/Save';
@@ -26,6 +26,18 @@ import { get, post } from 'api/api';
 import { toast } from 'react-toastify';
 
 const Attendance = () => {
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+
+  const handleChangePage = (event, newPage) => {
+    setPage(newPage);
+  };
+
+  const handleChangeRowsPerPage = (event) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
+
   const [attendanceData, setAttendanceData] = useState([]);
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const Status = ['PRESENT', 'ABSENT', 'HALF DAY'];
@@ -156,7 +168,7 @@ const Attendance = () => {
                       </TableRow>
                     </TableHead>
                     <TableBody>
-                      {attendanceData.map((entry, index) => (
+                      {attendanceData.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((entry, index) => (
                         <TableRow key={index}>
                           <TableCell>{index + 1}</TableCell>
                           <TableCell>{entry.staffId}</TableCell>
@@ -201,6 +213,18 @@ const Attendance = () => {
                       ))}
                     </TableBody>
                   </Table>
+
+            <TablePagination
+              rowsPerPageOptions={[5, 10, 25, 50, 100]}
+              component="div"
+              count={attendanceData.length || 0}
+              rowsPerPage={rowsPerPage}
+              page={page}
+              onPageChange={handleChangePage}
+              onRowsPerPageChange={handleChangeRowsPerPage}
+              labelRowsPerPage="Rows per page:"
+            />
+
                 </Grid>
               </Box>
 

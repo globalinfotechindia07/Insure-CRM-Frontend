@@ -141,8 +141,16 @@ const ParametricReport = () => {
 
   const rows = filteredRows;
 
-  // With lazy loading, we show all loaded rows directly (no client-side pagination slice)
-  const paginatedRows = rows;
+  const handleChangePage = (event, newPage) => {
+    setPage(newPage);
+  };
+
+  const handleChangeRowsPerPage = (event) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
+
+  const paginatedRows = rows.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
 
   const pageSubtotal = useMemo(() => {
     return paginatedRows.reduce(
@@ -829,22 +837,16 @@ const ParametricReport = () => {
               </TableBody>
             </Table>
           </TableContainer>
-          {/* Lazy-load sentinel: IntersectionObserver watches this to trigger next page */}
-          <div ref={sentinelRef} style={{ height: 1 }} />
-          {loadingMore && (
-            <Box display="flex" justifyContent="center" alignItems="center" py={2}>
-              <CircularProgress size={28} />
-              <Typography variant="body2" color="text.secondary" ml={1}>
-                Loading more records...
-              </Typography>
-            </Box>
-          )}
-          {reportGenerated && !hasMore && rows.length > 0 && (
-            <Box display="flex" justifyContent="center" py={1}>
-              <Typography variant="caption" color="text.secondary">
-                All {rows.length} records loaded
-              </Typography>
-            </Box>
+          {reportGenerated && rows.length > 0 && (
+            <TablePagination
+              rowsPerPageOptions={[25, 50, 100]}
+              component="div"
+              count={rows.length}
+              rowsPerPage={rowsPerPage}
+              page={page}
+              onPageChange={handleChangePage}
+              onRowsPerPageChange={handleChangeRowsPerPage}
+            />
           )}
         </Grid>
       </Grid>

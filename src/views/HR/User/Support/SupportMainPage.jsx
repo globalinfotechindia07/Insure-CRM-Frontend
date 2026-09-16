@@ -21,7 +21,7 @@ import {
   DialogContent,
   DialogContentText,
   DialogTitle
-} from '@mui/material'
+, TablePagination } from '@mui/material'
 import Breadcrumb from 'component/Breadcrumb'
 import { Link, useNavigate } from 'react-router-dom'
 import { gridSpacing } from 'config.js'
@@ -34,6 +34,18 @@ import ViewBtn from 'component/buttons/ViewBtn'
 import { toast, ToastContainer } from 'react-toastify'
 
 const SupportMainPage = () => {
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+
+  const handleChangePage = (event, newPage) => {
+    setPage(newPage);
+  };
+
+  const handleChangeRowsPerPage = (event) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
+
   const [supportData, setSupportData] = useState([])
   const [filteredData, setFilteredData] = useState([])
   const [searchQuery, setSearchQuery] = useState('')
@@ -174,7 +186,7 @@ const SupportMainPage = () => {
                           </TableRow>
                         </TableHead>
                         <TableBody>
-                          {filteredData.map((item, index) => (
+                          {filteredData.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((item, index) => (
                             <TableRow key={item._id}>
                               <TableCell>{index + 1}</TableCell>
                               <TableCell>
@@ -201,6 +213,18 @@ const SupportMainPage = () => {
                         </TableBody>
                       </Table>
                     </TableContainer>
+
+            <TablePagination
+              rowsPerPageOptions={[5, 10, 25, 50, 100]}
+              component="div"
+              count={filteredData.length || 0}
+              rowsPerPage={rowsPerPage}
+              page={page}
+              onPageChange={handleChangePage}
+              onRowsPerPageChange={handleChangeRowsPerPage}
+              labelRowsPerPage="Rows per page:"
+            />
+
                   )}
                 </>
               )}

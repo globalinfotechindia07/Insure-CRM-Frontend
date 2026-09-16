@@ -1,10 +1,22 @@
 import React from 'react';
-import { Card, CardContent, Box, Grid, Table, TableHead, TableRow, TableCell, TableBody, Button, IconButton } from '@mui/material';
+import { Card, CardContent, Box, Grid, Table, TableHead, TableRow, TableCell, TableBody, Button, IconButton , TablePagination } from '@mui/material';
 import { Edit, Delete } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { get, post, put, remove } from '../../../api/api';
 import { toast } from 'react-toastify';
 const PermanentClientTable = ({ clientList, refreshClients, clientPermission, isAdmin }) => {
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+
+  const handleChangePage = (event, newPage) => {
+    setPage(newPage);
+  };
+
+  const handleChangeRowsPerPage = (event) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
+
   const navigate = useNavigate();
   clientList = clientList.filter((client) => client?.clientType?.typeOfClient === 'Permanent');
   const handleDeleteClient = async (id) => {
@@ -43,7 +55,7 @@ const PermanentClientTable = ({ clientList, refreshClients, clientPermission, is
                 </TableRow>
               </TableHead>
               <TableBody>
-                {clientList.map((entry, index) => (
+                {clientList.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((entry, index) => (
                   <TableRow key={entry._id || index}>
                     <TableCell>{index + 1}</TableCell>
                     <TableCell>{entry.clientName}</TableCell>
@@ -85,6 +97,18 @@ const PermanentClientTable = ({ clientList, refreshClients, clientPermission, is
                 ))}
               </TableBody>
             </Table>
+
+            <TablePagination
+              rowsPerPageOptions={[5, 10, 25, 50, 100]}
+              component="div"
+              count={clientList.length || 0}
+              rowsPerPage={rowsPerPage}
+              page={page}
+              onPageChange={handleChangePage}
+              onRowsPerPageChange={handleChangeRowsPerPage}
+              labelRowsPerPage="Rows per page:"
+            />
+
           </Grid>
         </Box>
       </CardContent>

@@ -25,7 +25,7 @@ import {
   IconButton,
   Backdrop,
   CircularProgress
-} from '@mui/material';
+, TablePagination } from '@mui/material';
 
 import Breadcrumb from 'component/Breadcrumb';
 import { Link, useNavigate } from 'react-router-dom';
@@ -39,6 +39,18 @@ import SuspendUser from 'views/HR/User/SuspendUser';
 import { useSelector } from 'react-redux';
 
 const AdminStaff = () => {
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+
+  const handleChangePage = (event, newPage) => {
+    setPage(newPage);
+  };
+
+  const handleChangeRowsPerPage = (event) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
+
   const [administrativeData, setAdministrativeData] = useState([]);
   const [filteredData, setFilteredData] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -322,6 +334,7 @@ const AdminStaff = () => {
                       No Records Found
                     </Typography>
                   ) : (
+                    <>
                     <TableContainer component={Paper}>
                       <Table>
                         <TableHead>
@@ -339,7 +352,7 @@ const AdminStaff = () => {
                           </TableRow>
                         </TableHead>
                         <TableBody>
-                          {activeData.map((item, index) => {
+                          {activeData.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((item, index) => {
                             // const isSuspended = checkifsuspended(item._id);
                             const empCode = item?.basicDetails?.empCode || 'N/A';
                             const firstName = item?.basicDetails?.firstName || 'N/A';
@@ -394,6 +407,18 @@ const AdminStaff = () => {
                         </TableBody>
                       </Table>
                     </TableContainer>
+
+            <TablePagination
+              rowsPerPageOptions={[5, 10, 25, 50, 100]}
+              component="div"
+              count={activeData.length || 0}
+              rowsPerPage={rowsPerPage}
+              page={page}
+              onPageChange={handleChangePage}
+              onRowsPerPageChange={handleChangeRowsPerPage}
+              labelRowsPerPage="Rows per page:"
+            />
+                    </>
                   )}
                 </>
               )}
