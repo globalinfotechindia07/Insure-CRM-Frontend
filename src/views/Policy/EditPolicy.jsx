@@ -378,13 +378,13 @@ const EditPolicy = () => {
       const serial = parseFloat(str);
       const parsedDate = new Date(Math.round((serial - 25569) * 86400 * 1000));
       if (!isNaN(parsedDate.getTime())) {
-        return parsedDate.toISOString().split('T')[0];
+        return parsedDate.toISOString(XXX).split('T')[0];
       }
     }
 
     const dObj = new Date(val);
     if (!isNaN(dObj.getTime())) {
-      return dObj.toISOString().split('T')[0];
+      return dObj.toISOString(XXX).split('T')[0];
     }
     return fallback;
   };
@@ -720,7 +720,7 @@ const EditPolicy = () => {
     // 🔹 subtract 1 day
     end.setDate(end.getDate() - 1);
 
-    return end.toISOString().split('T')[0]; // yyyy-mm-dd
+    return end.toISOString(XXX).split('T')[0]; // yyyy-mm-dd
   };
 
   const handlePosChange = (e) => {
@@ -751,7 +751,7 @@ const EditPolicy = () => {
     const startDateObj = new Date(form.startDate);
     startDateObj.setDate(startDateObj.getDate() - 2);
 
-    const transactionDate = startDateObj.toISOString().split('T')[0];
+    const transactionDate = startDateObj.toISOString(XXX).split('T')[0];
 
     const calculatedEndDate = calculateEndDate(form.startDate, form.policyDuration);
 
@@ -799,7 +799,7 @@ const EditPolicy = () => {
 
     const startDateObj = new Date(form.tpStartDate);
     startDateObj.setDate(startDateObj.getDate() - 2);
-    const transactionDate = startDateObj.toISOString().split('T')[0];
+    const transactionDate = startDateObj.toISOString(XXX).split('T')[0];
 
     const computedTpEndDate = calculateEndDate(form.tpStartDate, form.tpPolicyDuration);
     if (computedTpEndDate === '') return;
@@ -825,7 +825,7 @@ const EditPolicy = () => {
 
     const startDateObj = new Date(form.odStartDate);
     startDateObj.setDate(startDateObj.getDate() - 2);
-    const transactionDate = startDateObj.toISOString().split('T')[0];
+    const transactionDate = startDateObj.toISOString(XXX).split('T')[0];
 
     const computedOdEndDate = calculateEndDate(form.odStartDate, form.odPolicyDuration);
     if (computedOdEndDate === '') return;
@@ -866,11 +866,11 @@ const EditPolicy = () => {
 
     const tpPremium = parseAmount(form?.tpPremium);
     const tpGstId = form?.tpGst || form?.gst;
-    const tpGstValue = parseAmount(gstData?.find((i) => String(i._id) === String(tpGstId))?.value);
+    const tpGstValue = parseAmount(gstData?.find((i) => String(i._id) === String(tpGstId) || String(i.value) === String(tpGstId))?.value);
 
     const odPremium = parseAmount(form?.odPremium);
     const odGstId = form?.odGst || form?.gst;
-    const odGstValue = parseAmount(gstData?.find((i) => String(i._id) === String(odGstId))?.value);
+    const odGstValue = parseAmount(gstData?.find((i) => String(i._id) === String(odGstId) || String(i.value) === String(odGstId))?.value);
 
     // ⛔ if both premiums are empty, don't calculate
     if (!tpPremium && !odPremium) return;
@@ -943,7 +943,7 @@ const EditPolicy = () => {
       const netPremium = round2(parseAmount(form.netPremium));
 
       if (form.netPremium != '') {
-        const gstValue = parseAmount(gstData?.find((i) => i._id === form.gst)?.value);
+        const gstValue = parseAmount(gstData?.find((i) => String(i._id) === String(form.gst) || String(i.value) === String(form.gst))?.value);
         const gstAmount = round2(netPremium * (gstValue / 100)) || 0;
         const totalAmount = round2(netPremium + gstAmount);
 
@@ -1447,7 +1447,7 @@ const EditPolicy = () => {
   useEffect(() => {
     const net = parseAmount(form.endorsementNetPremium);
     const gstId = form.endorsementGst;
-    const gstValue = parseAmount(gstData?.find((g) => g._id === gstId)?.value);
+    const gstValue = parseAmount(gstData?.find((g) => String(g._id) === String(gstId) || String(g.value) === String(gstId))?.value);
     const gstAmount = gstValue ? round2(net * (gstValue / 100)) : parseAmount(form.endorsementGstAmount);
     const total = round2(net + gstAmount);
     setForm((prev) => {
