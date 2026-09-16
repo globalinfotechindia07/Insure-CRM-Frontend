@@ -259,13 +259,13 @@ const AddPolicy = () => {
     // const tpPremium = form?.tpPremium ? parseFloat(form.tpPremium) : 0;
     // const tpGstId = form?.tpGst;
     // // console.log('ID from from ', tpGstId, odGstId);
-    // const tpGstValue = gstData?.find((i) => String(i._id) === String(XXX) || String(i.value) === String(XXX))?.value;
+    // const tpGstValue = gstData?.find((i) => String(i._id) === String() || String(i.value) === String())?.value;
     // const tpGstAmount = tpPremium * (tpGstValue / 100) || 0;
     // const tpAmount = tpPremium + tpGstAmount;
 
     // const odPremium = form?.odPremium ? parseFloat(form.odPremium) : 0;
     // const odGstId = form?.odGst;
-    // const odGstValue = gstData?.find((i) => String(i._id) === String(XXX) || String(i.value) === String(XXX))?.value;
+    // const odGstValue = gstData?.find((i) => String(i._id) === String() || String(i.value) === String())?.value;
     // const odGstAmount = odPremium * (odGstValue / 100) || 0;
     // const odAmount = odPremium + odGstAmount;
     // const totalPremium = tpPremium + odPremium || '';
@@ -609,7 +609,7 @@ const AddPolicy = () => {
     // 🔹 subtract 1 day
     end.setDate(end.getDate() - 1);
 
-    return end.toISOString(XXX).split('T')[0]; // yyyy-mm-dd
+    return end.toISOString().split('T')[0]; // yyyy-mm-dd
   };
 
   const handlePosChange = (e) => {
@@ -640,7 +640,7 @@ const AddPolicy = () => {
     const startDateObj = new Date(form.startDate);
     startDateObj.setDate(startDateObj.getDate() - 2);
 
-    const transactionDate = startDateObj.toISOString(XXX).split('T')[0];
+    const transactionDate = startDateObj.toISOString().split('T')[0];
 
     const calculatedEndDate = calculateEndDate(form.startDate, form.policyDuration);
 
@@ -691,7 +691,7 @@ const AddPolicy = () => {
     const startDateObj = new Date(form.tpStartDate);
     startDateObj.setDate(startDateObj.getDate() - 2);
 
-    const transactionDate = startDateObj.toISOString(XXX).split('T')[0];
+    const transactionDate = startDateObj.toISOString().split('T')[0];
 
     const tpEndDate = calculateEndDate(form.tpStartDate, form.tpPolicyDuration);
 
@@ -713,7 +713,7 @@ const AddPolicy = () => {
     const startDateObj = new Date(form.odStartDate);
     startDateObj.setDate(startDateObj.getDate() - 2);
 
-    const transactionDate = startDateObj.toISOString(XXX).split('T')[0];
+    const transactionDate = startDateObj.toISOString().split('T')[0];
 
     const odEndDate = calculateEndDate(form.odStartDate, form.odPolicyDuration);
 

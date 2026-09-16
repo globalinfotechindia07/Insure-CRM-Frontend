@@ -596,7 +596,7 @@ const RenewPolicy = () => {
     // 🔹 subtract 1 day
     end.setDate(end.getDate() - 1);
 
-    return end.toISOString(XXX).split('T')[0]; // yyyy-mm-dd
+    return end.toISOString().split('T')[0]; // yyyy-mm-dd
   };
 
   useEffect(() => {
@@ -605,7 +605,7 @@ const RenewPolicy = () => {
     const startDateObj = new Date(form.startDate);
     startDateObj.setDate(startDateObj.getDate() - 2);
 
-    const transactionDate = startDateObj.toISOString(XXX).split('T')[0];
+    const transactionDate = startDateObj.toISOString().split('T')[0];
 
     const calculatedEndDate = calculateEndDate(form.startDate, form.policyDuration);
 
@@ -629,7 +629,7 @@ const RenewPolicy = () => {
     const startDateObj = new Date(form.tpStartDate);
     startDateObj.setDate(startDateObj.getDate() - 2);
 
-    const transactionDate = startDateObj.toISOString(XXX).split('T')[0];
+    const transactionDate = startDateObj.toISOString().split('T')[0];
 
     const tpEndDate = calculateEndDate(form.tpStartDate, form.tpPolicyDuration);
 
@@ -649,7 +649,7 @@ const RenewPolicy = () => {
     const startDateObj = new Date(form.odStartDate);
     startDateObj.setDate(startDateObj.getDate() - 2);
 
-    const transactionDate = startDateObj.toISOString(XXX).split('T')[0];
+    const transactionDate = startDateObj.toISOString().split('T')[0];
 
     const odEndDate = calculateEndDate(form.odStartDate, form.odPolicyDuration);
 
