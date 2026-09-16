@@ -1686,7 +1686,7 @@ const RenewPolicy = () => {
                         {gstData.length > 0 &&
                           gstData.map((type) => (
                             <MenuItem key={type._id} value={type._id}>
-                              {type.value}
+                              {String(type.value)}
                             </MenuItem>
                           ))}
                       </Select>
@@ -1780,7 +1780,7 @@ const RenewPolicy = () => {
                         {gstData.length > 0 &&
                           gstData.map((type) => (
                             <MenuItem key={type._id} value={type._id}>
-                              {type.value}
+                              {String(type.value)}
                             </MenuItem>
                           ))}
                       </Select>
@@ -2135,8 +2135,8 @@ const RenewPolicy = () => {
                     {gstData.length > 0 &&
                       gstData.map((type) => (
                         <MenuItem key={type._id} value={type._id}>
-                          {type.value}
-                        </MenuItem>
+                              {String(type.value)}
+                            </MenuItem>
                       ))}
                   </Select>
                 </FormControl>
@@ -2413,8 +2413,8 @@ const RenewPolicy = () => {
                   {gstData.length > 0 &&
                     gstData.map((type) => (
                       <MenuItem key={type._id} value={type._id}>
-                        {type.value}
-                      </MenuItem>
+                              {String(type.value)}
+                            </MenuItem>
                     ))}
                   {form.endorsementGst && !gstData.some((t) => String(t._id) === String(form.endorsementGst)) && (
                       <MenuItem key={String(form.endorsementGst)} value={String(form.endorsementGst)}>
@@ -2795,8 +2795,8 @@ const RenewPolicy = () => {
                   {gstData.length > 0 &&
                     gstData.map((type) => (
                       <MenuItem key={type._id} value={type.value}>
-                        {type.value}
-                      </MenuItem>
+                            {String(type.value)}
+                          </MenuItem>
                     ))}
                 </Select>
               </FormControl>

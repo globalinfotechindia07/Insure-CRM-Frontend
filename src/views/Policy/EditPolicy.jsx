@@ -2079,7 +2079,7 @@ const EditPolicy = () => {
                         {gstData.length > 0 &&
                           gstData.map((type) => (
                             <MenuItem key={type._id} value={type._id}>
-                              {type.value}
+                              {String(type.value)}
                             </MenuItem>
                           ))}
                         {(form.tpGst || form.gst) && !gstData.some((t) => String(t._id) === String(resolveSelectValue(gstData, form.tpGst || form.gst))) && (
@@ -2184,7 +2184,7 @@ const EditPolicy = () => {
                         {gstData.length > 0 &&
                           gstData.map((type) => (
                             <MenuItem key={type._id} value={type._id}>
-                              {type.value}
+                              {String(type.value)}
                             </MenuItem>
                           ))}
                         {(form.odGst || form.gst) && !gstData.some((t) => String(t._id) === String(resolveSelectValue(gstData, form.odGst || form.gst))) && (
@@ -2576,8 +2576,8 @@ const EditPolicy = () => {
                     {gstData.length > 0 &&
                       gstData.map((type) => (
                         <MenuItem key={type._id} value={type._id}>
-                          {type.value}
-                        </MenuItem>
+                              {String(type.value)}
+                            </MenuItem>
                       ))}
                     {form.gst && !gstData.some((t) => String(t._id) === String(resolveSelectValue(gstData, form.gst))) && (
                       <MenuItem key={String(form.gst)} value={String(form.gst)}>
@@ -2968,8 +2968,8 @@ const EditPolicy = () => {
                   {gstData.length > 0 &&
                     gstData.map((type) => (
                       <MenuItem key={type._id} value={type._id}>
-                        {type.value}
-                      </MenuItem>
+                              {String(type.value)}
+                            </MenuItem>
                     ))}
                   {form.endorsementGst && !gstData.some((t) => String(t._id) === String(resolveSelectValue(gstData, form.endorsementGst))) && (
                     <MenuItem key={String(form.endorsementGst)} value={String(form.endorsementGst)}>
@@ -3327,8 +3327,8 @@ const EditPolicy = () => {
                   {gstData.length > 0 &&
                     gstData.map((type) => (
                       <MenuItem key={type._id} value={type.value}>
-                        {type.value}
-                      </MenuItem>
+                            {String(type.value)}
+                          </MenuItem>
                     ))}
                   {form.totalBrokerageGst && !gstData.some((t) => String(t.value) === String(form.totalBrokerageGst)) && (
                     <MenuItem key={String(form.totalBrokerageGst)} value={form.totalBrokerageGst}>
