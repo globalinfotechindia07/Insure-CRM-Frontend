@@ -290,7 +290,7 @@ const fetchInsDepartments = async () => {
   {data && data.length > 0 ? (
     data.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((item, index) => (
       <TableRow key={item._id || index}>
-        <TableCell>{index + 1}</TableCell>
+        <TableCell>{page * rowsPerPage + index + 1}</TableCell>
         <TableCell>{item.insDepartment}</TableCell>
         <TableCell>
           <Button

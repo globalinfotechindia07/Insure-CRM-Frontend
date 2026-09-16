@@ -24,7 +24,8 @@ import {
   FormControlLabel,
   Switch,
   Backdrop,
-  CircularProgress
+  CircularProgress,
+  TablePagination
 } from '@mui/material';
 
 import { 
@@ -74,6 +75,18 @@ const InvestigatorPage = () => {
     status: true,
   });
   const [isUploading, setIsUploading] = useState(false);
+
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+
+  const handleChangePage = (event, newPage) => {
+    setPage(newPage);
+  };
+
+  const handleChangeRowsPerPage = (event) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
 
   const fetchData = async () => {
     setLoading(true);
@@ -576,9 +589,9 @@ const InvestigatorPage = () => {
                   </TableCell>
                 </TableRow>
               ) : (
-                data.map((item, index) => (
+                data.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((item, index) => (
                   <TableRow key={item._id}>
-                    <TableCell>{index + 1}</TableCell>
+                    <TableCell>{page * rowsPerPage + index + 1}</TableCell>
                     <TableCell>{item.investigatorName}</TableCell>
                     <TableCell>{item.email || "-"}</TableCell>
                     <TableCell>{item.contactNo || "-"}</TableCell>
@@ -628,6 +641,15 @@ const InvestigatorPage = () => {
               )}
             </TableBody>
           </Table>
+          <TablePagination
+            rowsPerPageOptions={[5, 10, 25, 50, 100]}
+            component="div"
+            count={data.length || 0}
+            rowsPerPage={rowsPerPage}
+            page={page}
+            onPageChange={handleChangePage}
+            onRowsPerPageChange={handleChangeRowsPerPage}
+          />
         </CardContent>
       </Card>
 

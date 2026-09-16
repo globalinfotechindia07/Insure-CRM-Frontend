@@ -23,7 +23,8 @@ import {
   Tabs,
   Box,
   Backdrop,
-  CircularProgress
+  CircularProgress,
+  TablePagination
 } from '@mui/material';
 
 import {
@@ -77,6 +78,18 @@ const ClaimPage = () => {
   const [tpas, setTPAs] = useState([]);
   const [investigators, setInvestigators] = useState([]);
   const [departments, setDepartments] = useState([]);
+
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+
+  const handleChangePage = (event, newPage) => {
+    setPage(newPage);
+  };
+
+  const handleChangeRowsPerPage = (event) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
 
   const [formData, setFormData] = useState({
     claimNo: "",
@@ -1042,9 +1055,9 @@ const ClaimPage = () => {
             </TableHead>
             <TableBody>
               {data.length > 0 ? (
-                data.map((item, index) => (
+                data.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((item, index) => (
                   <TableRow key={item._id}>
-                    <TableCell>{index + 1}</TableCell>
+                    <TableCell>{page * rowsPerPage + index + 1}</TableCell>
                     <TableCell>{item.claimNo}</TableCell>
                     <TableCell>{item.policyNo}</TableCell>
                     <TableCell>{item.insuredName}</TableCell>
@@ -1074,6 +1087,15 @@ const ClaimPage = () => {
               )}
             </TableBody>
           </Table>
+          <TablePagination
+            rowsPerPageOptions={[5, 10, 25, 50, 100]}
+            component="div"
+            count={data.length || 0}
+            rowsPerPage={rowsPerPage}
+            page={page}
+            onPageChange={handleChangePage}
+            onRowsPerPageChange={handleChangeRowsPerPage}
+          />
         </CardContent>
       </Card>
       
