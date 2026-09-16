@@ -378,13 +378,13 @@ const EditPolicy = () => {
       const serial = parseFloat(str);
       const parsedDate = new Date(Math.round((serial - 25569) * 86400 * 1000));
       if (!isNaN(parsedDate.getTime())) {
-        return parsedDate.toISOString(XXX).split('T')[0];
+        return parsedDate.toISOString().split('T')[0];
       }
     }
 
     const dObj = new Date(val);
     if (!isNaN(dObj.getTime())) {
-      return dObj.toISOString(XXX).split('T')[0];
+      return dObj.toISOString().split('T')[0];
     }
     return fallback;
   };
@@ -720,7 +720,7 @@ const EditPolicy = () => {
     // 🔹 subtract 1 day
     end.setDate(end.getDate() - 1);
 
-    return end.toISOString(XXX).split('T')[0]; // yyyy-mm-dd
+    return end.toISOString().split('T')[0]; // yyyy-mm-dd
   };
 
   const handlePosChange = (e) => {
@@ -751,7 +751,7 @@ const EditPolicy = () => {
     const startDateObj = new Date(form.startDate);
     startDateObj.setDate(startDateObj.getDate() - 2);
 
-    const transactionDate = startDateObj.toISOString(XXX).split('T')[0];
+    const transactionDate = startDateObj.toISOString().split('T')[0];
 
     const calculatedEndDate = calculateEndDate(form.startDate, form.policyDuration);
 
@@ -799,7 +799,7 @@ const EditPolicy = () => {
 
     const startDateObj = new Date(form.tpStartDate);
     startDateObj.setDate(startDateObj.getDate() - 2);
-    const transactionDate = startDateObj.toISOString(XXX).split('T')[0];
+    const transactionDate = startDateObj.toISOString().split('T')[0];
 
     const computedTpEndDate = calculateEndDate(form.tpStartDate, form.tpPolicyDuration);
     if (computedTpEndDate === '') return;
@@ -825,7 +825,7 @@ const EditPolicy = () => {
 
     const startDateObj = new Date(form.odStartDate);
     startDateObj.setDate(startDateObj.getDate() - 2);
-    const transactionDate = startDateObj.toISOString(XXX).split('T')[0];
+    const transactionDate = startDateObj.toISOString().split('T')[0];
 
     const computedOdEndDate = calculateEndDate(form.odStartDate, form.odPolicyDuration);
     if (computedOdEndDate === '') return;
