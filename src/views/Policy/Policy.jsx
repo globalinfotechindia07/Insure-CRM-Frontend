@@ -66,25 +66,38 @@ const Policy = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState(initialState);
-  const [filter, setFilter] = useState('');
+  const getSessionState = (key, defaultValue) => {
+    const saved = sessionStorage.getItem(`policyList_${key}`);
+    return saved !== null ? JSON.parse(saved) : defaultValue;
+  };
+
+  const [filter, setFilter] = useState(() => getSessionState('filter', ''));
   const [customerList, setCustomerList] = useState([]);
   const [insCompanyData, setInsCompanyData] = useState({});
   const [insDepartmentData, setInsDepartmentData] = useState({});
   const [financialYearData, setFinancialYearData] = useState([]);
   const [financialYear, setFinancialYear] = useState('');
-  const [selectedCompany, setSelectedCompany] = useState('');
-  const [selectedDepartment, setSelectedDepartment] = useState('');
-  const [selectedMonth, setSelectedMonth] = useState('');
+  const [selectedCompany, setSelectedCompany] = useState(() => getSessionState('selectedCompany', ''));
+  const [selectedDepartment, setSelectedDepartment] = useState(() => getSessionState('selectedDepartment', ''));
+  const [selectedMonth, setSelectedMonth] = useState(() => getSessionState('selectedMonth', ''));
 
-  const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [page, setPage] = useState(() => getSessionState('page', 0));
+  const [rowsPerPage, setRowsPerPage] = useState(() => getSessionState('rowsPerPage', 10));
   const [totalCount, setTotalCount] = useState(0);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState(() => getSessionState('searchTerm', ''));
   const [file, setFile] = useState(null);
   const [isExporting, setIsExporting] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
 
-  useEffect(() => { }, [filter]);
+  useEffect(() => {
+    sessionStorage.setItem('policyList_filter', JSON.stringify(filter));
+    sessionStorage.setItem('policyList_selectedCompany', JSON.stringify(selectedCompany));
+    sessionStorage.setItem('policyList_selectedDepartment', JSON.stringify(selectedDepartment));
+    sessionStorage.setItem('policyList_selectedMonth', JSON.stringify(selectedMonth));
+    sessionStorage.setItem('policyList_page', JSON.stringify(page));
+    sessionStorage.setItem('policyList_rowsPerPage', JSON.stringify(rowsPerPage));
+    sessionStorage.setItem('policyList_searchTerm', JSON.stringify(searchTerm));
+  }, [filter, selectedCompany, selectedDepartment, selectedMonth, page, rowsPerPage, searchTerm]);
 
   useEffect(() => {
     const selectedFY = localStorage.getItem('selectedFY');

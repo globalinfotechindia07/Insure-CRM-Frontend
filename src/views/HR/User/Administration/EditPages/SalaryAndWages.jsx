@@ -14,7 +14,7 @@ import {
   Grid,
   TextField,
   Button
-} from '@mui/material';
+, TablePagination } from '@mui/material';
 import SaveIcon from '@mui/icons-material/Save';
 import PrintIcon from '@mui/icons-material/Print';
 
@@ -58,6 +58,18 @@ function SalaryAndWages({ setValue, storedAllData, setStoredAllData }) {
 
   // Function to calculate variable income
   const calculateVariableIncome = (salary) => {
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+
+  const handleChangePage = (event, newPage) => {
+    setPage(newPage);
+  };
+
+  const handleChangeRowsPerPage = (event) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
+
     return incomeData.reduce((sum, item) => sum + (item.amount * salary) / 100, 0);
   };
 
@@ -541,7 +553,7 @@ function SalaryAndWages({ setValue, storedAllData, setStoredAllData }) {
 </TableRow>
 
 
-                 {incomeData.map((item) => {
+                 {incomeData.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((item) => {
   const salary = isEditing ? baseSalary : submittedSalary;
   const monthly = item.amount ? (item.amount * salary) / 100 : 0; // Ensuring no calculation error if amount is null
   return (
@@ -568,6 +580,18 @@ function SalaryAndWages({ setValue, storedAllData, setStoredAllData }) {
                 </TableBody>
               </Table>
             </TableContainer>
+
+            <TablePagination
+              rowsPerPageOptions={[5, 10, 25, 50, 100]}
+              component="div"
+              count={incomeData.length || 0}
+              rowsPerPage={rowsPerPage}
+              page={page}
+              onPageChange={handleChangePage}
+              onRowsPerPageChange={handleChangeRowsPerPage}
+              labelRowsPerPage="Rows per page:"
+            />
+
           </Grid>
 
           {/* Deductions Section */}
@@ -669,6 +693,18 @@ function SalaryAndWages({ setValue, storedAllData, setStoredAllData }) {
                 </TableBody>
               </Table>
             </TableContainer>
+
+            <TablePagination
+              rowsPerPageOptions={[5, 10, 25, 50, 100]}
+              component="div"
+              count={incomeData.length || 0}
+              rowsPerPage={rowsPerPage}
+              page={page}
+              onPageChange={handleChangePage}
+              onRowsPerPageChange={handleChangeRowsPerPage}
+              labelRowsPerPage="Rows per page:"
+            />
+
           </Grid>
         </Grid>
 

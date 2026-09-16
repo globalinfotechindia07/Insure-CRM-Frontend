@@ -22,7 +22,7 @@ import {
   Tooltip,
   Backdrop,
   CircularProgress
-} from '@mui/material';
+, TablePagination } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
@@ -37,6 +37,18 @@ import axios from 'axios';
 import REACT_APP_API_URL, { get, post, put, remove, retrieveToken } from 'api/api';
 
 const POS = () => {
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+
+  const handleChangePage = (event, newPage) => {
+    setPage(newPage);
+  };
+
+  const handleChangeRowsPerPage = (event) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
+
   const [posList, setPosList] = useState([]);
   const [open, setOpen] = useState(false);
   const [editId, setEditId] = useState(null);
@@ -306,7 +318,7 @@ const POS = () => {
             </TableRow>
           </TableHead>
           <TableBody>
-            {posList.length > 0 ? posList.map((pos) => (
+            {posList.length > 0 ? posList.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((pos) => (
               <TableRow key={pos._id}>
                 <TableCell>{pos.posName}</TableCell>
                 <TableCell>{pos.codeNumber}</TableCell>
@@ -338,6 +350,18 @@ const POS = () => {
             )}
           </TableBody>
         </Table>
+
+            <TablePagination
+              rowsPerPageOptions={[5, 10, 25, 50, 100]}
+              component="div"
+              count={posList.length || 0}
+              rowsPerPage={rowsPerPage}
+              page={page}
+              onPageChange={handleChangePage}
+              onRowsPerPageChange={handleChangeRowsPerPage}
+              labelRowsPerPage="Rows per page:"
+            />
+
       </TableContainer>
 
       <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth>

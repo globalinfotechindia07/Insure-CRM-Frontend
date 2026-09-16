@@ -19,7 +19,7 @@ import {
   Box,
   Backdrop,
   CircularProgress
-} from '@mui/material';
+, TablePagination } from '@mui/material';
 import Breadcrumb from 'component/Breadcrumb';
 import { Link } from 'react-router-dom';
 import { Add, Edit, Delete, Close } from '@mui/icons-material';
@@ -37,6 +37,18 @@ import { get, post, put, remove } from '../../../api/api';
 import { useSelector } from 'react-redux';
 
 const LeaveType = () => {
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+
+  const handleChangePage = (event, newPage) => {
+    setPage(newPage);
+  };
+
+  const handleChangeRowsPerPage = (event) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
+
   const [form, setForm] = useState({
     leaveType: '',
     shortForm: '',
@@ -384,7 +396,7 @@ const LeaveType = () => {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {data.map((row, index) => (
+                  {data.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((row, index) => (
                     <TableRow key={index}>
                       <TableCell>{index + 1}</TableCell>
                       <TableCell>{row.leaveType}</TableCell>
@@ -428,6 +440,18 @@ const LeaveType = () => {
                   ))}
                 </TableBody>
               </Table>
+
+            <TablePagination
+              rowsPerPageOptions={[5, 10, 25, 50, 100]}
+              component="div"
+              count={data.length || 0}
+              rowsPerPage={rowsPerPage}
+              page={page}
+              onPageChange={handleChangePage}
+              onRowsPerPageChange={handleChangeRowsPerPage}
+              labelRowsPerPage="Rows per page:"
+            />
+
             </Box>
           </CardContent>
         </Card>

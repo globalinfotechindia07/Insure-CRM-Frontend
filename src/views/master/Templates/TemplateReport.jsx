@@ -3,7 +3,7 @@ import {
   Button, TextField, Dialog, DialogActions, DialogContent, DialogTitle,
   Box, Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
   Paper, IconButton, Tooltip, Divider, Typography, Autocomplete
-} from '@mui/material';
+, TablePagination } from '@mui/material';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import AddIcon from '@mui/icons-material/Add';
 import { toast, ToastContainer } from 'react-toastify';
@@ -34,6 +34,18 @@ const CustomReactQuill = forwardRef(({ value, onChange, modules, formats }, ref)
 ));
 
 const TemplateReport = () => {
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+
+  const handleChangePage = (event, newPage) => {
+    setPage(newPage);
+  };
+
+  const handleChangeRowsPerPage = (event) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
+
   const { data } = useGetRadiologyTemplateQuery();
   const { data: sectionMaster = [], isLoading: sectionLoading } = useGetRadiologySectionQuery();
   const [addTemplate] = useAddRaiologyTemplateMutation();
@@ -244,7 +256,7 @@ const TemplateReport = () => {
             </TableHead>
             <TableBody>
               {filteredData?.length > 0 ? (
-                filteredData.map((row, index) => (
+                filteredData.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((row, index) => (
                   <TableRow key={index}>
                     <TableCell>{row.fileName}</TableCell>
                     <TableCell align="center">
@@ -273,6 +285,18 @@ const TemplateReport = () => {
               )}
             </TableBody>
           </Table>
+
+            <TablePagination
+              rowsPerPageOptions={[5, 10, 25, 50, 100]}
+              component="div"
+              count={filteredData.length || 0}
+              rowsPerPage={rowsPerPage}
+              page={page}
+              onPageChange={handleChangePage}
+              onRowsPerPageChange={handleChangeRowsPerPage}
+              labelRowsPerPage="Rows per page:"
+            />
+
         </TableContainer>
         {/* Create/Edit Modal */}
         <Dialog open={open} onClose={() => { setOpen(false); resetForm(); }} fullWidth maxWidth="md" scroll="paper">

@@ -13,7 +13,7 @@ import {
   TableHead,
   TableRow,
   Paper
-} from '@mui/material'
+, TablePagination } from '@mui/material'
 import { toast } from 'react-toastify'
 import 'react-toastify/dist/ReactToastify.css'
 import { put } from 'api/api'
@@ -66,6 +66,18 @@ function PastEmploymentDetails ({ setValue, setStoredAllData, storedAllData }) {
   }
 
   const handleChange = (index, e) => {
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+
+  const handleChangePage = (event, newPage) => {
+    setPage(newPage);
+  };
+
+  const handleChangeRowsPerPage = (event) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
+
     const { name, value } = e.target
     const updatedData = [...pastEmploymentData]
     updatedData[index][name] = value
@@ -143,7 +155,7 @@ function PastEmploymentDetails ({ setValue, setStoredAllData, storedAllData }) {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {pastEmploymentData.map((entry, index) => (
+                  {pastEmploymentData.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((entry, index) => (
                     <TableRow key={index} sx={{ border: '1px solid black' }}>
                       <TableCell sx={{ border: '1px solid black' }}>
                         <TextField
@@ -238,6 +250,18 @@ function PastEmploymentDetails ({ setValue, setStoredAllData, storedAllData }) {
                 </TableBody>
               </Table>
             </TableContainer>
+
+            <TablePagination
+              rowsPerPageOptions={[5, 10, 25, 50, 100]}
+              component="div"
+              count={pastEmploymentData.length || 0}
+              rowsPerPage={rowsPerPage}
+              page={page}
+              onPageChange={handleChangePage}
+              onRowsPerPageChange={handleChangeRowsPerPage}
+              labelRowsPerPage="Rows per page:"
+            />
+
 
             <Box sx={{ display: 'flex', justifyContent: 'space-between', marginTop: 2 }}>
               <Button type='button' onClick={handleAddRow} variant='outlined' disabled={storedAllData?.pastEmploymentDetails[0]?._id}>
