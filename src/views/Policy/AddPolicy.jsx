@@ -1,3 +1,11 @@
+
+const normalizeValStr = (val) => {
+  if (val === null || val === undefined) return '';
+  let str = String(val).trim();
+  if (str.endsWith('%')) str = str.slice(0, -1).trim();
+  return str.toLowerCase();
+};
+
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   Grid,
@@ -265,14 +273,14 @@ const AddPolicy = () => {
 
     const tpPremium = parseAmount(form?.tpPremium);
     const tpGstId = form?.tpGst || form?.gst;
-    const tpGstValue = parseAmount(gstData?.find((i) => String(i._id) === String(tpGstId) || String(i.value) === String(tpGstId))?.value);
+    const tpGstValue = parseAmount(gstData?.find((i) => String(i._id) === String(tpGstId) || normalizeValStr(i.value) === normalizeValStr(tpGstId))?.value);
 
     const tpGstAmount = round2(tpPremium * (tpGstValue / 100));
     const tpAmount = round2(tpPremium + tpGstAmount);
 
     const odPremium = parseAmount(form?.odPremium);
     const odGstId = form?.odGst || form?.gst;
-    const odGstValue = parseAmount(gstData?.find((i) => String(i._id) === String(odGstId) || String(i.value) === String(odGstId))?.value);
+    const odGstValue = parseAmount(gstData?.find((i) => String(i._id) === String(odGstId) || normalizeValStr(i.value) === normalizeValStr(odGstId))?.value);
 
     const odGstAmount = round2(odPremium * (odGstValue / 100));
     const odAmount = round2(odPremium + odGstAmount);
@@ -301,7 +309,7 @@ const AddPolicy = () => {
       const isTaxApplicable = taxes.IGST || taxes.UGST || taxes.CGST || taxes.SGST;
 
       const gstId = form?.gst;
-      const gstValue = parseAmount(gstData?.find((i) => String(i._id) === String(form.gst) || String(i.value) === String(form.gst))?.value);
+      const gstValue = parseAmount(gstData?.find((i) => String(i._id) === String(form.gst) || normalizeValStr(i.value) === normalizeValStr(form.gst))?.value);
 
       const gstAmount = round2(netPremium * (gstValue / 100));
       const totalAmount = round2(netPremium + gstAmount);
@@ -1158,7 +1166,7 @@ const AddPolicy = () => {
   useEffect(() => {
     const net = parseAmount(form.endorsementNetPremium);
     const gstId = form.endorsementGst;
-    const gstValue = parseAmount(gstData?.find((g) => String(g._id) === String(gstId) || String(g.value) === String(gstId))?.value || 0);
+    const gstValue = parseAmount(gstData?.find((g) => String(g._id) === String(gstId) || normalizeValStr(g.value) === normalizeValStr(gstId))?.value || 0);
     const gstAmount = round2(net * (gstValue / 100));
     const total = round2(net + gstAmount);
     setForm((prev) => ({

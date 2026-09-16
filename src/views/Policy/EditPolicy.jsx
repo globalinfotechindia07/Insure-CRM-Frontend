@@ -866,11 +866,11 @@ const EditPolicy = () => {
 
     const tpPremium = parseAmount(form?.tpPremium);
     const tpGstId = form?.tpGst || form?.gst;
-    const tpGstValue = parseAmount(gstData?.find((i) => String(i._id) === String(tpGstId) || String(i.value) === String(tpGstId))?.value);
+    const tpGstValue = parseAmount(gstData?.find((i) => String(i._id) === String(tpGstId) || normalizeValStr(i.value) === normalizeValStr(tpGstId))?.value);
 
     const odPremium = parseAmount(form?.odPremium);
     const odGstId = form?.odGst || form?.gst;
-    const odGstValue = parseAmount(gstData?.find((i) => String(i._id) === String(odGstId) || String(i.value) === String(odGstId))?.value);
+    const odGstValue = parseAmount(gstData?.find((i) => String(i._id) === String(odGstId) || normalizeValStr(i.value) === normalizeValStr(odGstId))?.value);
 
     // ⛔ if both premiums are empty, don't calculate
     if (!tpPremium && !odPremium) return;
@@ -943,7 +943,7 @@ const EditPolicy = () => {
       const netPremium = round2(parseAmount(form.netPremium));
 
       if (form.netPremium != '') {
-        const gstValue = parseAmount(gstData?.find((i) => String(i._id) === String(form.gst) || String(i.value) === String(form.gst))?.value);
+        const gstValue = parseAmount(gstData?.find((i) => String(i._id) === String(form.gst) || normalizeValStr(i.value) === normalizeValStr(form.gst))?.value);
         const gstAmount = round2(netPremium * (gstValue / 100)) || 0;
         const totalAmount = round2(netPremium + gstAmount);
 
@@ -1447,7 +1447,7 @@ const EditPolicy = () => {
   useEffect(() => {
     const net = parseAmount(form.endorsementNetPremium);
     const gstId = form.endorsementGst;
-    const gstValue = parseAmount(gstData?.find((g) => String(g._id) === String(gstId) || String(g.value) === String(gstId))?.value);
+    const gstValue = parseAmount(gstData?.find((g) => String(g._id) === String(gstId) || normalizeValStr(g.value) === normalizeValStr(gstId))?.value);
     const gstAmount = gstValue ? round2(net * (gstValue / 100)) : parseAmount(form.endorsementGstAmount);
     const total = round2(net + gstAmount);
     setForm((prev) => {
