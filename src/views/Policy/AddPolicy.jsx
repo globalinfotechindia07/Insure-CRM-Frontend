@@ -1093,14 +1093,10 @@ const AddPolicy = () => {
     const amountOnOtherTerr = round2((netPremium * otherTerrRate) / 100);
     const amountOnTerr = round2((netPremium * terrRate) / 100);
 
-    const totalBrokerageAmount = round2(amountOnOtherTerr + amountOnTerr);
-
     setForm((prev) => ({
       ...prev,
       amountOnOtherTerr: formatAmountWithCommas(amountOnOtherTerr),
-      amountOnTerr: formatAmountWithCommas(amountOnTerr),
-      totalBrokerageAmount: formatAmountWithCommas(totalBrokerageAmount),
-      totalBrokerageAmountincGst: formatAmountWithCommas(totalBrokerageAmount)
+      amountOnTerr: formatAmountWithCommas(amountOnTerr)
     }));
   }, [form.rateOnOtherTerr, form.rateOnTerr, form.netPremium, brokerageRateData]);
 
@@ -1121,16 +1117,33 @@ const AddPolicy = () => {
     const tpBrokerageAmount = round2((tpPremium * tpRate) / 100);
     const odBrokerageAmount = round2((odPremium * odRate) / 100);
 
-    const totalBrokerageAmount = round2(tpBrokerageAmount + odBrokerageAmount);
-
     setForm((prev) => ({
       ...prev,
       tpBrokerageAmount: formatAmountWithCommas(tpBrokerageAmount),
-      odBrokerageAmount: formatAmountWithCommas(odBrokerageAmount),
-      totalBrokerageAmount: formatAmountWithCommas(totalBrokerageAmount),
-      totalBrokerageAmountincGst: formatAmountWithCommas(totalBrokerageAmount)
+      odBrokerageAmount: formatAmountWithCommas(odBrokerageAmount)
     }));
   }, [form.tpPremium, form.odPremium, form.tpBrokerageRate, form.odBrokerageRate, brokerageRateData]);
+
+  useEffect(() => {
+    let total = 0;
+    if (selectedDeptName === 'motor') {
+      const tp = parseAmount(form.tpBrokerageAmount);
+      const od = parseAmount(form.odBrokerageAmount);
+      total = tp + od;
+    } else {
+      const terr = parseAmount(form.amountOnTerr);
+      const otherTerr = parseAmount(form.amountOnOtherTerr);
+      total = terr + otherTerr;
+    }
+    setForm((prev) => {
+      const newTotal = formatAmountWithCommas(total);
+      if (prev.totalBrokerageAmount === newTotal) return prev;
+      return {
+        ...prev,
+        totalBrokerageAmount: newTotal
+      };
+    });
+  }, [form.tpBrokerageAmount, form.odBrokerageAmount, form.amountOnTerr, form.amountOnOtherTerr, selectedDeptName]);
 
   useEffect(() => {
     const total = parseAmount(form.totalBrokerageAmount);
