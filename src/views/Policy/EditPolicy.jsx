@@ -1340,22 +1340,17 @@ const EditPolicy = () => {
     setForm((prev) => {
       const newAmountOnOtherTerr = formatAmountWithCommas(amountOnOtherTerr);
       const newAmountOnTerr = formatAmountWithCommas(amountOnTerr);
-      const newTotalBrokerageAmount = formatAmountWithCommas(totalBrokerageAmount);
 
       if (
         prev.amountOnOtherTerr === newAmountOnOtherTerr &&
-        prev.amountOnTerr === newAmountOnTerr &&
-        prev.totalBrokerageAmount === newTotalBrokerageAmount &&
-        prev.totalBrokerageAmountincGst === newTotalBrokerageAmount
+        prev.amountOnTerr === newAmountOnTerr
       ) {
         return prev;
       }
       return {
         ...prev,
         amountOnOtherTerr: newAmountOnOtherTerr,
-        amountOnTerr: newAmountOnTerr,
-        totalBrokerageAmount: newTotalBrokerageAmount,
-        totalBrokerageAmountincGst: newTotalBrokerageAmount
+        amountOnTerr: newAmountOnTerr
       };
     });
   }, [form.rateOnOtherTerr, form.rateOnTerr, form.netPremium, brokerageRateData]);
@@ -1376,30 +1371,44 @@ const EditPolicy = () => {
     const tpBrokerageAmount = round2((tpPremium * tpRate) / 100);
     const odBrokerageAmount = round2((odPremium * odRate) / 100);
 
-    const totalBrokerageAmount = round2(tpBrokerageAmount + odBrokerageAmount);
-
     setForm((prev) => {
       const newTpBrokerageAmount = formatAmountWithCommas(tpBrokerageAmount);
       const newOdBrokerageAmount = formatAmountWithCommas(odBrokerageAmount);
-      const newTotalBrokerageAmount = formatAmountWithCommas(totalBrokerageAmount);
 
       if (
         prev.tpBrokerageAmount === newTpBrokerageAmount &&
-        prev.odBrokerageAmount === newOdBrokerageAmount &&
-        prev.totalBrokerageAmount === newTotalBrokerageAmount &&
-        prev.totalBrokerageAmountincGst === newTotalBrokerageAmount
+        prev.odBrokerageAmount === newOdBrokerageAmount
       ) {
         return prev;
       }
       return {
         ...prev,
         tpBrokerageAmount: newTpBrokerageAmount,
-        odBrokerageAmount: newOdBrokerageAmount,
-        totalBrokerageAmount: newTotalBrokerageAmount,
-        totalBrokerageAmountincGst: newTotalBrokerageAmount
+        odBrokerageAmount: newOdBrokerageAmount
       };
     });
   }, [form.tpPremium, form.odPremium, form.tpBrokerageRate, form.odBrokerageRate, brokerageRateData]);
+
+  useEffect(() => {
+    let total = 0;
+    if (selectedDeptName === 'motor') {
+      const tp = parseAmount(form.tpBrokerageAmount);
+      const od = parseAmount(form.odBrokerageAmount);
+      total = tp + od;
+    } else {
+      const terr = parseAmount(form.amountOnTerr);
+      const otherTerr = parseAmount(form.amountOnOtherTerr);
+      total = terr + otherTerr;
+    }
+    setForm((prev) => {
+      const newTotal = formatAmountWithCommas(total);
+      if (prev.totalBrokerageAmount === newTotal) return prev;
+      return {
+        ...prev,
+        totalBrokerageAmount: newTotal
+      };
+    });
+  }, [form.tpBrokerageAmount, form.odBrokerageAmount, form.amountOnTerr, form.amountOnOtherTerr, selectedDeptName]);
 
   useEffect(() => {
     const total = parseAmount(form.totalBrokerageAmount);
